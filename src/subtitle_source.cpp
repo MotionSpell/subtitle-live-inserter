@@ -22,12 +22,18 @@ class SubtitleSource : public Module {
 			meta->timeScale = { IClock::Rate, 1 };
 			output->setMetadata(meta);
 	        m_host->activate(true);
+			
+			std::ifstream file(filename);
+			if (!file.is_open())
+				throw error("Can't open subtitle source file");
 		}
 
 		void process() override {
 			std::ifstream file(filename);
-			if (!file.is_open())
-				throw error("Can't open subtitle source file");
+			if (!file.is_open()) {
+				m_host->log(Error, "Can't open subtitle source file");
+				return;
+			}
             file.seekg(lastFilePos, std::ios::beg);
 
 			std::string line;
