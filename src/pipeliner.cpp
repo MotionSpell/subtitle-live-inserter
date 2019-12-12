@@ -2,6 +2,7 @@
 #include "lib_utils/system_clock.hpp"
 #include "lib_utils/os.hpp"
 #include "lib_utils/time.hpp"
+#include "lib_utils/tools.hpp" // operator|
 
 // modules
 #include "lib_media/mux/mux_mp4_config.hpp"
@@ -31,7 +32,7 @@ void ensureDir(std::string path) {
 }
 
 std::unique_ptr<Pipeline> buildPipeline(const char *url, const char *filename) {
-	auto pipeline = make_unique<Pipeline>();
+	auto pipeline = std::make_unique<Pipeline>();
 
 	auto redasher = pipeline->add("reDASH", url);
 

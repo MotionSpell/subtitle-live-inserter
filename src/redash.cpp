@@ -1,36 +1,77 @@
+#include "lib_media/common/metadata_file.hpp"
+#include "lib_media/common/file_puller.hpp"
+#include "lib_media/common/mpeg_dash_parser.hpp"
 #include "lib_modules/utils/helper.hpp"
-#include "lib_media/common/metadata.hpp"
-#include "lib_media/common/attributes.hpp"
 #include "lib_modules/utils/factory.hpp"
 #include "lib_utils/tools.hpp" //enforce
-#include "lib_utils/log_sink.hpp"
-#include "lib_utils/format.hpp"
-#include <fstream>
-
-extern const uint64_t g_segmentDurationInMs;
-
-namespace {
+#include <thread>
+#include <chrono>
 
 using namespace Modules;
+using namespace Modules::In;
+
+extern const uint64_t g_segmentDurationInMs;
+std::unique_ptr<IFilePuller> createHttpSource();
+
+namespace {
 
 class ReDash : public Module {
 	public:
 		ReDash(KHost* host, const char* url)
-			: m_host(host), url(url) {
+			: m_host(host), url(url), httpSrc(createHttpSource()) {
+            std::string urlFn = url;
+            auto i = urlFn.rfind('/');
+            if(i != urlFn.npos)
+                urlFn = urlFn.substr(i+1, urlFn.npos);
+			auto meta = std::make_shared<MetadataFile>(PLAYLIST);
+			meta->filename = urlFn;
 			output = addOutput();
-			auto meta = std::make_shared<MetadataPktSubtitle>();
-			meta->timeScale = { IClock::Rate, 1 };
 			output->setMetadata(meta);
 	        m_host->activate(true);
+
+            auto mpdAsText = download(httpSrc.get(), url);
+            if(mpdAsText.empty())
+                throw std::runtime_error("can't get mpd");
+
+            auto mpd = parseMpd({(const char*)mpdAsText.data(), mpdAsText.size()});
+            minUpdatePeriodInMs = mpd->minUpdatePeriod;
 		}
 
 		void process() override {
+            std::this_thread::sleep_for(std::chrono::milliseconds(minUpdatePeriodInMs));
+
+            auto mpdAsText = download(httpSrc.get(), url.c_str());
+            if(mpdAsText.empty())
+                throw std::runtime_error("can't get mpd");
+
+            auto mpd = parseMpd({(const char*)mpdAsText.data(), mpdAsText.size()});
+
+            //TODO: there is no default comparison operator in C++<20
+            //if (*mpd == lastMpd)
+            //    return;
+
+            //add BaseURL
+            for (auto &set : mpd->sets) {
+
+            }
+
+            //addSubtitleAdaptationSet(lastMpd);
+            /*    <AdaptationSet id="2XXX" lang="de" segmentAlignment="true">
+                    <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2" />
+                    <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+                    <SegmentTemplate timescale="10000000" duration="20000000" startNumber="1XXX" initialization="00c41ecc51a61445875ef0e323d473a8_2_$RepresentationID$-init.mp4XXX" media="00c41ecc51a61445875ef0e323d473a8_2_$RepresentationID$-$Number$XXX.mp4" />
+                    <Representation id="subtitle_07" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1" />
+                    </AdaptationSet>
+            */
 		}
 
 	private:
 		KHost* const m_host;
-        std::string url;
 		OutputDefault* output;
+
+        std::string url;
+        std::unique_ptr<IFilePuller> httpSrc;
+        int minUpdatePeriodInMs = 0;
 };
 
 IModule* createObject(KHost* host, void* va) {
