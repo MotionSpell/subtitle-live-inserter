@@ -30,8 +30,8 @@ class SubtitleSource : public Module {
 				if (!file.is_open())
 					throw error(format("Can't open subtitle source file \"%s\"", filename).c_str());
 			}
-			
-	        m_host->activate(true);
+
+			m_host->activate(true);
 		}
 
 		void process() override {
@@ -123,7 +123,7 @@ class SubtitleSource : public Module {
 				}
 			}
 
-            numSegment++;
+			numSegment++;
 		}
 
 	private:

@@ -12,5 +12,5 @@ struct UtcStartTime : IUtcStartTimeQuery {
 
 struct ReDashConfig {
 	std::string url;
-    UtcStartTime *utcStartTime;
+	UtcStartTime *utcStartTime;
 };

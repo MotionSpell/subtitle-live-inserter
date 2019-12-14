@@ -25,20 +25,20 @@ Tag parseXml(span<const char> text) {
 	Tag root;
 	std::vector<Tag*> tagStack = { &root };
 
-    //FIXME: our parser uses a map that reorder the attributes 
-	auto onNodeStart = [&](std::string name, std::map<std::string, std::string>& attr) {
-		Tag tag { name };
+	//FIXME: our parser uses a map that reorder the attributes
+	auto onNodeStart = [&](std::string name, std::map<std::string, std::string> &attr) {
+		Tag tag{name};
 
-        for (auto &a : attr)
+		for (auto &a : attr)
 			tag.attr.push_back({a.first, a.second});
 
 		tagStack.back()->add(tag);
 		tagStack.push_back(&tagStack.back()->children.back());
 	};
 
-    auto onNodeEnd = [&](std::string) {
+	auto onNodeEnd = [&](std::string) {
 		tagStack.pop_back();
-    };
+	};
 
 	saxParse(text, onNodeStart, onNodeEnd);
 
@@ -49,20 +49,20 @@ Tag parseXml(span<const char> text) {
 class ReDash : public Module {
 	public:
 		ReDash(KHost* host, ReDashConfig *cfg)
-			: m_host(host), url(cfg->url), httpSrc(createHttpSource()) {
-            std::string urlFn = url;
-            auto i = urlFn.rfind('/');
-            if(i != urlFn.npos)
-                urlFn = urlFn.substr(i+1, urlFn.npos);
+		: m_host(host), url(cfg->url), httpSrc(createHttpSource()) {
+			std::string urlFn = url;
+			auto i = urlFn.rfind('/');
+			if(i != urlFn.npos)
+				urlFn = urlFn.substr(i+1, urlFn.npos);
 			auto meta = std::make_shared<MetadataFile>(PLAYLIST);
 			meta->filename = urlFn;
 			output = addOutput();
 			output->setMetadata(meta);
-	        m_host->activate(true);
+			m_host->activate(true);
 
 			auto mpd = refreshDashSession(url);
-            
-            cfg->utcStartTime->startTime = parseDate(mpd["availabilityStartTime"]) * IClock::Rate;
+
+			cfg->utcStartTime->startTime = parseDate(mpd["availabilityStartTime"]) * IClock::Rate;
 		}
 
 		void process() override {
@@ -70,7 +70,7 @@ class ReDash : public Module {
 
 			//TODO: there is no default comparison operator in C++<20
 			//if (mpd == lastMpd)
-			//    return;
+			//	return;
 
 			//add BaseURL
 			std::string baseUrl = url;
@@ -109,16 +109,16 @@ class ReDash : public Module {
 			return mpd;
 		}
 
-        void addBaseUrl(Tag &mpd, std::string baseUrl) const {
-            for (auto &e : mpd.children)
-                if (e.name == "AdaptationSet") {
-                    Tag tag { "BaseURL" };
+		void addBaseUrl(Tag &mpd, std::string baseUrl) const {
+			for (auto &e : mpd.children)
+				if (e.name == "AdaptationSet") {
+					Tag tag{"BaseURL"};
 					tag.content = baseUrl;
-                    //tag.attr.push_back({"serviceLocation", baseUrl});
-                    e.add(tag);
-                } else
-                    addBaseUrl(e, baseUrl);
-        }
+					//tag.attr.push_back({"serviceLocation", baseUrl});
+					e.add(tag);
+				} else
+					addBaseUrl(e, baseUrl);
+		}
 
 		void addSubtitleAdaptationSet(Tag& mpd) const {
 			for (auto& e : mpd.children)
@@ -149,9 +149,9 @@ class ReDash : public Module {
 		KHost* const m_host;
 		OutputDefault* output;
 
-        std::string url;
-        std::unique_ptr<IFilePuller> httpSrc;
-        int minUpdatePeriodInSec = 0;
+		std::string url;
+		std::unique_ptr<IFilePuller> httpSrc;
+		int minUpdatePeriodInSec = 0;
 };
 
 IModule* createObject(KHost* host, void* va) {

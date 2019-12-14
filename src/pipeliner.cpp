@@ -66,10 +66,8 @@ std::unique_ptr<Pipeline> buildPipeline(const char *url, const char *filename) {
 		subconfig.utcStartTime = &utcStartTime;
 		auto subSource = pipeline->add("SubtitleSource", &subconfig);
 		auto source = GetOutputPin(subSource, 0);
-		source = regulate(source);
-		//auto muxer = 
+		source = regulate(source); 
 		mux(source);
-		//Romain: pipeline->connect(muxer, sink);
 	}
 
 	//diff retrieved AST from MPD with the local clock
