@@ -10,12 +10,12 @@ std::unique_ptr<Pipelines::Pipeline> buildPipeline(const char *subListFilename, 
 static Pipelines::Pipeline *g_Pipeline = nullptr;
 
 void safeMain(int argc, const char* argv[]) {
-	if (argc != 3) {
-		std::cout << "Usage: " << g_appName << " mpd_url sub_list_filename" << std::endl;
+	if (argc != 2 && argc != 3) {
+		std::cout << "Usage: " << g_appName << " mpd_url [sub_list_filename]" << std::endl;
 		exit(1);
 	}
 
-	auto pipeline = buildPipeline(argv[1], argv[2]);
+	auto pipeline = buildPipeline(argv[1], argc == 3 ? argv[2] : "");
 	g_Pipeline = pipeline.get();
 
 	Tools::Profiler profilerProcessing(format("%s - processing time", g_appName));

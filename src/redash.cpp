@@ -1,11 +1,13 @@
+#include "redash.hpp"
 #include "lib_media/common/metadata_file.hpp"
 #include "lib_media/common/file_puller.hpp"
 #include "lib_media/common/sax_xml_parser.hpp"
 #include "lib_media/common/xml.hpp"
 #include "lib_modules/utils/helper.hpp"
 #include "lib_modules/utils/factory.hpp"
-#include "lib_utils/log_sink.hpp" //enforce
+#include "lib_utils/log_sink.hpp"
 #include "lib_utils/tools.hpp" //enforce
+#include "lib_utils/time.hpp" //parseDate
 #include <thread>
 #include <chrono>
 #include <cassert>
@@ -46,8 +48,8 @@ Tag parseXml(span<const char> text) {
 
 class ReDash : public Module {
 	public:
-		ReDash(KHost* host, const char* url)
-			: m_host(host), url(url), httpSrc(createHttpSource()) {
+		ReDash(KHost* host, ReDashConfig *cfg)
+			: m_host(host), url(cfg->url), httpSrc(createHttpSource()) {
             std::string urlFn = url;
             auto i = urlFn.rfind('/');
             if(i != urlFn.npos)
@@ -58,7 +60,9 @@ class ReDash : public Module {
 			output->setMetadata(meta);
 	        m_host->activate(true);
 
-			refreshDashSession(url);
+			auto mpd = refreshDashSession(url);
+            
+            cfg->utcStartTime->startTime = parseDate(mpd["availabilityStartTime"]) * IClock::Rate;
 		}
 
 		void process() override {
@@ -72,13 +76,15 @@ class ReDash : public Module {
 			std::string baseUrl = url;
 			auto i = baseUrl.rfind('/');
 			if (i != baseUrl.npos)
-				baseUrl = baseUrl.substr(0, i);
+				baseUrl = baseUrl.substr(0, i+1);
 			addBaseUrl(mpd, baseUrl);
 
-			//ass subtitles
+			//add subtitles
 			addSubtitleAdaptationSet(mpd);
 
 			auto newMpd = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + serializeXml(mpd);
+
+			postManifest(newMpd);
 
 			if (0) {
 				m_host->log(Warning, newMpd.c_str());
@@ -107,26 +113,37 @@ class ReDash : public Module {
             for (auto &e : mpd.children)
                 if (e.name == "AdaptationSet") {
                     Tag tag { "BaseURL" };
-                    tag.attr.push_back({"serviceLocation", baseUrl});
+					tag.content = baseUrl;
+                    //tag.attr.push_back({"serviceLocation", baseUrl});
                     e.add(tag);
                 } else
                     addBaseUrl(e, baseUrl);
         }
 
-		void addSubtitleAdaptationSet(Tag& mpd) {
+		void addSubtitleAdaptationSet(Tag& mpd) const {
 			for (auto& e : mpd.children)
 				if (e.name == "Period") {
 					auto as = R"|(
-    <AdaptationSet id="2XXX" lang="de" segmentAlignment="true">
+    <AdaptationSet id="gpac_licensing_live_sub_inserter" lang="de" segmentAlignment="true">
         <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2" />
         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
-        <SegmentTemplate timescale="10000000" duration="20000000" startNumber="1XXX" initialization="00c41ecc51a61445875ef0e323d473a8_2_$RepresentationID$-init.mp4XXX" media="00c41ecc51a61445875ef0e323d473a8_2_$RepresentationID$-$Number$XXX.mp4" />
-        <Representation id="subtitle_07" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1" />
+        <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" />
+        <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1" />
     </AdaptationSet>)|";
 					e.add(parseXml({ as, strlen(as) }));
 				}
 				else
 					addSubtitleAdaptationSet(e);
+		}
+
+		void postManifest(std::string &contents) {
+			auto out = output->allocData<DataRaw>(contents.size());
+			auto metadata = make_shared<MetadataFile>(PLAYLIST);
+			metadata->filename = safe_cast<const MetadataFile>(output->getMetadata())->filename;;
+			metadata->filesize = contents.size();
+			out->setMetadata(metadata);
+			memcpy(out->buffer->data().ptr, contents.data(), contents.size());
+			output->post(out);
 		}
 
 		KHost* const m_host;
@@ -138,10 +155,10 @@ class ReDash : public Module {
 };
 
 IModule* createObject(KHost* host, void* va) {
-	auto url = (const char*)va;
+	auto cfg = (ReDashConfig*)va;
 	enforce(host, "reDASH: host can't be NULL");
-	enforce(url, "reDASH: url can't be NULL");
-	return createModule<ReDash>(host, url).release();
+	enforce(cfg, "reDASH: config can't be NULL");
+	return createModule<ReDash>(host, cfg).release();
 }
 
 auto const registered = Factory::registerModule("reDASH", &createObject);
