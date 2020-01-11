@@ -24,12 +24,13 @@ void ensureDir(std::string path) {
 		mkdir(path);
 }
 
-std::unique_ptr<Pipeline> buildPipeline(const char *url, const char *filename) {
+std::unique_ptr<Pipeline> buildPipeline(const char *url, const int delayInSec, const char *filename) {
 	auto pipeline = std::make_unique<Pipeline>();
 
 	ReDashConfig rdCfg;
 	rdCfg.url = url;
 	rdCfg.utcStartTime = &utcStartTime;
+	rdCfg.delayInSec = delayInSec;
 	auto redasher = pipeline->add("reDASH", &rdCfg);
 
 	auto sinkCfg = FileSystemSinkConfig { "." };

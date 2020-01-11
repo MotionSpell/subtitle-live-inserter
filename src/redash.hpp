@@ -13,4 +13,5 @@ struct UtcStartTime : IUtcStartTimeQuery {
 struct ReDashConfig {
 	std::string url;
 	UtcStartTime *utcStartTime;
+	int delayInSec = 0;
 };

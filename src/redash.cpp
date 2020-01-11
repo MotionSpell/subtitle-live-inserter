@@ -8,6 +8,7 @@
 #include "lib_utils/log_sink.hpp"
 #include "lib_utils/tools.hpp" //enforce
 #include "lib_utils/time.hpp" //parseDate
+#include <ctime> //gmtime
 #include <thread>
 #include <chrono>
 #include <cassert>
@@ -46,10 +47,25 @@ Tag parseXml(span<const char> text) {
 	return tagStack.front()->children[0];
 }
 
+std::string formatDate(int64_t timestamp) {
+	auto t = (time_t)timestamp;
+	std::tm date = *std::gmtime(&t);
+
+	char buffer[256];
+	sprintf(buffer, "%04d-%02d-%02dT%02d:%02d:%02dZ",
+	    1900 + date.tm_year,
+	    1 + date.tm_mon,
+	    date.tm_mday,
+	    date.tm_hour,
+	    date.tm_min,
+	    date.tm_sec);
+	return buffer;
+}
+
 class ReDash : public Module {
 	public:
 		ReDash(KHost* host, ReDashConfig *cfg)
-		: m_host(host), url(cfg->url), httpSrc(createHttpSource()) {
+		: m_host(host), url(cfg->url), httpSrc(createHttpSource()), delayInSec(cfg->delayInSec) {
 			std::string urlFn = url;
 			auto i = urlFn.rfind('/');
 			if(i != urlFn.npos)
@@ -71,6 +87,9 @@ class ReDash : public Module {
 			//TODO: there is no default comparison operator in C++<20
 			//if (mpd == lastMpd)
 			//	return;
+
+			//add AST offset to mitigate truncated file issues with Apache on Windows
+			mpd["availabilityStartTime"] = formatDate(parseDate(mpd["availabilityStartTime"]) + delayInSec);
 
 			//add BaseURL
 			std::string baseUrl = url;
@@ -152,6 +171,7 @@ class ReDash : public Module {
 		std::string url;
 		std::unique_ptr<IFilePuller> httpSrc;
 		int minUpdatePeriodInSec = 0;
+		int delayInSec = 0;
 };
 
 IModule* createObject(KHost* host, void* va) {
