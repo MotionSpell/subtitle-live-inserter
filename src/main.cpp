@@ -10,7 +10,7 @@ std::unique_ptr<Pipelines::Pipeline> buildPipeline(const char *subListFilename, 
 static Pipelines::Pipeline *g_Pipeline = nullptr;
 
 void safeMain(int argc, const char* argv[]) {
-	if (argc < 2 && argc > 4) {
+	if (argc < 2 || argc > 4) {
 		std::cout << "Usage: " << g_appName << " mpd_url [delay_in_seconds] [sub_list_filename]" << std::endl;
 		exit(1);
 	}
