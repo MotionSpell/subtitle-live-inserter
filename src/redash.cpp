@@ -98,7 +98,8 @@ class ReDash : public Module {
 				baseUrl = baseUrl.substr(0, i+1);
 			addBaseUrl(mpd, baseUrl);
 
-			//add subtitles
+			//add our subtitles
+			removeExistingSubtitleAdaptationSets(mpd);
 			addSubtitleAdaptationSet(mpd);
 
 			auto newMpd = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + serializeXml(mpd);
@@ -137,6 +138,23 @@ class ReDash : public Module {
 					e.add(tag);
 				} else
 					addBaseUrl(e, baseUrl);
+		}
+
+		void removeExistingSubtitleAdaptationSets(Tag& mpd) const {
+			for (auto& period : mpd.children)
+				if (period.name == "Period")
+					for (int iAs = 0; iAs < period.children.size(); ++iAs) {
+						auto& as = period.children[iAs];
+						if (as.name == "AdaptationSet")
+							for (auto& rep : as.children)
+								if (rep.name == "Representation")
+									for (auto& codec : rep.attr)
+										if (codec.name == "codecs" && codec.value == "stpp") {
+											period.children.erase(period.children.begin() + iAs);
+											return removeExistingSubtitleAdaptationSets(mpd);
+										}
+					}
+
 		}
 
 		void addSubtitleAdaptationSet(Tag& mpd) const {
