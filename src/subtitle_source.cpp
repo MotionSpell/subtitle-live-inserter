@@ -95,7 +95,7 @@ class SubtitleSource : public Module {
 					m_host->log(Error, format("Can't open subtitle source file \"%s\"", filename).c_str());
 					return;
 				}
-				file.seekg(lastFilePos, std::ios::beg);
+				file.seekg(lastFilePos);
 
 				std::string line;
 				if (std::getline(file, line))
@@ -118,8 +118,8 @@ class SubtitleSource : public Module {
 					output->post(pkt);
 					ifs.close();
 
-					lastFilePos = file.tellg();
-					m_host->log(Debug, format("Current file position: %d\n", (int)lastFilePos).c_str());
+					lastFilePos = lastFilePos + line.size() + 1;
+					m_host->log(Warning, format("Current file position: %s\n", (int)lastFilePos).c_str());
 				}
 			}
 
@@ -134,7 +134,7 @@ class SubtitleSource : public Module {
 		int numSegment = 0;
 		int64_t startTimeInMs = 0;
 		IUtcStartTimeQuery const *utcStartTime;
-		std::streampos lastFilePos;
+		int lastFilePos = 0;
 };
 
 IModule* createObject(KHost* host, void* va) {
