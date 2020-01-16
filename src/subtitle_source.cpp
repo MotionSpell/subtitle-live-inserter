@@ -92,7 +92,7 @@ class SubtitleSource : public Module {
 				std::ifstream file(filename);
 				if (!file.is_open())
 				{
-					m_host->log(Error, format("Can't open subtitle source file \"%s\"", filename).c_str());
+					m_host->log(Error, format("Can't open subtitle playlist file \"%s\"", filename).c_str());
 					return;
 				}
 				file.seekg(lastFilePos);
@@ -104,7 +104,10 @@ class SubtitleSource : public Module {
 
 					std::ifstream ifs(line);
 					if (!ifs.is_open())
+					{
+						m_host->log(Error, format("Can't open subtitle media file \"%s\"", filename).c_str());
 						return;
+					}
 
 					auto pbuf = ifs.rdbuf();
 					std::size_t size = pbuf->pubseekoff(0, ifs.end, ifs.in);
