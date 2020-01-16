@@ -88,6 +88,8 @@ class SubtitleSource : public Module {
 				pkt->set(DecodingTime{timescaleToClock(numSegment * (int64_t)segmentDurationInMs, 1000)});
 				pkt->setMediaTime(numSegment * segmentDurationInMs, 1000);
 				output->post(pkt);
+
+				numSegment++;
 			} else {
 				std::ifstream file(filename);
 				if (!file.is_open())
@@ -114,7 +116,9 @@ class SubtitleSource : public Module {
 					pbuf->pubseekpos(0, ifs.in);
 
 					auto pkt = output->allocData<DataRaw>(size);
-					pkt->set(CueFlags{});
+					CueFlags flags{};
+					flags.keyframe = true;
+					pkt->set(flags);
 					pkt->set(DecodingTime{timescaleToClock(numSegment * (int64_t)segmentDurationInMs, 1000)});
 					pkt->setMediaTime(numSegment * segmentDurationInMs, 1000);
 					pbuf->sgetn((char *)pkt->buffer->data().ptr, size);
@@ -123,10 +127,10 @@ class SubtitleSource : public Module {
 
 					lastFilePos = lastFilePos + line.size() + 1;
 					m_host->log(Warning, format("Current file position: %s\n", (int)lastFilePos).c_str());
+
+					numSegment++;
 				}
 			}
-
-			numSegment++;
 		}
 
 	private:
