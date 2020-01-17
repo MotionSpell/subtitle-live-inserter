@@ -134,7 +134,6 @@ class ReDash : public Module {
 				if (e.name == "AdaptationSet") {
 					Tag tag{"BaseURL"};
 					tag.content = baseUrl;
-					//tag.attr.push_back({"serviceLocation", baseUrl});
 					e.add(tag);
 				} else
 					addBaseUrl(e, baseUrl);
