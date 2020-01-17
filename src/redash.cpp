@@ -160,7 +160,7 @@ class ReDash : public Module {
 			for (auto& e : mpd.children)
 				if (e.name == "Period") {
 					auto as = R"|(
-    <AdaptationSet id="gpac_licensing_live_sub_inserter" lang="de" segmentAlignment="true">
+    <AdaptationSet id="1789" lang="de" segmentAlignment="true">
         <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2" />
         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
         <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" />
