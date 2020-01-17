@@ -104,7 +104,20 @@ class SubtitleSource : public Module {
 				{
 					m_host->log(Warning, format("Opening \"%s\"", line).c_str());
 
-					std::ifstream ifs(line);
+					// scan line
+					auto const MAX_PATH = 4096;
+					char filename[MAX_PATH];
+					int hour, minute, second, ms;
+					int ret = sscanf(line.c_str(), "%02d:%02d:%02d.%03d,%4095s",
+							&hour, &minute, &second, &ms, filename);
+					if(ret != 5)
+					{
+						m_host->log(Error, format("Invalid timing in line \"%s\": discarding.", line).c_str());
+						return;
+					}
+
+					//open file
+					std::ifstream ifs(filename);
 					if (!ifs.is_open())
 					{
 						m_host->log(Error, format("Can't open subtitle media file \"%s\"", filename).c_str());
@@ -119,8 +132,9 @@ class SubtitleSource : public Module {
 					CueFlags flags{};
 					flags.keyframe = true;
 					pkt->set(flags);
-					pkt->set(DecodingTime{timescaleToClock(numSegment * (int64_t)segmentDurationInMs, 1000)});
-					pkt->setMediaTime(numSegment * segmentDurationInMs, 1000);
+					auto timestamp = timescaleToClock(((hour * 60 + minute) * 60 + second) * 1000 + ms, 1000);
+					pkt->set(DecodingTime{timestamp});
+					pkt->setMediaTime(timestamp);
 					pbuf->sgetn((char *)pkt->buffer->data().ptr, size);
 					output->post(pkt);
 					ifs.close();
