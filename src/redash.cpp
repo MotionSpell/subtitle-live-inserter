@@ -134,7 +134,7 @@ class ReDash : public Module {
 				if (e.name == "AdaptationSet") {
 					Tag tag{"BaseURL"};
 					tag.content = baseUrl;
-					e.add(tag);
+					e.children.insert(e.children.begin(), tag);
 				} else
 					addBaseUrl(e, baseUrl);
 		}
@@ -142,7 +142,7 @@ class ReDash : public Module {
 		void removeExistingSubtitleAdaptationSets(Tag& mpd) const {
 			for (auto& period : mpd.children)
 				if (period.name == "Period")
-					for (int iAs = 0; iAs < period.children.size(); ++iAs) {
+					for (size_t iAs = 0; iAs < period.children.size(); ++iAs) {
 						auto& as = period.children[iAs];
 						if (as.name == "AdaptationSet")
 							for (auto& rep : as.children)
