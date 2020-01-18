@@ -2,17 +2,45 @@
 #include "lib_modules/utils/helper.hpp"
 #include "lib_media/common/metadata.hpp"
 #include "lib_media/common/attributes.hpp"
+#include "lib_media/common/sax_xml_parser.hpp"
+#include "lib_media/common/xml.hpp"
 #include "lib_modules/utils/factory.hpp"
 #include "lib_utils/tools.hpp" //enforce
 #include "lib_utils/log_sink.hpp"
 #include "lib_utils/format.hpp"
 #include "lib_utils/time.hpp" //timeInMsToStr
+#include <cassert>
 #include <fstream>
 #include <thread> //this_thread
 
 extern const uint64_t g_segmentDurationInMs;
 
 namespace {
+
+//FIXME: duplicate from redash
+Tag parseXml(span<const char> text) {
+	Tag root;
+	std::vector<Tag*> tagStack = { &root };
+
+	auto onNodeStart = [&](std::string name, std::map<std::string, std::string> &attr) {
+		Tag tag{name};
+
+		for (auto &a : attr)
+			tag.attr.push_back({a.first, a.second});
+
+		tagStack.back()->add(tag);
+		tagStack.push_back(&tagStack.back()->children.back());
+	};
+
+	auto onNodeEnd = [&](std::string) {
+		tagStack.pop_back();
+	};
+
+	saxParse(text, onNodeStart, onNodeEnd);
+
+	assert(tagStack.front()->children.size() == 1);
+	return tagStack.front()->children[0];
+}
 
 using namespace Modules;
 
@@ -107,7 +135,7 @@ class SubtitleSource : public Module {
 				{
 					m_host->log(Warning, format("Opening \"%s\"", line).c_str());
 
-					// scan line
+					//scan line
 					auto const MAX_PATH = 4096;
 					char filename[MAX_PATH];
 					int hour, minute, second, ms;
@@ -133,14 +161,31 @@ class SubtitleSource : public Module {
 					std::size_t size = pbuf->pubseekoff(0, ifs.end, ifs.in);
 					pbuf->pubseekpos(0, ifs.in);
 
-					auto pkt = output->allocData<DataRaw>(size);
+					//get a buffer
+					auto const pktPaddingLen = 128; //FIXME: should be a small as possible to minimize packet sizes
+					auto pkt = output->allocData<DataRaw>(size + pktPaddingLen);
+					pbuf->sgetn((char *)pkt->buffer->data().ptr, size);
+
+					//deserialize
+					auto ttml = parseXml({ (const char*)pkt->buffer->data().ptr, pkt->buffer->data().len });
+					assert(ttml.name == "tt:tt");
+
+					//find timings and increment them
+					incrementTtmlTimings(ttml, startTimeInMs);
+
+					//reserialize
+					auto const newTtml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + serializeXml(ttml);
+					auto const newTtmlSize = newTtml.size();
+					assert(newTtmlSize < pkt->buffer->data().len);
+					memcpy(pkt->buffer->data().ptr, newTtml.c_str(), newTtmlSize);
+					memset(pkt->buffer->data().ptr + newTtmlSize, 0, pkt->buffer->data().len - newTtmlSize);
+
 					CueFlags flags{};
 					flags.keyframe = true;
 					pkt->set(flags);
 					auto timestamp = timescaleToClock(((hour * 60 + minute) * 60 + second) * 1000 + ms, 1000);
 					pkt->set(DecodingTime{timestamp});
 					pkt->setMediaTime(timestamp);
-					pbuf->sgetn((char *)pkt->buffer->data().ptr, size);
 					output->post(pkt);
 					ifs.close();
 
@@ -153,6 +198,36 @@ class SubtitleSource : public Module {
 		}
 
 	private:
+		void incrementTtmlTimings(Tag &xml, int64_t incrementInMs) {
+			for (auto& elt : xml.children) {
+				for (auto& attr : elt.attr) {
+					if (attr.name == "begin" || attr.name == "end") {
+						//serialize
+						int hour, min, sec, msec;
+						int ret = sscanf(attr.value.c_str(), "%02d:%02d:%02d.%03d", &hour, &min, &sec, &msec);
+						assert(ret == 4);
+
+						//increment
+						auto totalInMs = incrementInMs + msec + 1000 * (sec + 60 * (min + 60 * hour));
+						msec = totalInMs % 1000;
+						totalInMs /= 1000;
+						sec = totalInMs % 60;
+						totalInMs /= 60;
+						min = totalInMs % 60;
+						totalInMs /= 60;
+						hour = totalInMs;
+
+						//deserialize
+						char buffer[256];
+						snprintf(buffer, sizeof buffer, "%02d:%02d:%02d.%03d", hour, min, sec, msec);
+						attr.value = buffer;
+					}
+				}
+
+				incrementTtmlTimings(elt, incrementInMs);
+			}
+		}
+
 		KHost *const m_host;
 		std::string filename;
 		OutputDefault *output;
