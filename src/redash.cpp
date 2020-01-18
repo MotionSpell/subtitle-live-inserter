@@ -26,7 +26,6 @@ Tag parseXml(span<const char> text) {
 	Tag root;
 	std::vector<Tag*> tagStack = { &root };
 
-	//FIXME: our parser uses a map that reorder the attributes
 	auto onNodeStart = [&](std::string name, std::map<std::string, std::string> &attr) {
 		Tag tag{name};
 
@@ -102,7 +101,7 @@ class ReDash : public Module {
 			removeExistingSubtitleAdaptationSets(mpd);
 			addSubtitleAdaptationSet(mpd);
 
-			auto newMpd = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + serializeXml(mpd);
+			auto const newMpd = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + serializeXml(mpd);
 
 			postManifest(newMpd);
 
@@ -172,7 +171,7 @@ class ReDash : public Module {
 					addSubtitleAdaptationSet(e);
 		}
 
-		void postManifest(std::string &contents) {
+		void postManifest(const std::string &contents) {
 			auto out = output->allocData<DataRaw>(contents.size());
 			auto metadata = make_shared<MetadataFile>(PLAYLIST);
 			metadata->filename = safe_cast<const MetadataFile>(output->getMetadata())->filename;;
