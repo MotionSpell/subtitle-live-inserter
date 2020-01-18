@@ -8,6 +8,7 @@
 #include "lib_utils/format.hpp"
 #include "lib_utils/time.hpp" //timeInMsToStr
 #include <fstream>
+#include <thread> //this_thread
 
 extern const uint64_t g_segmentDurationInMs;
 
@@ -91,10 +92,12 @@ class SubtitleSource : public Module {
 
 				numSegment++;
 			} else {
+				auto const sleepInMs = 200;
 				std::ifstream file(filename);
 				if (!file.is_open())
 				{
-					m_host->log(Error, format("Can't open subtitle playlist file \"%s\"", filename).c_str());
+					m_host->log(Error, format("Can't open subtitle playlist file \"%s\". Sleeping for %sms.", filename, sleepInMs).c_str());
+					std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
 					return;
 				}
 				file.seekg(lastFilePos);
@@ -112,7 +115,8 @@ class SubtitleSource : public Module {
 							&hour, &minute, &second, &ms, filename);
 					if(ret != 5)
 					{
-						m_host->log(Error, format("Invalid timing in line \"%s\": discarding.", line).c_str());
+						m_host->log(Error, format("Invalid timing in line \"%s\": will retry in %sms.", line, sleepInMs).c_str());
+						std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
 						return;
 					}
 
@@ -120,7 +124,8 @@ class SubtitleSource : public Module {
 					std::ifstream ifs(filename);
 					if (!ifs.is_open())
 					{
-						m_host->log(Error, format("Can't open subtitle media file \"%s\"", filename).c_str());
+						m_host->log(Error, format("Can't open subtitle media file \"%s\": will retry in %sms.", filename, sleepInMs).c_str());
+						std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
 						return;
 					}
 
