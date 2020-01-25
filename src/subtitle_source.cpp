@@ -162,12 +162,11 @@ class SubtitleSource : public Module {
 					pbuf->pubseekpos(0, ifs.in);
 
 					//get a buffer
-					auto const pktPaddingLen = 128; //FIXME: should be a small as possible to minimize packet sizes
-					auto pkt = output->allocData<DataRaw>(size + pktPaddingLen);
-					pbuf->sgetn((char *)pkt->buffer->data().ptr, size);
+					std::vector<char> input(size);
+					pbuf->sgetn(input.data(), size);
 
 					//deserialize
-					auto ttml = parseXml({ (const char*)pkt->buffer->data().ptr, pkt->buffer->data().len });
+					auto ttml = parseXml({ input.data(), size });
 					assert(ttml.name == "tt:tt");
 
 					//find timings and increment them
@@ -176,9 +175,8 @@ class SubtitleSource : public Module {
 					//reserialize
 					auto const newTtml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + serializeXml(ttml);
 					auto const newTtmlSize = newTtml.size();
-					assert(newTtmlSize < pkt->buffer->data().len);
+					auto pkt = output->allocData<DataRaw>(newTtmlSize);
 					memcpy(pkt->buffer->data().ptr, newTtml.c_str(), newTtmlSize);
-					memset(pkt->buffer->data().ptr + newTtmlSize, 0, pkt->buffer->data().len - newTtmlSize);
 
 					CueFlags flags{};
 					flags.keyframe = true;
