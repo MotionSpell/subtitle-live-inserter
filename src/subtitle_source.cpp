@@ -32,7 +32,8 @@ Tag parseXml(span<const char> text) {
 		tagStack.push_back(&tagStack.back()->children.back());
 	};
 
-	auto onNodeEnd = [&](std::string) {
+	auto onNodeEnd = [&](std::string /*id*/, std::string content) {
+		tagStack.back()->content = content;
 		tagStack.pop_back();
 	};
 
