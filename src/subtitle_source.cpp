@@ -182,7 +182,7 @@ class SubtitleSource : public Module {
 					CueFlags flags{};
 					flags.keyframe = true;
 					pkt->set(flags);
-					auto timestamp = timescaleToClock(((hour * 60 + minute) * 60 + second) * 1000 + ms, 1000);
+					auto timestamp = timescaleToClock((((int64_t)hour * 60 + minute) * 60 + second) * 1000 + ms, 1000);
 					pkt->set(DecodingTime{timestamp});
 					pkt->setMediaTime(timestamp);
 					output->post(pkt);
