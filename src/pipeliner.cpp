@@ -44,42 +44,35 @@ std::unique_ptr<Pipeline> buildPipeline(const char *url, const int generalDelayI
 
 	pipeline->connect(redasher, sink);
 
-	//simulate a fake live subtitle source (instead of taking a live EBU-TTD input)
-	if (1)
-	{
-		auto mux = [&](OutputPin compressed) -> OutputPin {
-			Mp4MuxConfig mp4config;
-			mp4config.baseName = "s_0";
-			mp4config.segmentDurationInMs = g_segmentDurationInMs;
-			mp4config.segmentPolicy = FragmentedSegment;
-			mp4config.fragmentPolicy = OneFragmentPerSegment;
-			mp4config.compatFlags = Browsers | ExactInputDur;
-			mp4config.utcStartTime = &utcStartTime;
+	auto mux = [&](OutputPin compressed) -> OutputPin {
+		Mp4MuxConfig mp4config;
+		mp4config.baseName = "s_0";
+		mp4config.segmentDurationInMs = g_segmentDurationInMs;
+		mp4config.segmentPolicy = FragmentedSegment;
+		mp4config.fragmentPolicy = OneFragmentPerSegment;
+		mp4config.compatFlags = Browsers | ExactInputDur;
+		mp4config.utcStartTime = &utcStartTime;
 
-			auto muxer = pipeline->add("GPACMuxMP4", &mp4config);
-			pipeline->connect(compressed, muxer);
-			return muxer;
-		};
+		auto muxer = pipeline->add("GPACMuxMP4", &mp4config);
+		pipeline->connect(compressed, muxer);
+		return muxer;
+	};
 
-		SubtitleSourceConfig subconfig;
-		subconfig.filename = filename;
-		subconfig.segmentDurationInMs = g_segmentDurationInMs;
-		subconfig.utcStartTime = &utcStartTime;
-		auto subSource = pipeline->add("SubtitleSource", &subconfig);
-		auto source = GetOutputPin(subSource, 0);
-		source = regulate(source); 
-		mux(source);
-	}
+	SubtitleSourceConfig subconfig;
+	subconfig.filename = filename;
+	subconfig.segmentDurationInMs = g_segmentDurationInMs;
+	subconfig.utcStartTime = &utcStartTime;
+	auto subSource = pipeline->add("SubtitleSource", &subconfig);
+	auto source = GetOutputPin(subSource, 0);
+	source = regulate(source); 
+	mux(source);
 
 	//diff retrieved AST from MPD with the local clock
-	if (1) {
-		auto const granularityInMs = g_segmentDurationInMs;
-		auto const t = int64_t(getUTC() * granularityInMs);
-		auto const remainderInMs = granularityInMs - (t % granularityInMs);
-		std::this_thread::sleep_for(std::chrono::milliseconds(remainderInMs));
-		utcStartTime.startTime = rescale(t + remainderInMs, granularityInMs, IClock::Rate) - utcStartTime.startTime;
-	}
-
+	auto const granularityInMs = g_segmentDurationInMs;
+	auto const t = int64_t(getUTC() * granularityInMs);
+	auto const remainderInMs = granularityInMs - (t % granularityInMs);
+	std::this_thread::sleep_for(std::chrono::milliseconds(remainderInMs));
+	utcStartTime.startTime = rescale(t + remainderInMs, granularityInMs, IClock::Rate) - utcStartTime.startTime;
 	utcStartTime.startTime += subtitleForwardTimeInSec * IClock::Rate;
 
 	return pipeline;
