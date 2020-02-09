@@ -77,6 +77,8 @@ class SubtitleSource : public Module {
 				char timecodeHide[timecodeSize] = {};
 				timeInMsToStr(startTimeInMs + (numSegment + 1) * segmentDurationInMs, timecodeHide, ".");
 				timecodeHide[timecodeSize - 1] = 0;
+				char timecodeUtc[timecodeSize] = {};
+				timeInMsToStr((uint64_t)(getUTC() * 1000), timecodeUtc, ".");
 
 				//generate samples
 				auto content = format(R"|(
@@ -101,12 +103,12 @@ class SubtitleSource : public Module {
       <p region="Region" style="textAlignment_0" begin="%s" end="%s" xml:id="sub_0">
         <span style="Style0_0">IRT/GPAC-Licensing live subtitle inserter:</span>
         <br/>
-        <span style="Style0_0">%s - %s</span>
+        <span style="Style0_0">%s - %s (UTC=%s)</span>
       </p>
     </div>
   </body>
 </tt>
-)|", timecodeShow, timecodeHide, timecodeShow, timecodeHide);
+)|", timecodeShow, timecodeHide, timecodeShow, timecodeHide, timecodeUtc);
 
 				//send sample
 				auto const size = content.size();

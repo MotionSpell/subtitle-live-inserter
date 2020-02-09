@@ -27,8 +27,6 @@ void ensureDir(std::string path) {
 std::unique_ptr<Pipeline> buildPipeline(const char *url, const int generalDelayInSec, const int subtitleForwardTimeInSec, const char *filename) {
 	auto pipeline = std::make_unique<Pipeline>();
 
-	utcStartTime.startTime = subtitleForwardTimeInSec * IClock::Rate;
-
 	ReDashConfig rdCfg;
 	rdCfg.url = url;
 	rdCfg.utcStartTime = &utcStartTime;
@@ -81,6 +79,8 @@ std::unique_ptr<Pipeline> buildPipeline(const char *url, const int generalDelayI
 		std::this_thread::sleep_for(std::chrono::milliseconds(remainderInMs));
 		utcStartTime.startTime = rescale(t + remainderInMs, granularityInMs, IClock::Rate) - utcStartTime.startTime;
 	}
+
+	utcStartTime.startTime += subtitleForwardTimeInSec * IClock::Rate;
 
 	return pipeline;
 }
