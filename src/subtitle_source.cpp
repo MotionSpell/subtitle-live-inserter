@@ -142,7 +142,7 @@ class SubtitleSource : public Module {
 					auto const MAX_PATH = 4096;
 					char filename[MAX_PATH];
 					int hour, minute, second, ms;
-					int ret = sscanf(line.c_str(), "%02d:%02d:%02d.%03d,%4095s",
+					int ret = sscanf(line.c_str(), "%d:%02d:%02d.%03d,%4095s",
 							&hour, &minute, &second, &ms, filename);
 					if(ret != 5)
 					{
