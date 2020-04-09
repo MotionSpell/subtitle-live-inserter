@@ -11,6 +11,8 @@
 #include "redash.hpp"
 #include "subtitle_source.hpp"
 
+#include "options.hpp"
+
 using namespace Modules;
 using namespace Pipelines;
 
@@ -24,13 +26,13 @@ void ensureDir(std::string path) {
 		mkdir(path);
 }
 
-std::unique_ptr<Pipeline> buildPipeline(const char *url, const int generalDelayInSec, const int subtitleForwardTimeInSec, const char *filename) {
+std::unique_ptr<Pipeline> buildPipeline(const Config &cfg) {
 	auto pipeline = std::make_unique<Pipeline>();
 
 	ReDashConfig rdCfg;
-	rdCfg.url = url;
+	rdCfg.url = cfg.url;
 	rdCfg.utcStartTime = &utcStartTime;
-	rdCfg.delayInSec = generalDelayInSec;
+	rdCfg.delayInSec = cfg.delayInSec;
 	auto redasher = pipeline->add("reDASH", &rdCfg);
 
 	auto sinkCfg = FileSystemSinkConfig { "." };
@@ -59,7 +61,7 @@ std::unique_ptr<Pipeline> buildPipeline(const char *url, const int generalDelayI
 	};
 
 	SubtitleSourceConfig subconfig;
-	subconfig.filename = filename;
+	subconfig.filename = cfg.url;
 	subconfig.segmentDurationInMs = g_segmentDurationInMs;
 	subconfig.utcStartTime = &utcStartTime;
 	auto subSource = pipeline->add("SubtitleSource", &subconfig);
@@ -73,7 +75,7 @@ std::unique_ptr<Pipeline> buildPipeline(const char *url, const int generalDelayI
 	auto const remainderInMs = granularityInMs - (t % granularityInMs);
 	std::this_thread::sleep_for(std::chrono::milliseconds(remainderInMs));
 	utcStartTime.startTime = rescale(t + remainderInMs, granularityInMs, IClock::Rate) - utcStartTime.startTime;
-	utcStartTime.startTime += subtitleForwardTimeInSec * IClock::Rate;
+	utcStartTime.startTime += cfg.subtitleForwardTimeInSec * IClock::Rate;
 
 	return pipeline;
 }

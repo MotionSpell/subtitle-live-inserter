@@ -12,6 +12,7 @@ EXE_SUBTITLE_LIVE_INSERTER_SRCS:=\
 	$(LIB_PIPELINE_SRCS)\
 	$(LIB_UTILS_SRCS)\
 	$(MYDIR)/../signals/src/lib_appcommon/safemain.cpp\
+	$(MYDIR)/../signals/src/lib_appcommon/options.cpp\
 	$(MYDIR)/redash.cpp\
 	$(MYDIR)/subtitle_source.cpp\
 	$(MYDIR)/main.cpp\
