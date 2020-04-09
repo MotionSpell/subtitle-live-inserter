@@ -79,6 +79,7 @@ class ReDash : public Module {
 			auto mpd = refreshDashSession(url);
 
 			cfg->utcStartTime->startTime = parseDate(mpd["availabilityStartTime"]) * IClock::Rate;
+			cfg->timeshiftBufferDepthInSec = parseIso8601Period(mpd["timeShiftBufferDepth"]);
 		}
 
 		void process() override {
