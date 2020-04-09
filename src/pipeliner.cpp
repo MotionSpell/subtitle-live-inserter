@@ -1,8 +1,12 @@
 #include "lib_pipeline/pipeline.hpp"
+#include "lib_modules/utils/loader.hpp"
+#include "lib_media/common/metadata_file.hpp"
 #include "lib_utils/system_clock.hpp"
 #include "lib_utils/os.hpp"
 #include "lib_utils/time.hpp"
 #include "lib_utils/tools.hpp" // operator|
+#include "options.hpp"
+#include <cassert>
 
 // modules
 #include "lib_media/mux/mux_mp4_config.hpp"
@@ -11,8 +15,6 @@
 #include "lib_media/out/http_sink.hpp"
 #include "redash.hpp"
 #include "subtitle_source.hpp"
-
-#include "options.hpp"
 
 using namespace Modules;
 using namespace Pipelines;
@@ -65,15 +67,41 @@ std::unique_ptr<Pipeline> buildPipeline(const Config &cfg) {
 	pipeline->connect(redasher, sink);
 
 	auto mux = [&](OutputPin compressed) -> OutputPin {
+		struct Mp4MuxerFilenamed : ModuleS {
+			Mp4MuxerFilenamed(KHost *host, Mp4MuxConfig *cfg) : segDurInMs(cfg->segmentDurationInMs) {
+				addOutput();
+				delegate = safe_cast<ModuleS>(loadModule("GPACMuxMP4", host, (void*)cfg));
+				ConnectOutput(delegate->getOutput(0), [&](Data data) {
+					auto out = std::make_shared<DataBaseRef>(data);
+					out->copyAttributes(*data);
+					auto meta = std::make_shared<MetadataFile>(*safe_cast<const MetadataFile>(data->getMetadata()));
+					meta->filename = "s_0-";
+					if (meta->durationIn180k == 0) {
+						meta->filename += "init.mp4";
+					} else {
+						meta->filename += std::to_string(data->get<PresentationTime>().time / timescaleToClock(segDurInMs, 1000));
+						meta->filename += ".m4s";
+					}
+					assert(meta->EOS); //we don't support the muxer flush mem flag
+					out->setMetadata(meta);
+					getOutput(0)->post(out);
+				});
+			}
+			void processOne(Data data) override {
+				delegate->getInput(0)->push(data);
+			}
+		private:
+			std::shared_ptr<ModuleS> delegate;
+			const uint64_t segDurInMs;
+		};
 		Mp4MuxConfig mp4config;
-		mp4config.baseName = "s_0";
 		mp4config.segmentDurationInMs = g_segmentDurationInMs;
 		mp4config.segmentPolicy = FragmentedSegment;
 		mp4config.fragmentPolicy = OneFragmentPerSegment;
 		mp4config.compatFlags = Browsers | ExactInputDur;
 		mp4config.utcStartTime = &utcStartTime;
 
-		auto muxer = pipeline->add("GPACMuxMP4", &mp4config);
+		auto muxer = pipeline->addModule<Mp4MuxerFilenamed>(&mp4config);
 		pipeline->connect(compressed, muxer);
 		return muxer;
 	};
