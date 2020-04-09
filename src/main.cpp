@@ -16,9 +16,10 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	Config cfg;
 
 	CmdLineOptions opt;
-	opt.add("d", "delay", &cfg.delayInSec, "General delay in seconds (signed).");
-	opt.add("s", "subdelay", &cfg.subtitleForwardTimeInSec, "Subtitle delay in seconds (signed).");
-	opt.add("p", "output", &cfg.subListFn, "File path of the ever-growing playlist. If not set then synthetic content is generated.");
+	opt.add("g", "general-delay", &cfg.delayInSec, "General delay in seconds (signed).");
+	opt.add("s", "subtitle-delay", &cfg.subtitleForwardTimeInSec, "Subtitle delay in seconds (signed).");
+	opt.add("f", "file-playlist", &cfg.subListFn, "File path of the ever-growing playlist. If not set then synthetic content is generated.");
+	opt.add("p", "post", &cfg.postUrl, "Path or URL where the content is posted.");
 	opt.addFlag("h", "help", &cfg.help, "Print usage and exit.");
 
 	auto urls = opt.parse(argc, argv);
@@ -27,12 +28,15 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	cfg.url = urls[0];
 
 	if(cfg.help) {
-		std::cout << "Usage: " << g_appName << " mpd_url [delay_in_seconds] [subtitleForwardTimeInSec] [sub_list_filename]" << std::endl;
 		opt.printHelp();
 		return cfg;
 	}
 
-	std::cerr << "Detected options:\n\turl=\"" << cfg.url << "\"\n\tdelayInSec=" << cfg.delayInSec << "\n\tsubtitleForwardTimeInSec=" << cfg.subtitleForwardTimeInSec << "\n\tsubListFn=\"" << cfg.subListFn << "\"\n";
+	std::cerr << "Detected options:\n"
+		"\turl=\"" << cfg.url << "\"\n\tdelayInSec=" << cfg.delayInSec << "\n"
+		"\tsubtitleForwardTimeInSec=" << cfg.subtitleForwardTimeInSec << "\n"
+		"\tsubListFn=\"" << cfg.subListFn << "\"\n"
+		"\tpost=\"" << cfg.postUrl << "\"\n";
 
 	return cfg;
 }

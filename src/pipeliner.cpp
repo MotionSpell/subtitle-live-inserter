@@ -8,6 +8,7 @@
 #include "lib_media/mux/mux_mp4_config.hpp"
 #include "lib_media/utils/regulator.hpp"
 #include "lib_media/out/filesystem.hpp"
+#include "lib_media/out/http_sink.hpp"
 #include "redash.hpp"
 #include "subtitle_source.hpp"
 
@@ -21,9 +22,15 @@ extern const uint64_t g_segmentDurationInMs = 2000;
 
 static UtcStartTime utcStartTime;
 
+namespace {
 void ensureDir(std::string path) {
 	if(!dirExists(path))
 		mkdir(path);
+}
+
+bool startsWith(std::string s, std::string prefix) {
+  return s.substr(0, prefix.size()) == prefix;
+}
 }
 
 std::unique_ptr<Pipeline> buildPipeline(const Config &cfg) {
@@ -35,8 +42,19 @@ std::unique_ptr<Pipeline> buildPipeline(const Config &cfg) {
 	rdCfg.delayInSec = cfg.delayInSec;
 	auto redasher = pipeline->add("reDASH", &rdCfg);
 
-	auto sinkCfg = FileSystemSinkConfig { "." };
-	auto sink = pipeline->add("FileSystemSink", &sinkCfg);
+	// Create sink
+	IFilter *sink = nullptr;
+	if (startsWith(cfg.postUrl, "http")) {
+		HttpSinkConfig sinkCfg{};
+		sinkCfg.baseURL = cfg.postUrl;
+		sinkCfg.userAgent = "Elemental";
+		sink = pipeline->add("HttpSink", &sinkCfg);
+	} else {
+		FileSystemSinkConfig sinkCfg{};
+		sinkCfg.directory = cfg.postUrl;
+		ensureDir(sinkCfg.directory);
+		sink = pipeline->add("FileSystemSink", &sinkCfg);
+	}
 
 	auto regulate = [&](OutputPin source) -> OutputPin {
 		auto regulator = pipeline->addNamedModule<Regulator>("Regulator", g_SystemClock);
@@ -61,13 +79,14 @@ std::unique_ptr<Pipeline> buildPipeline(const Config &cfg) {
 	};
 
 	SubtitleSourceConfig subconfig;
-	subconfig.filename = cfg.url;
+	subconfig.filename = cfg.subListFn;
 	subconfig.segmentDurationInMs = g_segmentDurationInMs;
 	subconfig.utcStartTime = &utcStartTime;
 	auto subSource = pipeline->add("SubtitleSource", &subconfig);
 	auto source = GetOutputPin(subSource, 0);
 	source = regulate(source); 
-	mux(source);
+	auto muxer = mux(source);
+	pipeline->connect(muxer, sink, true);
 
 	//diff retrieved AST from MPD with the local clock
 	auto const granularityInMs = g_segmentDurationInMs;
