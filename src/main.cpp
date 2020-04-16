@@ -23,14 +23,20 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	opt.addFlag("h", "help", &cfg.help, "Print usage and exit.");
 
 	auto urls = opt.parse(argc, argv);
-	if (urls.size() != 1)
-		throw std::runtime_error("Several MPD URLs detected, use --help");
-	cfg.url = urls[0];
 
 	if(cfg.help) {
 		opt.printHelp();
 		return cfg;
 	}
+
+	if (urls.size() != 1) {
+		opt.printHelp();
+		if (urls.empty())
+			throw std::runtime_error("No MPD URLs detected. Exit.");
+		else
+			throw std::runtime_error("Several MPD URLs detected. Exit.");
+	}
+	cfg.url = urls[0];
 
 	std::cerr << "Detected options:\n"
 		"\turl=\"" << cfg.url << "\"\n\tdelayInSec=" << cfg.delayInSec << "\n"
