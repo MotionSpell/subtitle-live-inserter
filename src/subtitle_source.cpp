@@ -134,67 +134,69 @@ class SubtitleSource : public Module {
 				file.seekg(lastFilePos);
 
 				std::string line;
-				if (std::getline(file, line))
-				{
-					m_host->log(Warning, format("Opening \"%s\"", line).c_str());
-
-					//scan line
-					auto const MAX_PATH = 4096;
-					char filename[MAX_PATH];
-					int hour, minute, second, ms;
-					int ret = sscanf(line.c_str(), "%d:%02d:%02d.%03d,%4095s",
-							&hour, &minute, &second, &ms, filename);
-					if(ret != 5)
-					{
-						m_host->log(Error, format("Invalid timing in line \"%s\": will retry in %sms.", line, sleepInMs).c_str());
-						std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
-						return;
-					}
-
-					//open file
-					std::ifstream ifs(filename);
-					if (!ifs.is_open())
-					{
-						m_host->log(Error, format("Can't open subtitle media file \"%s\": will retry in %sms.", filename, sleepInMs).c_str());
-						std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
-						return;
-					}
-
-					auto pbuf = ifs.rdbuf();
-					std::size_t size = pbuf->pubseekoff(0, ifs.end, ifs.in);
-					pbuf->pubseekpos(0, ifs.in);
-
-					//get a buffer
-					std::vector<char> input(size);
-					pbuf->sgetn(input.data(), size);
-
-					//deserialize
-					auto ttml = parseXml({ input.data(), size });
-					assert(ttml.name == "tt:tt");
-
-					//find timings and increment them
-					incrementTtmlTimings(ttml, startTimeInMs);
-
-					//reserialize
-					auto const newTtml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + serializeXml(ttml);
-					auto const newTtmlSize = newTtml.size();
-					auto pkt = output->allocData<DataRaw>(newTtmlSize);
-					memcpy(pkt->buffer->data().ptr, newTtml.c_str(), newTtmlSize);
-
-					CueFlags flags{};
-					flags.keyframe = true;
-					pkt->set(flags);
-					auto timestamp = timescaleToClock((((int64_t)hour * 60 + minute) * 60 + second) * 1000 + ms, 1000);
-					pkt->set(DecodingTime{timestamp});
-					pkt->setMediaTime(timestamp);
-					output->post(pkt);
-					ifs.close();
-
-					lastFilePos = lastFilePos + line.size() + 1;
-					m_host->log(Warning, format("Current file position: %s\n", (int)lastFilePos).c_str());
-
-					numSegment++;
+				if (!std::getline(file, line)) {
+					std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
+					return;
 				}
+
+				m_host->log(Warning, format("Opening \"%s\"", line).c_str());
+
+				//scan line
+				auto const MAX_PATH = 4096;
+				char filename[MAX_PATH];
+				int hour, minute, second, ms;
+				int ret = sscanf(line.c_str(), "%d:%02d:%02d.%03d,%4095s",
+						&hour, &minute, &second, &ms, filename);
+				if(ret != 5)
+				{
+					m_host->log(Error, format("Invalid timing in line \"%s\": will retry in %sms.", line, sleepInMs).c_str());
+					std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
+					return;
+				}
+
+				//open file
+				std::ifstream ifs(filename);
+				if (!ifs.is_open())
+				{
+					m_host->log(Error, format("Can't open subtitle media file \"%s\": will retry in %sms.", filename, sleepInMs).c_str());
+					std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
+					return;
+				}
+
+				auto pbuf = ifs.rdbuf();
+				std::size_t size = pbuf->pubseekoff(0, ifs.end, ifs.in);
+				pbuf->pubseekpos(0, ifs.in);
+
+				//get a buffer
+				std::vector<char> input(size);
+				pbuf->sgetn(input.data(), size);
+
+				//deserialize
+				auto ttml = parseXml({ input.data(), size });
+				assert(ttml.name == "tt:tt");
+
+				//find timings and increment them
+				incrementTtmlTimings(ttml, startTimeInMs);
+
+				//reserialize
+				auto const newTtml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + serializeXml(ttml);
+				auto const newTtmlSize = newTtml.size();
+				auto pkt = output->allocData<DataRaw>(newTtmlSize);
+				memcpy(pkt->buffer->data().ptr, newTtml.c_str(), newTtmlSize);
+
+				CueFlags flags{};
+				flags.keyframe = true;
+				pkt->set(flags);
+				auto timestamp = timescaleToClock((((int64_t)hour * 60 + minute) * 60 + second) * 1000 + ms, 1000);
+				pkt->set(DecodingTime{timestamp});
+				pkt->setMediaTime(timestamp);
+				output->post(pkt);
+				ifs.close();
+
+				lastFilePos = lastFilePos + line.size() + 1;
+				m_host->log(Warning, format("Current file position: %s\n", (int)lastFilePos).c_str());
+
+				numSegment++;
 			}
 		}
 
