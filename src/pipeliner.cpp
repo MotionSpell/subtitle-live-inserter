@@ -43,6 +43,7 @@ std::unique_ptr<Pipeline> buildPipeline(const Config &cfg) {
 	rdCfg.url = cfg.url;
 	rdCfg.utcStartTime = &utcStartTime;
 	rdCfg.delayInSec = cfg.delayInSec;
+	rdCfg.mpdFn = cfg.mpdFn;
 	auto redasher = pipeline->add("reDASH", &rdCfg);
 
 	// Create sink

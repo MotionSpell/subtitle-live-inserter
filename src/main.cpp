@@ -19,6 +19,7 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	opt.add("g", "general-delay", &cfg.delayInSec, "General delay in seconds (signed).");
 	opt.add("s", "subtitle-delay", &cfg.subtitleForwardTimeInSec, "Subtitle delay in seconds (signed).");
 	opt.add("f", "file-playlist", &cfg.subListFn, "File path of the ever-growing playlist. If not set then synthetic content is generated.");
+	opt.add("o", "output-mpd-filename", &cfg.mpdFn, "Manifest filename. If not specified the input filename is copied.");
 	opt.add("p", "post", &cfg.postUrl, "Path or URL where the content is posted.");
 	opt.addFlag("h", "help", &cfg.help, "Print usage and exit.");
 
@@ -42,6 +43,7 @@ Config parseCommandLine(int argc, char const* argv[]) {
 		"\turl=\"" << cfg.url << "\"\n\tdelayInSec=" << cfg.delayInSec << "\n"
 		"\tsubtitleForwardTimeInSec=" << cfg.subtitleForwardTimeInSec << "\n"
 		"\tsubListFn=\"" << cfg.subListFn << "\"\n"
+		"\tmpdFn=\"" << cfg.mpdFn << "\"\n"
 		"\tpost=\"" << cfg.postUrl << "\"\n";
 
 	return cfg;

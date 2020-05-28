@@ -66,7 +66,7 @@ class ReDash : public Module {
 	public:
 		ReDash(KHost* host, ReDashConfig *cfg)
 		: m_host(host), url(cfg->url), httpSrc(createHttpSource()), delayInSec(cfg->delayInSec) {
-			std::string urlFn = url;
+			std::string urlFn = cfg->mpdFn.empty() ? url : cfg->mpdFn;
 			auto i = urlFn.rfind('/');
 			if(i != urlFn.npos)
 				urlFn = urlFn.substr(i+1, urlFn.npos);

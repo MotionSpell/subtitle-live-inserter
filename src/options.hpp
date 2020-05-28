@@ -7,7 +7,8 @@ struct Config {
 	int delayInSec = 0;
 	int subtitleForwardTimeInSec = 0;
 	std::string subListFn;
-    std::string postUrl = ".";
+	std::string postUrl = ".";
+	std::string mpdFn;
 
 	bool help = false;
 };
