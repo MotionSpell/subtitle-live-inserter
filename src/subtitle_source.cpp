@@ -205,10 +205,11 @@ class SubtitleSource : public Module {
 			for (auto& elt : xml.children) {
 				for (auto& attr : elt.attr) {
 					if (attr.name == "begin" || attr.name == "end") {
+						auto const fmt = "%02d:%02d:%02d.%03d";
+
 						//serialize
-						int hour, min, sec, msec;
-						int ret = sscanf(attr.value.c_str(), "%02d:%02d:%02d.%03d", &hour, &min, &sec, &msec);
-						assert(ret == 4);
+						int hour=0, min=0, sec=0, msec=0;
+						sscanf(attr.value.c_str(), fmt, &hour, &min, &sec, &msec);
 
 						//increment
 						auto totalInMs = incrementInMs + msec + 1000 * (sec + 60 * (min + 60 * hour));
@@ -222,7 +223,7 @@ class SubtitleSource : public Module {
 
 						//deserialize
 						char buffer[256];
-						snprintf(buffer, sizeof buffer, "%02d:%02d:%02d.%03d", hour, min, sec, msec);
+						snprintf(buffer, sizeof buffer, fmt, hour, min, sec, msec);
 						attr.value = buffer;
 					}
 				}
