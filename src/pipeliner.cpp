@@ -1,6 +1,7 @@
 #include "lib_pipeline/pipeline.hpp"
-#include "lib_modules/core/database.hpp" /*DataRaw*/
+#include "lib_modules/core/database.hpp" // DataRaw
 #include "lib_modules/utils/loader.hpp"
+#include "lib_media/common/attributes.hpp" // PresentationTime
 #include "lib_media/common/metadata_file.hpp"
 #include "lib_utils/system_clock.hpp"
 #include "lib_utils/os.hpp"
@@ -8,12 +9,13 @@
 #include "lib_utils/tools.hpp" // operator|
 #include "options.hpp"
 #include <cassert>
+#include <thread>
 
 // modules
 #include "lib_media/mux/mux_mp4_config.hpp"
-#include "lib_media/utils/regulator.hpp"
 #include "lib_media/out/filesystem.hpp"
 #include "lib_media/out/http_sink.hpp"
+#include "plugins/RegulatorMono/regulator_mono.hpp"
 #include "redash.hpp"
 #include "subtitle_source.hpp"
 
@@ -32,7 +34,7 @@ void ensureDir(std::string path) {
 }
 
 bool startsWith(std::string s, std::string prefix) {
-  return s.substr(0, prefix.size()) == prefix;
+	return s.substr(0, prefix.size()) == prefix;
 }
 }
 
@@ -61,7 +63,8 @@ std::unique_ptr<Pipeline> buildPipeline(const Config &cfg) {
 	}
 
 	auto regulate = [&](OutputPin source) -> OutputPin {
-		auto regulator = pipeline->addNamedModule<Regulator>("Regulator", g_SystemClock);
+		RegulatorMonoConfig rmCfg;
+		auto regulator = pipeline->add("RegulatorMono", &rmCfg);
 		pipeline->connect(source, regulator);
 		return GetOutputPin(regulator);
 	};
@@ -71,7 +74,7 @@ std::unique_ptr<Pipeline> buildPipeline(const Config &cfg) {
 	auto mux = [&](OutputPin compressed) -> OutputPin {
 		struct Mp4MuxerFileHandler : ModuleS {
 			Mp4MuxerFileHandler(KHost *host, Mp4MuxConfig *cfg, int64_t timeshiftBufferDepthInSec)
-			: output(addOutput()), segDurInMs(cfg->segmentDurationInMs), timeshiftBufferDepth(timescaleToClock(timeshiftBufferDepthInSec, 1)) {
+				: output(addOutput()), segDurInMs(cfg->segmentDurationInMs), timeshiftBufferDepth(timescaleToClock(timeshiftBufferDepthInSec, 1)) {
 				delegate = safe_cast<ModuleS>(loadModule("GPACMuxMP4", host, (void*)cfg));
 				ConnectOutput(delegate->getOutput(0), [&](Data data) {
 					auto out = std::make_shared<DataBaseRef>(data);
@@ -110,12 +113,12 @@ std::unique_ptr<Pipeline> buildPipeline(const Config &cfg) {
 			void processOne(Data data) override {
 				delegate->getInput(0)->push(data);
 			}
-		private:
+private:
 			std::shared_ptr<ModuleS> delegate;
 			OutputDefault * const output;
 			const uint64_t segDurInMs;
 			const int64_t timeshiftBufferDepth;
-			
+
 			struct PendingSegment {
 				int64_t pts;
 				std::string filename;
@@ -141,7 +144,7 @@ std::unique_ptr<Pipeline> buildPipeline(const Config &cfg) {
 	subconfig.utcStartTime = &utcStartTime;
 	auto subSource = pipeline->add("SubtitleSource", &subconfig);
 	auto source = GetOutputPin(subSource, 0);
-	source = regulate(source); 
+	source = regulate(source);
 	auto muxer = mux(source);
 	pipeline->connect(muxer, sink, true);
 

@@ -54,7 +54,7 @@ class SubtitleSource : public Module {
 			auto meta = std::make_shared<MetadataPktSubtitle>();
 			meta->timeScale = { IClock::Rate, 1 };
 			output->setMetadata(meta);
-			
+
 			if (!filename.empty()) {
 				std::ifstream file(filename);
 				if (!file.is_open())

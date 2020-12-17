@@ -40,11 +40,11 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	cfg.url = urls[0];
 
 	std::cerr << "Detected options:\n"
-		"\turl=\"" << cfg.url << "\"\n\tdelayInSec=" << cfg.delayInSec << "\n"
-		"\tsubtitleForwardTimeInSec=" << cfg.subtitleForwardTimeInSec << "\n"
-		"\tsubListFn=\"" << cfg.subListFn << "\"\n"
-		"\tmpdFn=\"" << cfg.mpdFn << "\"\n"
-		"\tpost=\"" << cfg.postUrl << "\"\n";
+	    "\turl=\"" << cfg.url << "\"\n\tdelayInSec=" << cfg.delayInSec << "\n"
+	    "\tsubtitleForwardTimeInSec=" << cfg.subtitleForwardTimeInSec << "\n"
+	    "\tsubListFn=\"" << cfg.subListFn << "\"\n"
+	    "\tmpdFn=\"" << cfg.mpdFn << "\"\n"
+	    "\tpost=\"" << cfg.postUrl << "\"\n";
 
 	return cfg;
 }

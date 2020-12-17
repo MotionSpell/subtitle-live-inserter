@@ -65,7 +65,7 @@ std::string formatDate(int64_t timestamp) {
 class ReDash : public Module {
 	public:
 		ReDash(KHost* host, ReDashConfig *cfg)
-		: m_host(host), url(cfg->url), httpSrc(createHttpSource()), delayInSec(cfg->delayInSec) {
+			: m_host(host), url(cfg->url), httpSrc(createHttpSource()), delayInSec(cfg->delayInSec) {
 			std::string urlFn = cfg->mpdFn.empty() ? url : cfg->mpdFn;
 			auto i = urlFn.rfind('/');
 			if(i != urlFn.npos)
@@ -168,8 +168,7 @@ class ReDash : public Module {
         <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1" />
     </AdaptationSet>)|";
 					e.add(parseXml({ as, strlen(as) }));
-				}
-				else
+				} else
 					addSubtitleAdaptationSet(e);
 		}
 
