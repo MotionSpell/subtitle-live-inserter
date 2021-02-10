@@ -3,6 +3,7 @@
 #include "lib_media/common/file_puller.hpp"
 #include "lib_modules/utils/helper.hpp"
 #include "lib_modules/utils/factory.hpp"
+#include "lib_utils/format.hpp"
 #include "lib_utils/log_sink.hpp"
 #include "lib_utils/tools.hpp" //enforce
 #include "lib_utils/time.hpp" //parseDate
@@ -65,7 +66,7 @@ std::string formatDate(int64_t timestamp) {
 class ReDash : public Module {
 	public:
 		ReDash(KHost* host, ReDashConfig *cfg)
-			: m_host(host), url(cfg->url), httpSrc(createHttpSource()), delayInSec(cfg->delayInSec) {
+			: m_host(host), url(cfg->url), postUrl(cfg->postUrl), httpSrc(createHttpSource()), delayInSec(cfg->delayInSec) {
 			std::string urlFn = cfg->mpdFn.empty() ? url : cfg->mpdFn;
 			auto i = urlFn.rfind('/');
 			if(i != urlFn.npos)
@@ -104,16 +105,12 @@ class ReDash : public Module {
 			// add AST offset to mitigate truncated file issues with Apache on Windows
 			mpd["availabilityStartTime"] = formatDate(parseDate(mpd["availabilityStartTime"]) + delayInSec);
 
-			// add BaseURL
-			std::string baseUrl = url;
-			auto i = baseUrl.rfind('/');
-			if (i != baseUrl.npos)
-				baseUrl = baseUrl.substr(0, i+1);
-			addBaseUrl(mpd, baseUrl);
+			// add BaseURL whenever necessary
+			addBaseUrl(mpd, url);
 
 			// add our subtitles
 			removeExistingSubtitleAdaptationSets(mpd);
-			addSubtitleAdaptationSet(mpd);
+			addSubtitleAdaptationSet(mpd, postUrl);
 
 			// publish modified mpd
 			auto const modifiedMpdAsText = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + serializeXml(mpd);
@@ -122,7 +119,10 @@ class ReDash : public Module {
 			// save unmodified mpd
 			lastMpdAsText = mpdAsText;
 
-			std::this_thread::sleep_for(std::chrono::seconds(minUpdatePeriodInSec));
+			auto sleepTimeInSec = std::abs(minUpdatePeriodInSec);
+			auto const maxSleepTimeInSec = 2; // some content put a long period but change some parameters along the way...
+			if (sleepTimeInSec > maxSleepTimeInSec) sleepTimeInSec = maxSleepTimeInSec;
+			std::this_thread::sleep_for(std::chrono::seconds(sleepTimeInSec));
 		}
 
 	private:
@@ -136,14 +136,51 @@ class ReDash : public Module {
 			return mpd;
 		}
 
-		void addBaseUrl(Tag &mpd, std::string baseUrl) const {
-			for (auto &e : mpd.children)
-				if (e.name == "AdaptationSet") {
-					Tag tag{"BaseURL"};
-					tag.content = baseUrl;
-					e.children.insert(e.children.begin(), tag);
-				} else
-					addBaseUrl(e, baseUrl);
+		void addBaseUrl(Tag &mpd, const std::string &url) const {
+			// compute base URL
+			std::string baseUrl = url;
+			auto i = baseUrl.rfind('/');
+			if (i != baseUrl.npos)
+				baseUrl = baseUrl.substr(0, i+1);
+
+			// ensure all content from @mpd are covered by an absolute BaseURL
+			auto hasAbsoluteBaseUrl = [](Tag &tag) {
+				auto isUrlAbsolute = [](const std::string &url_) {
+					const std::string prefix = "http";
+					return url_.substr(0, prefix.size()) == prefix;
+				};
+
+				for (auto &e : tag.children)
+					if (e.name == "BaseURL" && isUrlAbsolute(e.content))
+						return true;
+
+				return false;
+			};
+
+			if (hasAbsoluteBaseUrl(mpd))
+				return;
+
+			for (auto& period : mpd.children) {
+				if (hasAbsoluteBaseUrl(period))
+					continue;
+
+				if (period.name == "Period")
+					for (auto& as : period.children)
+						if (as.name == "AdaptationSet") {
+							if (hasAbsoluteBaseUrl(as))
+								continue;
+
+							for (auto& rep : as.children)
+								if (rep.name == "Representation") {
+									if (hasAbsoluteBaseUrl(rep))
+										continue;
+
+									Tag tag{"BaseURL"};
+									tag.content = baseUrl;
+									rep.children.insert(rep.children.begin(), tag);
+								}
+						}
+			}
 		}
 
 		void removeExistingSubtitleAdaptationSets(Tag& mpd) const {
@@ -163,20 +200,20 @@ class ReDash : public Module {
 
 		}
 
-		void addSubtitleAdaptationSet(Tag& mpd) const {
+		void addSubtitleAdaptationSet(Tag& mpd, const std::string &baseUrl) const {
 			for (auto& e : mpd.children)
 				if (e.name == "Period") {
-					auto as = R"|(
+					auto as = format(R"|(
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
         <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2" />
         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
-        <BaseURL>.</BaseURL>
+        <BaseURL>%s</BaseURL>
         <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" />
         <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1" />
-    </AdaptationSet>)|";
-					e.add(parseXml({ as, strlen(as) }));
+    </AdaptationSet>)|", baseUrl);
+					e.add(parseXml({ as.c_str(), as.size() }));
 				} else
-					addSubtitleAdaptationSet(e);
+					addSubtitleAdaptationSet(e, baseUrl);
 		}
 
 		void postManifest(const std::string &contents) {
@@ -192,7 +229,7 @@ class ReDash : public Module {
 		KHost* const m_host;
 		OutputDefault* output;
 
-		std::string url;
+		std::string url, postUrl;
 		std::vector<uint8_t> lastMpdAsText;
 		std::unique_ptr<IFilePuller> httpSrc;
 		int64_t minUpdatePeriodInSec = 0;

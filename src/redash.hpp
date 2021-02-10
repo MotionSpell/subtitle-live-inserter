@@ -16,4 +16,5 @@ struct ReDashConfig {
 	int delayInSec = 0;
 	int64_t timeshiftBufferDepthInSec = 24 * 60 * 60;
 	std::string mpdFn;
+	std::string postUrl;
 };
