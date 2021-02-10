@@ -1,13 +1,13 @@
 #include "redash.hpp"
 #include "lib_media/common/metadata_file.hpp"
 #include "lib_media/common/file_puller.hpp"
-#include "lib_media/common/sax_xml_parser.hpp"
-#include "lib_media/common/xml.hpp"
 #include "lib_modules/utils/helper.hpp"
 #include "lib_modules/utils/factory.hpp"
 #include "lib_utils/log_sink.hpp"
 #include "lib_utils/tools.hpp" //enforce
 #include "lib_utils/time.hpp" //parseDate
+#include "lib_utils/sax_xml_parser.hpp"
+#include "lib_utils/xml.hpp"
 #include <ctime> //gmtime
 #include <thread>
 #include <chrono>
@@ -26,11 +26,11 @@ Tag parseXml(span<const char> text) {
 	Tag root;
 	std::vector<Tag*> tagStack = { &root };
 
-	auto onNodeStart = [&](std::string name, std::map<std::string, std::string> &attr) {
+	auto onNodeStart = [&](std::string name, SmallMap<std::string, std::string> &attr) {
 		Tag tag{name};
 
 		for (auto &a : attr)
-			tag.attr.push_back({a.first, a.second});
+			tag.attr.push_back({a.key, a.value});
 
 		tagStack.back()->add(tag);
 		tagStack.push_back(&tagStack.back()->children.back());
