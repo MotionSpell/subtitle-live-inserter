@@ -17,6 +17,8 @@
 using namespace Modules;
 using namespace Modules::In;
 
+extern const char *g_appName;
+extern const char *g_version;
 extern const uint64_t g_segmentDurationInMs;
 std::unique_ptr<IFilePuller> createHttpSource();
 int64_t parseIso8601Period(std::string input);
@@ -105,6 +107,9 @@ class ReDash : public Module {
 			// add AST offset to mitigate truncated file issues with Apache on Windows
 			mpd["availabilityStartTime"] = formatDate(parseDate(mpd["availabilityStartTime"]) + delayInSec);
 
+			// add version of this tool
+			addVersion(mpd);
+
 			// add BaseURL whenever necessary
 			addBaseUrl(mpd, url);
 
@@ -134,6 +139,24 @@ class ReDash : public Module {
 			minUpdatePeriodInSec = parseIso8601Period(mpd["minimumUpdatePeriod"]);
 
 			return mpd;
+		}
+
+		void addVersion(Tag &mpd) const {
+			auto const version = std::string("Updated with Motion Spell / GPAC Licensing ") + g_appName + " version " + g_version;
+
+			for (auto& e : mpd.children)
+				if (e.name == "ProgramInformation")
+					for (auto& p : e.children)
+						if (p.name == "Title") {
+							p.content += std::string(" - ") + version;
+							return;
+						}
+
+			Tag title { "Title" };
+			title.content = version;
+			Tag progInfo { "ProgramInformation" };
+			progInfo.children.push_back(title);
+			mpd.children.insert(mpd.children.begin(), progInfo);
 		}
 
 		void addBaseUrl(Tag &mpd, const std::string &url) const {
