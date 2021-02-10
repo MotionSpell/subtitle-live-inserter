@@ -96,8 +96,8 @@ class ReDash : public Module {
 			}
 
 			// compare to previous mpd
-			//if (mpdAsText == lastMpdAsText)
-			//	return;
+			if (mpdAsText == lastMpdAsText)
+				return;
 
 			auto mpd = refreshDashSession(mpdAsText);
 
