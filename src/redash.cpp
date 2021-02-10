@@ -72,55 +72,61 @@ class ReDash : public Module {
 				urlFn = urlFn.substr(i+1, urlFn.npos);
 			auto meta = std::make_shared<MetadataFile>(PLAYLIST);
 			meta->filename = urlFn;
-			output = addOutput();
-			output->setMetadata(meta);
-			m_host->activate(true);
 
-			auto mpd = refreshDashSession(url);
+			auto mpdAsText = download(httpSrc.get(), url.c_str());
+			if (mpdAsText.empty())
+				throw std::runtime_error("can't get mpd");
+
+			auto mpd = refreshDashSession(mpdAsText);
 
 			cfg->utcStartTime->startTime = parseDate(mpd["availabilityStartTime"]) * IClock::Rate;
 			cfg->timeshiftBufferDepthInSec = parseIso8601Period(mpd["timeShiftBufferDepth"]);
+
+			output = addOutput();
+			output->setMetadata(meta);
+			m_host->activate(true);
 		}
 
 		void process() override {
-			auto mpd = refreshDashSession(url);
+			// download the mpd
+			auto mpdAsText = download(httpSrc.get(), url.c_str());
+			if (mpdAsText.empty()) {
+				m_host->log(Error, "can't get mpd");
+				return;
+			}
 
-			//TODO: there is no default comparison operator in C++<20
-			//if (mpd == lastMpd)
+			// compare to previous mpd
+			//if (mpdAsText == lastMpdAsText)
 			//	return;
 
-			//add AST offset to mitigate truncated file issues with Apache on Windows
+			auto mpd = refreshDashSession(mpdAsText);
+
+			// add AST offset to mitigate truncated file issues with Apache on Windows
 			mpd["availabilityStartTime"] = formatDate(parseDate(mpd["availabilityStartTime"]) + delayInSec);
 
-			//add BaseURL
+			// add BaseURL
 			std::string baseUrl = url;
 			auto i = baseUrl.rfind('/');
 			if (i != baseUrl.npos)
 				baseUrl = baseUrl.substr(0, i+1);
 			addBaseUrl(mpd, baseUrl);
 
-			//add our subtitles
+			// add our subtitles
 			removeExistingSubtitleAdaptationSets(mpd);
 			addSubtitleAdaptationSet(mpd);
 
-			auto const newMpd = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + serializeXml(mpd);
+			// publish modified mpd
+			auto const modifiedMpdAsText = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + serializeXml(mpd);
+			postManifest(modifiedMpdAsText);
 
-			postManifest(newMpd);
-
-			if (0) {
-				m_host->log(Warning, newMpd.c_str());
-				exit(0);
-			}
+			// save unmodified mpd
+			lastMpdAsText = mpdAsText;
 
 			std::this_thread::sleep_for(std::chrono::seconds(minUpdatePeriodInSec));
 		}
 
 	private:
-		Tag refreshDashSession(std::string url) {
-			auto mpdAsText = download(httpSrc.get(), url.c_str());
-			if (mpdAsText.empty())
-				throw std::runtime_error("can't get mpd");
-
+		Tag refreshDashSession(const std::vector<uint8_t> &mpdAsText) {
 			auto mpd = parseXml({ (const char*)mpdAsText.data(), mpdAsText.size() });
 			assert(mpd.name == "MPD");
 
@@ -187,8 +193,9 @@ class ReDash : public Module {
 		OutputDefault* output;
 
 		std::string url;
+		std::vector<uint8_t> lastMpdAsText;
 		std::unique_ptr<IFilePuller> httpSrc;
-		int minUpdatePeriodInSec = 0;
+		int64_t minUpdatePeriodInSec = 0;
 		int delayInSec = 0;
 };
 
