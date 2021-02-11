@@ -6,7 +6,7 @@
 #include "options.hpp"
 #include <iostream>
 
-const char *g_appName = "subtitle-live-inserter";
+extern const char *g_appName;
 
 std::unique_ptr<Pipelines::Pipeline> buildPipeline(const Config&);
 static Pipelines::Pipeline *g_Pipeline = nullptr;

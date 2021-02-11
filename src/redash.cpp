@@ -1,6 +1,5 @@
 #include "redash.hpp"
 #include "lib_media/common/metadata_file.hpp"
-#include "lib_media/common/file_puller.hpp"
 #include "lib_modules/utils/helper.hpp"
 #include "lib_modules/utils/factory.hpp"
 #include "lib_utils/format.hpp"
@@ -17,7 +16,8 @@
 using namespace Modules;
 using namespace Modules::In;
 
-extern const char *g_appName;
+const char *g_appName = "subtitle-live-inserter";
+
 extern const char *g_version;
 extern const uint64_t g_segmentDurationInMs;
 std::unique_ptr<IFilePuller> createHttpSource();
@@ -68,7 +68,7 @@ std::string formatDate(int64_t timestamp) {
 class ReDash : public Module {
 	public:
 		ReDash(KHost* host, ReDashConfig *cfg)
-			: m_host(host), url(cfg->url), postUrl(cfg->postUrl), httpSrc(createHttpSource()), delayInSec(cfg->delayInSec) {
+			: m_host(host), url(cfg->url), postUrl(cfg->postUrl), httpSrc(cfg->filePullerFactory->create()), delayInSec(cfg->delayInSec) {
 			std::string urlFn = cfg->mpdFn.empty() ? url : cfg->mpdFn;
 			auto i = urlFn.rfind('/');
 			if(i != urlFn.npos)

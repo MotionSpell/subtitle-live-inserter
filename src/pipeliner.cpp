@@ -26,6 +26,7 @@ extern const char *g_appName;
 extern const uint64_t g_segmentDurationInMs = 2000;
 
 static UtcStartTime utcStartTime;
+std::unique_ptr<In::IFilePuller> createHttpSource();
 
 namespace {
 void ensureDir(std::string path) {
@@ -41,12 +42,20 @@ bool startsWith(std::string s, std::string prefix) {
 std::unique_ptr<Pipeline> buildPipeline(const Config &cfg) {
 	auto pipeline = std::make_unique<Pipeline>();
 
+	struct FilePullerFactory : In::IFilePullerFactory {
+		std::unique_ptr<In::IFilePuller> create() override {
+			return createHttpSource();
+		}
+	};
+
 	ReDashConfig rdCfg;
 	rdCfg.url = cfg.url;
 	rdCfg.utcStartTime = &utcStartTime;
 	rdCfg.delayInSec = cfg.delayInSec;
 	rdCfg.mpdFn = cfg.mpdFn;
 	rdCfg.postUrl = cfg.postUrl;
+	FilePullerFactory filePullerFactory;
+	rdCfg.filePullerFactory = &filePullerFactory;
 	auto redasher = pipeline->add("reDASH", &rdCfg);
 
 	// Create sink
@@ -93,7 +102,7 @@ std::unique_ptr<Pipeline> buildPipeline(const Config &cfg) {
 					out->setMetadata(meta);
 					getOutput(0)->post(out);
 
-					/*delete deprecated*/
+					/*delete deprecated content*/
 					auto seg = timeshiftSegments.begin();
 					while (seg != timeshiftSegments.end()) {
 						if (data->get<PresentationTime>().time - seg->pts > timeshiftBufferDepth) {

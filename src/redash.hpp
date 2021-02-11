@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <lib_media/common/file_puller.hpp>
 #include <lib_media/common/utc_start_time.hpp>
 
 struct UtcStartTime : IUtcStartTimeQuery {
@@ -12,9 +13,10 @@ struct UtcStartTime : IUtcStartTimeQuery {
 
 struct ReDashConfig {
 	std::string url;
-	UtcStartTime *utcStartTime;
+	UtcStartTime *utcStartTime = nullptr;
 	int delayInSec = 0;
 	int64_t timeshiftBufferDepthInSec = 24 * 60 * 60;
 	std::string mpdFn;
 	std::string postUrl;
+	Modules::In::IFilePullerFactory *filePullerFactory = nullptr;
 };
