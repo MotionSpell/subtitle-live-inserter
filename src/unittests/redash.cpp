@@ -1,13 +1,16 @@
 #include "tests/tests.hpp"
+#include "../redash.hpp"
 #include "lib_modules/utils/loader.hpp"
 #include "lib_modules/utils/helper.hpp" // NullHost
 #include "lib_media/common/file_puller.hpp"
 #include "lib_media/common/metadata_file.hpp"
 #include "lib_media/utils/recorder.hpp"
 #include "lib_modules/core/connection.hpp"
-#include "../redash.hpp"
+#include "lib_utils/format.hpp"
 
 using namespace Modules;
+
+extern const char *g_version;
 
 namespace {
 struct MemoryFileSystem : In::IFilePuller {
@@ -26,6 +29,42 @@ struct FilePullerFactory : In::IFilePullerFactory {
     }
 	const char *src = nullptr;
 };
+
+void check(std::string mpd, std::string expected) {
+    ReDashConfig cfg;
+    cfg.url = "/home/root/";
+    UtcStartTime utcStartTime;
+    utcStartTime.startTime = 1789;
+    cfg.utcStartTime = &utcStartTime;
+    cfg.delayInSec = 0;
+    cfg.timeshiftBufferDepthInSec = 17;
+    cfg.mpdFn = "redash.mpd";
+    cfg.postUrl = "http://127.0.0.1/test/";
+    FilePullerFactory filePullerFactory(mpd.c_str());
+    cfg.filePullerFactory = &filePullerFactory;
+    auto redash = loadModule("reDASH", &NullHost, &cfg);
+    auto recorder = createModule<Utils::Recorder>(&NullHost);
+	ConnectOutputToInput(redash->getOutput(0), recorder->getInput(0));
+
+    redash->process();
+
+    Data data;
+    auto ret = recorder->tryPop(data);
+    ASSERT_EQUALS(true, ret);
+
+    auto dataRaw = std::dynamic_pointer_cast<const DataRaw>(data);
+    ASSERT(dataRaw);
+
+    ret = recorder->tryPop(data);
+    ASSERT_EQUALS(false, ret);
+
+    auto meta = std::dynamic_pointer_cast<const MetadataFile>(data->getMetadata());
+    ASSERT(meta);
+
+    ASSERT_EQUALS(cfg.mpdFn, meta->filename.substr(meta->filename.size() - cfg.mpdFn.size(), meta->filename.size()));
+
+    ASSERT_EQUALS(expected, std::string((const char*)data->data().ptr, data->data().len).c_str());
+}
 
 unittest("Redash: manifest from Keepixo/Anevia/Ateme") {
     auto mpd = R"|(
@@ -58,10 +97,10 @@ unittest("Redash: manifest from Keepixo/Anevia/Ateme") {
   </Period>
 </MPD>)|";
 
-    std::string expected = R"|(<?xml version="1.0" encoding="utf-8"?>
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:mspr="urn:microsoft:playready" xmlns:cenc="urn:mpeg:cenc:2013" profiles="urn:dvb:dash:profile:dvb-dash:2014,urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011" type="dynamic" availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" publishTime="2020-10-02T17:27:38Z" timeShiftBufferDepth="PT24H0.00S" minBufferTime="PT10.00S">
   <ProgramInformation>
-    <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version 2-master-rev34-g8f15aa5</Title>
+    <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
   </ProgramInformation>
   <Period id="0" start="PT0S">
     <AdaptationSet id="0" maxWidth="1280" maxHeight="720" maxFrameRate="50/1" par="16:9" segmentAlignment="true">
@@ -101,41 +140,279 @@ unittest("Redash: manifest from Keepixo/Anevia/Ateme") {
     </AdaptationSet>
   </Period>
 </MPD>
-)|";
+)|", g_version);
 
-    ReDashConfig cfg;
-    cfg.url = "/home/root/";
-    UtcStartTime utcStartTime;
-    utcStartTime.startTime = 1789;
-    cfg.utcStartTime = &utcStartTime;
-    cfg.delayInSec = 0;
-    cfg.timeshiftBufferDepthInSec = 17;
-    cfg.mpdFn = "redash.mpd";
-    cfg.postUrl = "http://127.0.0.1/test/";
-    FilePullerFactory filePullerFactory(mpd);
-    cfg.filePullerFactory = &filePullerFactory;
-    auto redash = loadModule("reDASH", &NullHost, &cfg);
-    auto recorder = createModule<Utils::Recorder>(&NullHost);
-	ConnectOutputToInput(redash->getOutput(0), recorder->getInput(0));
+    check(mpd, expected);
+}
 
-    redash->process();
-    
-    Data data;
-    auto ret = recorder->tryPop(data);
-    ASSERT_EQUALS(true, ret);
+unittest("Redash: manifest from Elemental for ARD") {
+    auto mpd = R"|(
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-11T15:39:24Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-02-05T08:27:46Z" minBufferTime="PT22S" suggestedPresentationDelay="PT2S" timeShiftBufferDepth="PT1M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
+   <Period start="PT0S" id="1">
+    <AdaptationSet mimeType="video/mp4" frameRate="50/1" segmentAlignment="true" subsegmentAlignment="true" startWithSAP="1" subsegmentStartsWithSAP="1" bitstreamSwitching="false">
+      <SegmentTemplate timescale="90000" duration="540000" startNumber="1612513660"/>
+      <Representation id="1" width="1280" height="720" bandwidth="3584000" codecs="avc1.640020" scanType="progressive">
+        <SegmentTemplate duration="540000" startNumber="1612513660" media="dash_1280x720p50_3584k-$Number$.mp4" initialization="dash_1280x720p50_3584k-init.mp4"/>
+      </Representation>
+      <Representation id="2" width="960" height="540" bandwidth="1800000" codecs="avc1.4d401f" scanType="progressive">
+        <SegmentTemplate duration="540000" startNumber="1612513660" media="dash_960x540p50_1800k-$Number$.mp4" initialization="dash_960x540p50_1800k-init.mp4"/>
+      </Representation>
+      <Representation id="3" width="640" height="360" bandwidth="1024000" codecs="avc1.4d401f" scanType="progressive">
+        <SegmentTemplate duration="540000" startNumber="1612513660" media="dash_640x360p50_1024k-$Number$.mp4" initialization="dash_640x360p50_1024k-init.mp4"/>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet mimeType="audio/mp4" lang="ger" segmentAlignment="0">
+      <SegmentTemplate timescale="48000" media="dash_128k_aac-$Number$.mp4" initialization="dash_128k_aac-init.mp4" duration="288000" startNumber="1612513660"/>
+      <Representation id="4" bandwidth="128000" audioSamplingRate="48000" codecs="mp4a.40.2">
+        <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+      </Representation>
+    </AdaptationSet>
+  </Period>
+    )|";
 
-    auto dataRaw = std::dynamic_pointer_cast<const DataRaw>(data);
-    ASSERT(dataRaw);
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+<MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-11T15:39:24Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-02-05T08:27:46Z" minBufferTime="PT22S" suggestedPresentationDelay="PT2S" timeShiftBufferDepth="PT1M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
+  <ProgramInformation>
+    <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
+  </ProgramInformation>
+  <Period start="PT0S" id="1">
+    <AdaptationSet mimeType="video/mp4" frameRate="50/1" segmentAlignment="true" subsegmentAlignment="true" startWithSAP="1" subsegmentStartsWithSAP="1" bitstreamSwitching="false">
+      <SegmentTemplate timescale="90000" duration="540000" startNumber="1612513660"/>
+      <Representation id="1" width="1280" height="720" bandwidth="3584000" codecs="avc1.640020" scanType="progressive">
+        <BaseURL>/home/root/</BaseURL>
+        <SegmentTemplate duration="540000" startNumber="1612513660" media="dash_1280x720p50_3584k-$Number$.mp4" initialization="dash_1280x720p50_3584k-init.mp4"/>
+      </Representation>
+      <Representation id="2" width="960" height="540" bandwidth="1800000" codecs="avc1.4d401f" scanType="progressive">
+        <BaseURL>/home/root/</BaseURL>
+        <SegmentTemplate duration="540000" startNumber="1612513660" media="dash_960x540p50_1800k-$Number$.mp4" initialization="dash_960x540p50_1800k-init.mp4"/>
+      </Representation>
+      <Representation id="3" width="640" height="360" bandwidth="1024000" codecs="avc1.4d401f" scanType="progressive">
+        <BaseURL>/home/root/</BaseURL>
+        <SegmentTemplate duration="540000" startNumber="1612513660" media="dash_640x360p50_1024k-$Number$.mp4" initialization="dash_640x360p50_1024k-init.mp4"/>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet mimeType="audio/mp4" lang="ger" segmentAlignment="0">
+      <SegmentTemplate timescale="48000" media="dash_128k_aac-$Number$.mp4" initialization="dash_128k_aac-init.mp4" duration="288000" startNumber="1612513660"/>
+      <Representation id="4" bandwidth="128000" audioSamplingRate="48000" codecs="mp4a.40.2">
+        <BaseURL>/home/root/</BaseURL>
+        <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet id="1789" lang="de" segmentAlignment="true">
+      <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+      <BaseURL>http://127.0.0.1/test/</BaseURL>
+      <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
+      <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
+    </AdaptationSet>
+  </Period>
+</MPD>
+)|", g_version);
 
-    ret = recorder->tryPop(data);
-    ASSERT_EQUALS(false, ret);
+    check(mpd, expected);
+}
 
-    auto meta = std::dynamic_pointer_cast<const MetadataFile>(data->getMetadata());
-    ASSERT(meta);
+unittest("Redash: manifest from Elemental for RBB (MDR)") {
+    auto mpd = R"|(
+<?xml version="1.0" encoding="UTF-8" ?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:mspr="urn:microsoft:playready" xmlns:cenc="urn:mpeg:cenc:2013" profiles="urn:dvb:dash:profile:dvb-dash:2014,urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011" type="dynamic" availabilityStartTime="1970-01-01T00:00:00Z" minimumUpdatePeriod="PT6.000S" publishTime="2021-02-03T10:31:43Z" timeShiftBufferDepth="PT8H0.000S" minBufferTime="PT6.000S">
+  <Period id="0" start="PT0S">
+    <!--Video-->
+    <AdaptationSet id="0" maxWidth="1280" maxHeight="720" maxFrameRate="50/1" par="16:9" segmentAlignment="true">
+      <SegmentTemplate timescale="48000" duration="288000" startNumber="0" initialization="499cc3ced932a4d6108535e62f880109_0_$RepresentationID$_init.mp4" media="499cc3ced932a4d6108535e62f880109_0_$RepresentationID$-$Number$.mp4" />
+      <Representation id="video_00" mimeType="video/mp4" codecs="avc3.4d401f" bandwidth="900000" width="640" height="360" scanType="progressive" frameRate="50/1" sar="1:1" startWithSAP="1" />
+      <Representation id="video_01" mimeType="video/mp4" codecs="avc3.4d401f" bandwidth="1800000" width="960" height="540" scanType="progressive" frameRate="50/1" sar="1:1" startWithSAP="1" />
+      <Representation id="video_02" mimeType="video/mp4" codecs="avc3.4d4020" bandwidth="3500000" width="1280" height="720" scanType="progressive" frameRate="50/1" sar="1:1" startWithSAP="1" />
+    </AdaptationSet>
+    <!--Audio-->
+    <AdaptationSet id="1" lang="de" segmentAlignment="true">
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+      <SegmentTemplate timescale="48000" duration="288000" startNumber="0" initialization="499cc3ced932a4d6108535e62f880109_1_$RepresentationID$_init.mp4" media="499cc3ced932a4d6108535e62f880109_1_$RepresentationID$-$Number$.mp4" />
+      <Representation id="audio_03" mimeType="audio/mp4" codecs="mp4a.40.2" bandwidth="128000" audioSamplingRate="48000" startWithSAP="1">
+        <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2" />
+      </Representation>
+    </AdaptationSet>
+  </Period>
+</MPD>
+    )|";
 
-    ASSERT_EQUALS(cfg.mpdFn, meta->filename.substr(meta->filename.size() - cfg.mpdFn.size(), meta->filename.size()));
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:mspr="urn:microsoft:playready" xmlns:cenc="urn:mpeg:cenc:2013" profiles="urn:dvb:dash:profile:dvb-dash:2014,urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011" type="dynamic" availabilityStartTime="1970-01-01T00:00:00Z" minimumUpdatePeriod="PT6.000S" publishTime="2021-02-03T10:31:43Z" timeShiftBufferDepth="PT8H0.000S" minBufferTime="PT6.000S">
+  <ProgramInformation>
+    <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
+  </ProgramInformation>
+  <Period id="0" start="PT0S">
+    <AdaptationSet id="0" maxWidth="1280" maxHeight="720" maxFrameRate="50/1" par="16:9" segmentAlignment="true">
+      <SegmentTemplate timescale="48000" duration="288000" startNumber="0" initialization="499cc3ced932a4d6108535e62f880109_0_$RepresentationID$_init.mp4" media="499cc3ced932a4d6108535e62f880109_0_$RepresentationID$-$Number$.mp4"/>
+      <Representation id="video_00" mimeType="video/mp4" codecs="avc3.4d401f" bandwidth="900000" width="640" height="360" scanType="progressive" frameRate="50/1" sar="1:1" startWithSAP="1">
+        <BaseURL>/home/root/</BaseURL>
+      </Representation>
+      <Representation id="video_01" mimeType="video/mp4" codecs="avc3.4d401f" bandwidth="1800000" width="960" height="540" scanType="progressive" frameRate="50/1" sar="1:1" startWithSAP="1">
+        <BaseURL>/home/root/</BaseURL>
+      </Representation>
+      <Representation id="video_02" mimeType="video/mp4" codecs="avc3.4d4020" bandwidth="3500000" width="1280" height="720" scanType="progressive" frameRate="50/1" sar="1:1" startWithSAP="1">
+        <BaseURL>/home/root/</BaseURL>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet id="1" lang="de" segmentAlignment="true">
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+      <SegmentTemplate timescale="48000" duration="288000" startNumber="0" initialization="499cc3ced932a4d6108535e62f880109_1_$RepresentationID$_init.mp4" media="499cc3ced932a4d6108535e62f880109_1_$RepresentationID$-$Number$.mp4"/>
+      <Representation id="audio_03" mimeType="audio/mp4" codecs="mp4a.40.2" bandwidth="128000" audioSamplingRate="48000" startWithSAP="1">
+        <BaseURL>/home/root/</BaseURL>
+        <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet id="1789" lang="de" segmentAlignment="true">
+      <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+      <BaseURL>http://127.0.0.1/test/</BaseURL>
+      <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
+      <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
+    </AdaptationSet>
+  </Period>
+</MPD>
+)|", g_version);
 
-    ASSERT_EQUALS(expected, std::string((const char*)data->data().ptr, data->data().len).c_str());
+    check(mpd, expected);
+}
+
+unittest("Redash: manifest from Keepixo for RBB") {
+    auto mpd = R"|(
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-03T10:34:30Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-01-27T17:13:30Z" minBufferTime="PT6S" suggestedPresentationDelay="PT20S" timeShiftBufferDepth="PT2H0M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
+  <Period start="PT0S" id="1">
+    <AdaptationSet mimeType="video/mp4" frameRate="50/1" segmentAlignment="true" subsegmentAlignment="true" startWithSAP="1" subsegmentStartsWithSAP="1" bitstreamSwitching="false">
+      <SegmentTemplate timescale="90000" duration="540000" startNumber="1611767597"/>
+      <Representation id="1" width="1280" height="720" bandwidth="4000000" codecs="avc1.640020" scanType="progressive">
+        <SegmentTemplate duration="540000" startNumber="1611767597" media="dash1280x720p50-$Number$.mp4" initialization="dash1280x720p50-init.mp4"/>
+      </Representation>
+      <Representation id="2" width="960" height="540" bandwidth="2000000" codecs="avc1.4d4020" scanType="progressive">
+        <SegmentTemplate duration="540000" startNumber="1611767597" media="dash960x540p50-$Number$.mp4" initialization="dash960x540p50-init.mp4"/>
+      </Representation>
+      <Representation id="3" width="640" height="360" bandwidth="1024000" codecs="avc1.4d401f" scanType="progressive">
+        <SegmentTemplate duration="540000" startNumber="1611767597" media="dash640x360p50-$Number$.mp4" initialization="dash640x360p50-init.mp4"/>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet mimeType="audio/mp4" lang="de" segmentAlignment="0">
+      <SegmentTemplate timescale="48000" media="dashAudio-$Number$.mp4" initialization="dashAudio-init.mp4" duration="288000" startNumber="1611767597"/>
+      <Representation id="4" bandwidth="96000" audioSamplingRate="48000" codecs="mp4a.40.2">
+        <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+      </Representation>
+    </AdaptationSet>
+  </Period>
+</MPD>
+    )|";
+
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+<MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-03T10:34:30Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-01-27T17:13:30Z" minBufferTime="PT6S" suggestedPresentationDelay="PT20S" timeShiftBufferDepth="PT2H0M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
+  <ProgramInformation>
+    <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
+  </ProgramInformation>
+  <Period start="PT0S" id="1">
+    <AdaptationSet mimeType="video/mp4" frameRate="50/1" segmentAlignment="true" subsegmentAlignment="true" startWithSAP="1" subsegmentStartsWithSAP="1" bitstreamSwitching="false">
+      <SegmentTemplate timescale="90000" duration="540000" startNumber="1611767597"/>
+      <Representation id="1" width="1280" height="720" bandwidth="4000000" codecs="avc1.640020" scanType="progressive">
+        <BaseURL>/home/root/</BaseURL>
+        <SegmentTemplate duration="540000" startNumber="1611767597" media="dash1280x720p50-$Number$.mp4" initialization="dash1280x720p50-init.mp4"/>
+      </Representation>
+      <Representation id="2" width="960" height="540" bandwidth="2000000" codecs="avc1.4d4020" scanType="progressive">
+        <BaseURL>/home/root/</BaseURL>
+        <SegmentTemplate duration="540000" startNumber="1611767597" media="dash960x540p50-$Number$.mp4" initialization="dash960x540p50-init.mp4"/>
+      </Representation>
+      <Representation id="3" width="640" height="360" bandwidth="1024000" codecs="avc1.4d401f" scanType="progressive">
+        <BaseURL>/home/root/</BaseURL>
+        <SegmentTemplate duration="540000" startNumber="1611767597" media="dash640x360p50-$Number$.mp4" initialization="dash640x360p50-init.mp4"/>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet mimeType="audio/mp4" lang="de" segmentAlignment="0">
+      <SegmentTemplate timescale="48000" media="dashAudio-$Number$.mp4" initialization="dashAudio-init.mp4" duration="288000" startNumber="1611767597"/>
+      <Representation id="4" bandwidth="96000" audioSamplingRate="48000" codecs="mp4a.40.2">
+        <BaseURL>/home/root/</BaseURL>
+        <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet id="1789" lang="de" segmentAlignment="true">
+      <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+      <BaseURL>http://127.0.0.1/test/</BaseURL>
+      <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
+      <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
+    </AdaptationSet>
+  </Period>
+</MPD>
+)|", g_version);
+
+    check(mpd, expected);
+}
+
+unittest("Redash: manifest from Elemental for RBB (WDR)") {
+    auto mpd = R"|(
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-03T11:14:54Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-01-26T10:25:50Z" minBufferTime="PT22S" suggestedPresentationDelay="PT2S" timeShiftBufferDepth="PT2H0M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
+  <Period start="PT0S" id="1">
+    <AdaptationSet mimeType="video/mp4" frameRate="50/1" segmentAlignment="true" subsegmentAlignment="true" startWithSAP="1" subsegmentStartsWithSAP="1" bitstreamSwitching="false">
+      <SegmentTemplate timescale="90000" duration="360000" startNumber="1611656746"/>
+      <Representation id="1" width="1280" height="720" bandwidth="3584000" codecs="avc1.640020" scanType="progressive">
+        <SegmentTemplate duration="360000" startNumber="1611656746" media="dash_1280x720_3584k-$Number$.mp4" initialization="dash_1280x720_3584k-init.mp4"/>
+      </Representation>
+      <Representation id="2" width="960" height="540" bandwidth="1800000" codecs="avc1.4d401f" scanType="progressive">
+        <SegmentTemplate duration="360000" startNumber="1611656746" media="dash_960x540_1800k-$Number$.mp4" initialization="dash_960x540_1800k-init.mp4"/>
+      </Representation>
+      <Representation id="3" width="640" height="360" bandwidth="1024000" codecs="avc1.4d401f" scanType="progressive">
+        <SegmentTemplate duration="360000" startNumber="1611656746" media="dash_640x360_1024k-$Number$.mp4" initialization="dash_640x360_1024k-init.mp4"/>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet mimeType="audio/mp4" lang="ger" segmentAlignment="0">
+      <SegmentTemplate timescale="48000" media="dash_128k_aac-$Number$.mp4" initialization="dash_128k_aac-init.mp4" duration="192000" startNumber="1611656746"/>
+      <Representation id="4" bandwidth="128000" audioSamplingRate="48000" codecs="mp4a.40.2">
+        <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+      </Representation>
+    </AdaptationSet>
+  </Period>
+</MPD>
+    )|";
+
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+<MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-03T11:14:54Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-01-26T10:25:50Z" minBufferTime="PT22S" suggestedPresentationDelay="PT2S" timeShiftBufferDepth="PT2H0M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
+  <ProgramInformation>
+    <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
+  </ProgramInformation>
+  <Period start="PT0S" id="1">
+    <AdaptationSet mimeType="video/mp4" frameRate="50/1" segmentAlignment="true" subsegmentAlignment="true" startWithSAP="1" subsegmentStartsWithSAP="1" bitstreamSwitching="false">
+      <SegmentTemplate timescale="90000" duration="360000" startNumber="1611656746"/>
+      <Representation id="1" width="1280" height="720" bandwidth="3584000" codecs="avc1.640020" scanType="progressive">
+        <BaseURL>/home/root/</BaseURL>
+        <SegmentTemplate duration="360000" startNumber="1611656746" media="dash_1280x720_3584k-$Number$.mp4" initialization="dash_1280x720_3584k-init.mp4"/>
+      </Representation>
+      <Representation id="2" width="960" height="540" bandwidth="1800000" codecs="avc1.4d401f" scanType="progressive">
+        <BaseURL>/home/root/</BaseURL>
+        <SegmentTemplate duration="360000" startNumber="1611656746" media="dash_960x540_1800k-$Number$.mp4" initialization="dash_960x540_1800k-init.mp4"/>
+      </Representation>
+      <Representation id="3" width="640" height="360" bandwidth="1024000" codecs="avc1.4d401f" scanType="progressive">
+        <BaseURL>/home/root/</BaseURL>
+        <SegmentTemplate duration="360000" startNumber="1611656746" media="dash_640x360_1024k-$Number$.mp4" initialization="dash_640x360_1024k-init.mp4"/>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet mimeType="audio/mp4" lang="ger" segmentAlignment="0">
+      <SegmentTemplate timescale="48000" media="dash_128k_aac-$Number$.mp4" initialization="dash_128k_aac-init.mp4" duration="192000" startNumber="1611656746"/>
+      <Representation id="4" bandwidth="128000" audioSamplingRate="48000" codecs="mp4a.40.2">
+        <BaseURL>/home/root/</BaseURL>
+        <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet id="1789" lang="de" segmentAlignment="true">
+      <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+      <BaseURL>http://127.0.0.1/test/</BaseURL>
+      <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
+      <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
+    </AdaptationSet>
+  </Period>
+</MPD>
+)|", g_version);
+
+    check(mpd, expected);
 }
 
 }
