@@ -30,7 +30,7 @@ struct FilePullerFactory : In::IFilePullerFactory {
 	const char *src = nullptr;
 };
 
-void check(std::string mpd, std::string expected) {
+void check(const std::string &mpd, const std::string &expected) {
     ReDashConfig cfg;
     cfg.url = "/home/root/";
     UtcStartTime utcStartTime;
@@ -413,6 +413,42 @@ unittest("Redash: manifest from Elemental for RBB (WDR)") {
 )|", g_version);
 
     check(mpd, expected);
+}
+
+unittest("Redash: add version when ProgramInfo title is present") {
+    auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">    
+  <ProgramInformation>
+    <Title>TEST</Title>
+  </ProgramInformation>
+</MPD>)|";
+
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
+  <ProgramInformation>
+    <Title>TEST - Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
+  </ProgramInformation>
+</MPD>
+)|", g_version);
+
+    check(mpd, expected);
+}
+
+unittest("Redash: add version when ProgramInfo title is absent") {
+    auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"></MPD>)|";
+
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
+  <ProgramInformation>
+    <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
+  </ProgramInformation>
+</MPD>
+)|", g_version);
+
+    check(mpd, expected);
+}
+
+unittest("Redash: add BaseURL") {
+
 }
 
 }
