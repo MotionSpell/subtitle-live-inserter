@@ -166,7 +166,7 @@ class ReDash : public Module {
 			if (i != baseUrl.npos)
 				baseUrl = baseUrl.substr(0, i+1);
 
-			// ensure all content from @mpd are covered by an absolute BaseURL
+			// ensure all the elements from @tag are covered by an absolute BaseURL
 			auto hasAbsoluteBaseUrl = [](Tag &tag) {
 				auto isUrlAbsolute = [](const std::string &url_) {
 					const std::string prefix = "http";

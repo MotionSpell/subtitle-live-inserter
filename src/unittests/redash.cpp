@@ -32,14 +32,14 @@ struct FilePullerFactory : In::IFilePullerFactory {
 
 void check(const std::string &mpd, const std::string &expected) {
     ReDashConfig cfg;
-    cfg.url = "/home/root/";
+    cfg.url = "http://url/for/the.mpd";
     UtcStartTime utcStartTime;
     utcStartTime.startTime = 1789;
     cfg.utcStartTime = &utcStartTime;
     cfg.delayInSec = 0;
     cfg.timeshiftBufferDepthInSec = 17;
     cfg.mpdFn = "redash.mpd";
-    cfg.postUrl = "http://127.0.0.1/test/";
+    cfg.postUrl = "/root/output/";
     FilePullerFactory filePullerFactory(mpd.c_str());
     cfg.filePullerFactory = &filePullerFactory;
     auto redash = loadModule("reDASH", &NullHost, &cfg);
@@ -106,20 +106,20 @@ unittest("Redash: manifest from Keepixo/Anevia/Ateme") {
     <AdaptationSet id="0" maxWidth="1280" maxHeight="720" maxFrameRate="50/1" par="16:9" segmentAlignment="true">
       <SegmentTemplate timescale="10000000" duration="40000000" startNumber="1" initialization="f25cc24bca2d606b3bc0b585b3c53985_0_$RepresentationID$-init.mp4" media="f25cc24bca2d606b3bc0b585b3c53985_0_$RepresentationID$-$Number$.mp4"/>
       <Representation id="video_00" mimeType="video/mp4" codecs="avc3.640020" bandwidth="3500000" width="1280" height="720" scanType="progressive" frameRate="50/1" sar="1:1" startWithSAP="1">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
       </Representation>
       <Representation id="video_01" mimeType="video/mp4" codecs="avc3.64001f" bandwidth="1800000" width="960" height="540" scanType="progressive" frameRate="50/1" sar="1:1" startWithSAP="1">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
       </Representation>
       <Representation id="video_02" mimeType="video/mp4" codecs="avc3.64001f" bandwidth="1000000" width="640" height="360" scanType="progressive" frameRate="50/1" sar="1:1" startWithSAP="1">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
       </Representation>
     </AdaptationSet>
     <AdaptationSet id="1" lang="de" segmentAlignment="true">
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
       <SegmentTemplate timescale="10000000" duration="40000000" startNumber="1" initialization="f25cc24bca2d606b3bc0b585b3c53985_1_$RepresentationID$-init.mp4" media="f25cc24bca2d606b3bc0b585b3c53985_1_$RepresentationID$-$Number$.mp4"/>
       <Representation id="audio_03" mimeType="audio/mp4" codecs="mp4a.40.2" bandwidth="128000" audioSamplingRate="48000" startWithSAP="1">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
       </Representation>
     </AdaptationSet>
@@ -127,14 +127,14 @@ unittest("Redash: manifest from Keepixo/Anevia/Ateme") {
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="alternate"/>
       <SegmentTemplate timescale="10000000" duration="40000000" startNumber="1" initialization="f25cc24bca2d606b3bc0b585b3c53985_2_$RepresentationID$-init.mp4" media="f25cc24bca2d606b3bc0b585b3c53985_2_$RepresentationID$-$Number$.mp4"/>
       <Representation id="audio_04" mimeType="audio/mp4" codecs="mp4a.40.2" bandwidth="96000" audioSamplingRate="24000" startWithSAP="1">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
       </Representation>
     </AdaptationSet>
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>http://127.0.0.1/test/</BaseURL>
+      <BaseURL>/root/output/</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>
@@ -180,29 +180,29 @@ unittest("Redash: manifest from Elemental for ARD") {
     <AdaptationSet mimeType="video/mp4" frameRate="50/1" segmentAlignment="true" subsegmentAlignment="true" startWithSAP="1" subsegmentStartsWithSAP="1" bitstreamSwitching="false">
       <SegmentTemplate timescale="90000" duration="540000" startNumber="1612513660"/>
       <Representation id="1" width="1280" height="720" bandwidth="3584000" codecs="avc1.640020" scanType="progressive">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
         <SegmentTemplate duration="540000" startNumber="1612513660" media="dash_1280x720p50_3584k-$Number$.mp4" initialization="dash_1280x720p50_3584k-init.mp4"/>
       </Representation>
       <Representation id="2" width="960" height="540" bandwidth="1800000" codecs="avc1.4d401f" scanType="progressive">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
         <SegmentTemplate duration="540000" startNumber="1612513660" media="dash_960x540p50_1800k-$Number$.mp4" initialization="dash_960x540p50_1800k-init.mp4"/>
       </Representation>
       <Representation id="3" width="640" height="360" bandwidth="1024000" codecs="avc1.4d401f" scanType="progressive">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
         <SegmentTemplate duration="540000" startNumber="1612513660" media="dash_640x360p50_1024k-$Number$.mp4" initialization="dash_640x360p50_1024k-init.mp4"/>
       </Representation>
     </AdaptationSet>
     <AdaptationSet mimeType="audio/mp4" lang="ger" segmentAlignment="0">
       <SegmentTemplate timescale="48000" media="dash_128k_aac-$Number$.mp4" initialization="dash_128k_aac-init.mp4" duration="288000" startNumber="1612513660"/>
       <Representation id="4" bandwidth="128000" audioSamplingRate="48000" codecs="mp4a.40.2">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
       </Representation>
     </AdaptationSet>
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>http://127.0.0.1/test/</BaseURL>
+      <BaseURL>/root/output/</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>
@@ -246,27 +246,27 @@ unittest("Redash: manifest from Elemental for RBB (MDR)") {
     <AdaptationSet id="0" maxWidth="1280" maxHeight="720" maxFrameRate="50/1" par="16:9" segmentAlignment="true">
       <SegmentTemplate timescale="48000" duration="288000" startNumber="0" initialization="499cc3ced932a4d6108535e62f880109_0_$RepresentationID$_init.mp4" media="499cc3ced932a4d6108535e62f880109_0_$RepresentationID$-$Number$.mp4"/>
       <Representation id="video_00" mimeType="video/mp4" codecs="avc3.4d401f" bandwidth="900000" width="640" height="360" scanType="progressive" frameRate="50/1" sar="1:1" startWithSAP="1">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
       </Representation>
       <Representation id="video_01" mimeType="video/mp4" codecs="avc3.4d401f" bandwidth="1800000" width="960" height="540" scanType="progressive" frameRate="50/1" sar="1:1" startWithSAP="1">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
       </Representation>
       <Representation id="video_02" mimeType="video/mp4" codecs="avc3.4d4020" bandwidth="3500000" width="1280" height="720" scanType="progressive" frameRate="50/1" sar="1:1" startWithSAP="1">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
       </Representation>
     </AdaptationSet>
     <AdaptationSet id="1" lang="de" segmentAlignment="true">
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
       <SegmentTemplate timescale="48000" duration="288000" startNumber="0" initialization="499cc3ced932a4d6108535e62f880109_1_$RepresentationID$_init.mp4" media="499cc3ced932a4d6108535e62f880109_1_$RepresentationID$-$Number$.mp4"/>
       <Representation id="audio_03" mimeType="audio/mp4" codecs="mp4a.40.2" bandwidth="128000" audioSamplingRate="48000" startWithSAP="1">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
       </Representation>
     </AdaptationSet>
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>http://127.0.0.1/test/</BaseURL>
+      <BaseURL>/root/output/</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>
@@ -313,29 +313,29 @@ unittest("Redash: manifest from Keepixo for RBB") {
     <AdaptationSet mimeType="video/mp4" frameRate="50/1" segmentAlignment="true" subsegmentAlignment="true" startWithSAP="1" subsegmentStartsWithSAP="1" bitstreamSwitching="false">
       <SegmentTemplate timescale="90000" duration="540000" startNumber="1611767597"/>
       <Representation id="1" width="1280" height="720" bandwidth="4000000" codecs="avc1.640020" scanType="progressive">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
         <SegmentTemplate duration="540000" startNumber="1611767597" media="dash1280x720p50-$Number$.mp4" initialization="dash1280x720p50-init.mp4"/>
       </Representation>
       <Representation id="2" width="960" height="540" bandwidth="2000000" codecs="avc1.4d4020" scanType="progressive">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
         <SegmentTemplate duration="540000" startNumber="1611767597" media="dash960x540p50-$Number$.mp4" initialization="dash960x540p50-init.mp4"/>
       </Representation>
       <Representation id="3" width="640" height="360" bandwidth="1024000" codecs="avc1.4d401f" scanType="progressive">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
         <SegmentTemplate duration="540000" startNumber="1611767597" media="dash640x360p50-$Number$.mp4" initialization="dash640x360p50-init.mp4"/>
       </Representation>
     </AdaptationSet>
     <AdaptationSet mimeType="audio/mp4" lang="de" segmentAlignment="0">
       <SegmentTemplate timescale="48000" media="dashAudio-$Number$.mp4" initialization="dashAudio-init.mp4" duration="288000" startNumber="1611767597"/>
       <Representation id="4" bandwidth="96000" audioSamplingRate="48000" codecs="mp4a.40.2">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
       </Representation>
     </AdaptationSet>
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>http://127.0.0.1/test/</BaseURL>
+      <BaseURL>/root/output/</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>
@@ -382,29 +382,29 @@ unittest("Redash: manifest from Elemental for RBB (WDR)") {
     <AdaptationSet mimeType="video/mp4" frameRate="50/1" segmentAlignment="true" subsegmentAlignment="true" startWithSAP="1" subsegmentStartsWithSAP="1" bitstreamSwitching="false">
       <SegmentTemplate timescale="90000" duration="360000" startNumber="1611656746"/>
       <Representation id="1" width="1280" height="720" bandwidth="3584000" codecs="avc1.640020" scanType="progressive">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
         <SegmentTemplate duration="360000" startNumber="1611656746" media="dash_1280x720_3584k-$Number$.mp4" initialization="dash_1280x720_3584k-init.mp4"/>
       </Representation>
       <Representation id="2" width="960" height="540" bandwidth="1800000" codecs="avc1.4d401f" scanType="progressive">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
         <SegmentTemplate duration="360000" startNumber="1611656746" media="dash_960x540_1800k-$Number$.mp4" initialization="dash_960x540_1800k-init.mp4"/>
       </Representation>
       <Representation id="3" width="640" height="360" bandwidth="1024000" codecs="avc1.4d401f" scanType="progressive">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
         <SegmentTemplate duration="360000" startNumber="1611656746" media="dash_640x360_1024k-$Number$.mp4" initialization="dash_640x360_1024k-init.mp4"/>
       </Representation>
     </AdaptationSet>
     <AdaptationSet mimeType="audio/mp4" lang="ger" segmentAlignment="0">
       <SegmentTemplate timescale="48000" media="dash_128k_aac-$Number$.mp4" initialization="dash_128k_aac-init.mp4" duration="192000" startNumber="1611656746"/>
       <Representation id="4" bandwidth="128000" audioSamplingRate="48000" codecs="mp4a.40.2">
-        <BaseURL>/home/root/</BaseURL>
+        <BaseURL>http://url/for/</BaseURL>
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
       </Representation>
     </AdaptationSet>
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>http://127.0.0.1/test/</BaseURL>
+      <BaseURL>/root/output/</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>
@@ -445,10 +445,6 @@ unittest("Redash: add version when ProgramInfo title is absent") {
 )|", g_version);
 
     check(mpd, expected);
-}
-
-unittest("Redash: add BaseURL") {
-
 }
 
 }
