@@ -30,7 +30,7 @@ struct FilePullerFactory : In::IFilePullerFactory {
 	const char *src = nullptr;
 };
 
-void check(const std::string &mpd, const std::string &expected) {
+void check(const std::string &mpd, const std::string &expected, std::string postUrl = "/root/output/") {
     ReDashConfig cfg;
     cfg.url = "http://url/for/the.mpd";
     UtcStartTime utcStartTime;
@@ -39,7 +39,7 @@ void check(const std::string &mpd, const std::string &expected) {
     cfg.delayInSec = 0;
     cfg.timeshiftBufferDepthInSec = 17;
     cfg.mpdFn = "redash.mpd";
-    cfg.postUrl = "/root/output/";
+    cfg.postUrl = postUrl;
     FilePullerFactory filePullerFactory(mpd.c_str());
     cfg.filePullerFactory = &filePullerFactory;
     auto redash = loadModule("reDASH", &NullHost, &cfg);
@@ -134,7 +134,7 @@ unittest("Redash: manifest from Keepixo/Anevia/Ateme") {
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>/root/output/</BaseURL>
+      <BaseURL>.</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>
@@ -202,7 +202,7 @@ unittest("Redash: manifest from Elemental for ARD") {
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>/root/output/</BaseURL>
+      <BaseURL>.</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>
@@ -266,7 +266,7 @@ unittest("Redash: manifest from Elemental for RBB (MDR)") {
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>/root/output/</BaseURL>
+      <BaseURL>.</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>
@@ -335,7 +335,7 @@ unittest("Redash: manifest from Keepixo for RBB") {
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>/root/output/</BaseURL>
+      <BaseURL>.</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>
@@ -404,7 +404,7 @@ unittest("Redash: manifest from Elemental for RBB (WDR)") {
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>/root/output/</BaseURL>
+      <BaseURL>.</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>
@@ -445,6 +445,29 @@ unittest("Redash: add version when ProgramInfo title is absent") {
 )|", g_version);
 
     check(mpd, expected);
+}
+
+unittest("Redash: remote postUrl") {
+    auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
+
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
+  <ProgramInformation>
+    <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
+  </ProgramInformation>
+  <Period>
+    <AdaptationSet id="1789" lang="de" segmentAlignment="true">
+      <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+      <BaseURL>https://remote/url/</BaseURL>
+      <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
+      <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
+    </AdaptationSet>
+  </Period>
+</MPD>
+)|", g_version);
+
+    check(mpd, expected, "https://remote/url/");
 }
 
 }

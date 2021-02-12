@@ -25,6 +25,11 @@ int64_t parseIso8601Period(std::string input);
 
 namespace {
 
+bool isUrlAbsolute(const std::string &url) {
+	const std::string prefix = "http";
+	return url.substr(0, prefix.size()) == prefix;
+};
+
 Tag parseXml(span<const char> text) {
 	Tag root;
 	std::vector<Tag*> tagStack = { &root };
@@ -168,11 +173,6 @@ class ReDash : public Module {
 
 			// ensure all the elements from @tag are covered by an absolute BaseURL
 			auto hasAbsoluteBaseUrl = [](Tag &tag) {
-				auto isUrlAbsolute = [](const std::string &url_) {
-					const std::string prefix = "http";
-					return url_.substr(0, prefix.size()) == prefix;
-				};
-
 				for (auto &e : tag.children)
 					if (e.name == "BaseURL" && isUrlAbsolute(e.content))
 						return true;
@@ -223,7 +223,13 @@ class ReDash : public Module {
 
 		}
 
-		void addSubtitleAdaptationSet(Tag& mpd, const std::string &baseUrl) const {
+		void addSubtitleAdaptationSet(Tag& mpd, const std::string &url) const {
+			std::string baseUrl;
+			if (isUrlAbsolute(url))
+				baseUrl = url;
+			else
+				baseUrl = ".";
+
 			for (auto& e : mpd.children)
 				if (e.name == "Period") {
 					auto as = format(R"|(
