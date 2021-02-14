@@ -1,15 +1,14 @@
 Version 18 (//2021):
-- Transform test script into many unit tests. All known streams are not covered by tests.
+- Transform test script into many unit tests. All known streams are now covered by tests.
 - Add ProgramInformation in MPD to know which version was used.
-- Fix BaseURL when used with Docker.
+- Fix BaseURL when used with the Docker provided image.
 
 Version 17 (10/02/2021):
 - Avoid pushing MPD too often.
-- Don't process if input MPD doesn't change.
-- add version in output MPD.
+- Don't process if input MPD hasn't changed.
 
 Version 16 (20/01/2021):
-- Add BaseURL to subtitle content to support redirected streams).
+- Add BaseURL to subtitle content to support redirected streams.
 
 Version 15 (17/12/2020):
 - Fix installer (same code as v14).
@@ -37,7 +36,7 @@ Version 9 (09/04/2020):
 - Delete deprecated segments.
 
 Version 8 (09/02/2020):
-- Imrprove timings for debug purposes.
+- Improve timings for debug purposes.
 
 Version 7 (05/02/2020):
 - Add a subtitle delay option.
@@ -58,7 +57,7 @@ Version 4 (15/01/2020):
 
 Version 3 (14/01/2020):
 - Add general delay option.
-- robustify option parsing.
+- Robustify option parsing.
 - Remove any existing subtitle before adding ours.
 
 Version 2 (14/12/2019):
