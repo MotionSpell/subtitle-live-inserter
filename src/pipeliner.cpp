@@ -1,18 +1,13 @@
 #include "lib_pipeline/pipeline.hpp"
-#include "lib_modules/core/database.hpp" // DataRaw
-#include "lib_modules/utils/loader.hpp"
-#include "lib_media/common/attributes.hpp" // PresentationTime
-#include "lib_media/common/metadata_file.hpp"
 #include "lib_utils/system_clock.hpp"
 #include "lib_utils/os.hpp"
 #include "lib_utils/time.hpp"
 #include "lib_utils/tools.hpp" // operator|
 #include "options.hpp"
-#include <cassert>
 #include <thread>
 
 // modules
-#include "lib_media/mux/mux_mp4_config.hpp"
+#include "mp4_mux_file_handler_dyn.hpp"
 #include "lib_media/out/filesystem.hpp"
 #include "lib_media/out/http_sink.hpp"
 #include "plugins/RegulatorMono/regulator_mono.hpp"
@@ -82,60 +77,6 @@ std::unique_ptr<Pipeline> buildPipeline(const Config &cfg) {
 	pipeline->connect(redasher, sink);
 
 	auto mux = [&](OutputPin compressed) -> OutputPin {
-		struct Mp4MuxerFileHandler : ModuleS {
-			Mp4MuxerFileHandler(KHost *host, Mp4MuxConfig *cfg, int64_t timeshiftBufferDepthInSec)
-				: output(addOutput()), segDurInMs(cfg->segmentDurationInMs), timeshiftBufferDepth(timescaleToClock(timeshiftBufferDepthInSec, 1)) {
-				delegate = safe_cast<ModuleS>(loadModule("GPACMuxMP4", host, (void*)cfg));
-				ConnectOutput(delegate->getOutput(0), [&](Data data) {
-					auto out = std::make_shared<DataBaseRef>(data);
-					out->copyAttributes(*data);
-					auto meta = std::make_shared<MetadataFile>(*safe_cast<const MetadataFile>(data->getMetadata()));
-					meta->filename = "s_0-";
-					if (meta->durationIn180k == 0) {
-						meta->filename += "init.mp4";
-					} else {
-						meta->filename += std::to_string(data->get<PresentationTime>().time / timescaleToClock(segDurInMs, 1000));
-						meta->filename += ".m4s";
-						timeshiftSegments.push_back({ data->get<PresentationTime>().time, meta->filename });
-					}
-					assert(meta->EOS); //we don't support the muxer flush mem flag
-					out->setMetadata(meta);
-					getOutput(0)->post(out);
-
-					/*delete deprecated content*/
-					auto seg = timeshiftSegments.begin();
-					while (seg != timeshiftSegments.end()) {
-						if (data->get<PresentationTime>().time - seg->pts > timeshiftBufferDepth) {
-							// send 'DELETE' command
-							auto out = output->allocData<DataRaw>(0);
-							auto meta = make_shared<MetadataFile>(SUBTITLE_PKT);
-							meta->filesize = INT64_MAX; // "DELETE"
-							meta->filename = seg->filename;
-							out->setMetadata(meta);
-							output->post(out);
-
-							seg = timeshiftSegments.erase(seg);
-						} else
-							break; /*segment are pushed in chronological order*/
-					}
-				});
-			}
-			void processOne(Data data) override {
-				delegate->getInput(0)->push(data);
-			}
-private:
-			std::shared_ptr<ModuleS> delegate;
-			OutputDefault * const output;
-			const uint64_t segDurInMs;
-			const int64_t timeshiftBufferDepth;
-
-			struct PendingSegment {
-				int64_t pts;
-				std::string filename;
-			};
-			std::vector<PendingSegment> timeshiftSegments;
-		};
-
 		Mp4MuxConfig mp4config;
 		mp4config.segmentDurationInMs = g_segmentDurationInMs;
 		mp4config.segmentPolicy = FragmentedSegment;
@@ -143,7 +84,11 @@ private:
 		mp4config.compatFlags = Browsers | ExactInputDur;
 		mp4config.utcStartTime = &utcStartTime;
 
-		auto muxer = pipeline->addModule<Mp4MuxerFileHandler>(&mp4config, rdCfg.timeshiftBufferDepthInSec);
+		Mp4MuxFileHandlerDynConfig cfg;
+		cfg.mp4MuxCfg = &mp4config;
+		cfg.timeshiftBufferDepthInSec = rdCfg.timeshiftBufferDepthInSec;
+
+		auto muxer = pipeline->add("Mp4MuxFileHandlerDyn", &cfg);
 		pipeline->connect(compressed, muxer);
 		return muxer;
 	};

@@ -13,6 +13,7 @@ EXE_SUBTITLE_LIVE_INSERTER_SRCS:=\
 	$(LIB_UTILS_SRCS)\
 	$(MYDIR)/../signals/src/lib_appcommon/safemain.cpp\
 	$(MYDIR)/../signals/src/lib_appcommon/options.cpp\
+	$(MYDIR)/mp4_mux_file_handler_dyn.cpp\
 	$(MYDIR)/redash.cpp\
 	$(MYDIR)/subtitle_source.cpp\
 	$(MYDIR)/main.cpp\
