@@ -4,7 +4,10 @@
 #include "lib_pipeline/pipeline.hpp"
 #include "lib_appcommon/options.hpp"
 #include "options.hpp"
+#include "shell.hpp"
 #include <iostream>
+#include <sstream> // istringstream
+#include <thread>
 
 extern const char *g_appName;
 
@@ -49,6 +52,43 @@ Config parseCommandLine(int argc, char const* argv[]) {
 
 	return cfg;
 }
+
+void getAction(std::string parameters) {
+	std::istringstream isParam(parameters);
+
+	{
+		std::vector<std::string> params;
+		for (std::string param; std::getline(isParam, param, ' '); )
+			params.push_back(param);
+
+		if (params.size() != 3) {
+			std::string err = "Expected 1 command + 1 parameter for command \"get\", got (" + std::to_string(params.size()) + "): \"" + parameters + "\"";
+			throw std::runtime_error(err.c_str());
+		}
+	}
+
+	std::string command;
+	isParam >> command;
+	if (command == "delay") {
+		int delayInSec = 0;
+		isParam >> delayInSec;
+		std::cout << "executing: get " << command << " " << delayInSec;
+	} else if (command == "subfwd") {
+		int subtitleForwardTimeInSec = 0;
+		isParam >> subtitleForwardTimeInSec;
+		std::cout << "executing: get " << command << " " << subtitleForwardTimeInSec;
+	} else {
+		std::string err = "get: unknown command \"" + parameters + "\"";
+		throw std::runtime_error(err.c_str());
+	}
+}
+}
+
+void safeStop() {
+	if (g_Pipeline) {
+		g_Pipeline->exitSync();
+		g_Pipeline = nullptr;
+	}
 }
 
 void safeMain(int argc, const char* argv[]) {
@@ -59,14 +99,16 @@ void safeMain(int argc, const char* argv[]) {
 	auto pipeline = buildPipeline(cfg);
 	g_Pipeline = pipeline.get();
 
-	Tools::Profiler profilerProcessing(format("%s - processing time", g_appName));
-	pipeline->start();
-	pipeline->waitForEndOfStream();
-}
+	auto shell = std::shared_ptr<Shell>(new Shell, [](Shell *s) {
+		safeStop();
+		delete s;
+	}) ;
+	shell->addAction("get", getAction);
+	std::thread shellThread(&Shell::run, shell.get());
 
-void safeStop() {
-	if (g_Pipeline) {
-		g_Pipeline->exitSync();
-		g_Pipeline = nullptr;
+	{
+		Tools::Profiler profilerProcessing(format("%s - processing time", g_appName));
+		pipeline->start();
+		pipeline->waitForEndOfStream();
 	}
 }

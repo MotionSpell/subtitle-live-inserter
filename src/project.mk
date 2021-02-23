@@ -18,5 +18,6 @@ EXE_SUBTITLE_LIVE_INSERTER_SRCS:=\
 	$(MYDIR)/subtitle_source.cpp\
 	$(MYDIR)/main.cpp\
 	$(MYDIR)/pipeliner.cpp\
+	$(MYDIR)/shell.cpp\
 
 $(TARGET): $(EXE_SUBTITLE_LIVE_INSERTER_SRCS:%=$(BIN)/%.o)

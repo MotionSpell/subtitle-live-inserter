@@ -125,8 +125,7 @@ class SubtitleSource : public Module {
 			} else {
 				auto const sleepInMs = 200;
 				std::ifstream file(filename);
-				if (!file.is_open())
-				{
+				if (!file.is_open()) {
 					m_host->log(Error, format("Can't open subtitle playlist file \"%s\". Sleeping for %sms.", filename, sleepInMs).c_str());
 					std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
 					return;
@@ -147,8 +146,7 @@ class SubtitleSource : public Module {
 				int hour, minute, second, ms;
 				int ret = sscanf(line.c_str(), "%d:%02d:%02d.%03d,%4095s",
 						&hour, &minute, &second, &ms, filename);
-				if(ret != 5)
-				{
+				if(ret != 5) {
 					m_host->log(Error, format("Invalid timing in line \"%s\": will retry in %sms.", line, sleepInMs).c_str());
 					std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
 					return;
@@ -156,8 +154,7 @@ class SubtitleSource : public Module {
 
 				//open file
 				std::ifstream ifs(filename);
-				if (!ifs.is_open())
-				{
+				if (!ifs.is_open()) {
 					m_host->log(Error, format("Can't open subtitle media file \"%s\": will retry in %sms.", filename, sleepInMs).c_str());
 					std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
 					return;
