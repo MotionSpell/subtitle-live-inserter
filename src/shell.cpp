@@ -50,6 +50,6 @@ void Shell::processCommand() {
 
 	if (actions.find(command) == actions.end())
 		std::cerr << "[" << g_appName << "] " << "Unknown command \"" << command << "\"" << " in line \"" << line << "\"" << std::endl;
-
-	actions[command](line);
+	else
+		actions[command](line);
 }

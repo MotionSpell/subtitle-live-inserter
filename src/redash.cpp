@@ -93,6 +93,8 @@ class ReDash : public Module {
 			output = addOutput();
 			output->setMetadata(meta);
 			m_host->activate(true);
+
+			cfg->updateDelayInSec = std::bind(&ReDash::updateDelayInSec, this, std::placeholders::_1);
 		}
 
 		void process() override {
@@ -110,7 +112,10 @@ class ReDash : public Module {
 			auto mpd = refreshDashSession(mpdAsText);
 
 			// add AST offset to mitigate truncated file issues with Apache on Windows
-			mpd["availabilityStartTime"] = formatDate(parseDate(mpd["availabilityStartTime"]) + delayInSec);
+			{
+				std::unique_lock<std::mutex> lock(updateMutex);
+				mpd["availabilityStartTime"] = formatDate(parseDate(mpd["availabilityStartTime"]) + delayInSec);
+			}
 
 			// add version of this tool
 			addVersion(mpd);
@@ -136,6 +141,11 @@ class ReDash : public Module {
 		}
 
 	private:
+		void updateDelayInSec(int delayInSec) {
+			std::unique_lock<std::mutex> lock(updateMutex);
+			this->delayInSec = delayInSec;
+		}
+
 		Tag refreshDashSession(const std::vector<uint8_t> &mpdAsText) {
 			auto mpd = parseXml({ (const char*)mpdAsText.data(), mpdAsText.size() });
 			assert(mpd.name == "MPD");
@@ -262,7 +272,9 @@ class ReDash : public Module {
 		std::vector<uint8_t> lastMpdAsText;
 		std::unique_ptr<IFilePuller> httpSrc;
 		int64_t minUpdatePeriodInSec = 0;
-		int delayInSec = 0;
+
+		std::mutex updateMutex;
+		int delayInSec = 0; // protected by updateMutex
 };
 
 IModule* createObject(KHost* host, void* va) {

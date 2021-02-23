@@ -11,7 +11,7 @@
 
 extern const char *g_appName;
 
-std::unique_ptr<Pipelines::Pipeline> buildPipeline(const Config&);
+std::unique_ptr<Pipelines::Pipeline> buildPipeline(Config&);
 static Pipelines::Pipeline *g_Pipeline = nullptr;
 
 namespace {
@@ -53,32 +53,40 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	return cfg;
 }
 
-void getAction(std::string parameters) {
-	std::istringstream isParam(parameters);
 
+void setAction(Config *cfg, std::string parameters) {
+	std::vector<std::string> vParams;
 	{
-		std::vector<std::string> params;
+		std::istringstream isParam(parameters);
 		for (std::string param; std::getline(isParam, param, ' '); )
-			params.push_back(param);
+			vParams.push_back(param);
 
-		if (params.size() != 3) {
-			std::string err = "Expected 1 command + 1 parameter for command \"get\", got (" + std::to_string(params.size()) + "): \"" + parameters + "\"";
+		if (vParams.size() != 2) {
+			std::string err = "Expected 1 command + 1 parameter for command \"set\", got (" + std::to_string(vParams.size()) + "): \"" + parameters + "\"";
 			throw std::runtime_error(err.c_str());
 		}
 	}
 
-	std::string command;
-	isParam >> command;
+	auto &command = vParams[0];
 	if (command == "delay") {
 		int delayInSec = 0;
+		std::istringstream isParam(vParams[1]);
 		isParam >> delayInSec;
-		std::cout << "executing: get " << command << " " << delayInSec;
+		std::cout << "executing: set " << command << " " << delayInSec;
+		cfg->updateDelayInSec(delayInSec);
+		cfg->delayInSec = delayInSec;
+		std::cout << "done" << std::endl;
 	} else if (command == "subfwd") {
 		int subtitleForwardTimeInSec = 0;
+		std::istringstream isParam(vParams[1]);
 		isParam >> subtitleForwardTimeInSec;
-		std::cout << "executing: get " << command << " " << subtitleForwardTimeInSec;
+		std::cout << "executing: set " << command << " " << subtitleForwardTimeInSec;
+		cfg->subtitleForwardTimeInSec = subtitleForwardTimeInSec;
+		std::cout << "... restarting the pipeline: please update your player ..." << std::endl;
+		// TODO
+		std::cout << "done" << std::endl;
 	} else {
-		std::string err = "get: unknown command \"" + parameters + "\"";
+		std::string err = "set: unknown command \"" + parameters + "\"";
 		throw std::runtime_error(err.c_str());
 	}
 }
@@ -92,23 +100,27 @@ void safeStop() {
 }
 
 void safeMain(int argc, const char* argv[]) {
-	auto const cfg = parseCommandLine(argc, argv);
+	auto cfg = parseCommandLine(argc, argv);
 	if(cfg.help)
 		return;
 
-	auto pipeline = buildPipeline(cfg);
-	g_Pipeline = pipeline.get();
-
-	auto shell = std::shared_ptr<Shell>(new Shell, [](Shell *s) {
+	bool exit = false;
+	auto shell = std::shared_ptr<Shell>(new Shell, [&](Shell *s) {
 		safeStop();
 		delete s;
+		exit = true;
 	}) ;
-	shell->addAction("get", getAction);
+	shell->addAction("set", std::bind(setAction, &cfg, std::placeholders::_1));
 	std::thread shellThread(&Shell::run, shell.get());
 
-	{
-		Tools::Profiler profilerProcessing(format("%s - processing time", g_appName));
-		pipeline->start();
-		pipeline->waitForEndOfStream();
+	while (!exit) {
+		auto pipeline = buildPipeline(cfg);
+		g_Pipeline = pipeline.get();
+
+		{
+			Tools::Profiler profilerProcessing(format("%s - processing time", g_appName));
+			pipeline->start();
+			pipeline->waitForEndOfStream(); exit = true; //Romain: what happens when we exit sync()?
+		}
 	}
 }

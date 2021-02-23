@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <string>
 #include <lib_media/common/file_puller.hpp>
 #include <lib_media/common/utc_start_time.hpp>
@@ -19,4 +20,7 @@ struct ReDashConfig {
 	std::string mpdFn;
 	std::string postUrl;
 	Modules::In::IFilePullerFactory *filePullerFactory = nullptr;
+
+	// set by constructor - blocking call
+	std::function<void(int/*delayInSec*/)> updateDelayInSec = nullptr;
 };

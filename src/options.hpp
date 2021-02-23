@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <string>
 
 struct Config {
@@ -9,6 +10,8 @@ struct Config {
 	std::string subListFn;
 	std::string postUrl = ".";
 	std::string mpdFn;
+
+	std::function<void(int/*delayInSec*/)> updateDelayInSec;
 
 	bool help = false;
 };

@@ -34,7 +34,7 @@ bool startsWith(std::string s, std::string prefix) {
 }
 }
 
-std::unique_ptr<Pipeline> buildPipeline(const Config &cfg) {
+std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	auto pipeline = std::make_unique<Pipeline>();
 
 	struct FilePullerFactory : In::IFilePullerFactory {
@@ -110,6 +110,8 @@ std::unique_ptr<Pipeline> buildPipeline(const Config &cfg) {
 	std::this_thread::sleep_for(std::chrono::milliseconds(remainderInMs));
 	utcStartTime.startTime = rescale(t + remainderInMs, granularityInMs, IClock::Rate) - utcStartTime.startTime;
 	utcStartTime.startTime += cfg.subtitleForwardTimeInSec * IClock::Rate;
+
+	cfg.updateDelayInSec = rdCfg.updateDelayInSec;
 
 	return pipeline;
 }
