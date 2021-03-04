@@ -1,10 +1,13 @@
-Version 19 (//2021):
+Version 19 (04/03/2021):
 - Allow muxer to be rebooted for dynamic parameters support: the output stream
   timings could be discontinuous so make sure to restart the player.
 - Introduce a shell to inject dynamic value (both delays).
+- Put back BaseURL of the subtitle content to '.'. Needed because the content
+  is pushed to a URL but played back from a different URL.
 
 Version 18 (18/02/2021):
-- Transform test script into many unit tests. All known streams are now covered by tests.
+- Transform test script into many unit tests. All known streams are now covered
+  by tests.
 - Add ProgramInformation in MPD to know which version was used.
 - Fix BaseURL when used with the Docker provided image.
 
