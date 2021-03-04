@@ -82,9 +82,9 @@ void setAction(Config *cfg, std::string parameters) {
 		isParam >> subtitleForwardTimeInSec;
 		std::cout << "executing: set " << command << " " << subtitleForwardTimeInSec;
 		cfg->subtitleForwardTimeInSec = subtitleForwardTimeInSec;
-		std::cout << "... restarting the pipeline: please update your player ..." << std::endl;
-		// TODO
-		std::cout << "done" << std::endl;
+		std::cout << "... stopping the current pipeline: please update your player ..." << std::endl;
+		g_Pipeline->exitSync();
+		std::cout << "exited" << std::endl;
 	} else {
 		std::string err = "set: unknown command \"" + parameters + "\"";
 		throw std::runtime_error(err.c_str());
@@ -120,7 +120,7 @@ void safeMain(int argc, const char* argv[]) {
 		{
 			Tools::Profiler profilerProcessing(format("%s - processing time", g_appName));
 			pipeline->start();
-			pipeline->waitForEndOfStream(); exit = true; //Romain: what happens when we exit sync()?
+			pipeline->waitForEndOfStream();
 		}
 	}
 }
