@@ -233,11 +233,13 @@ class ReDash : public Module {
 
 		}
 
-		void addSubtitleAdaptationSet(Tag& mpd, const std::string &url) const {
+		void addSubtitleAdaptationSet(Tag& mpd, const std::string &/*url*/) const {
 			std::string baseUrl;
-			if (isUrlAbsolute(url))
-				baseUrl = url;
-			else
+
+			// What follows doesn't work when the push URL is not the publish URL.
+			//if (isUrlAbsolute(url))
+			//	baseUrl = url;
+			//else
 				baseUrl = ".";
 
 			for (auto& e : mpd.children)

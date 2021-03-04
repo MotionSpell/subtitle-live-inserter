@@ -459,7 +459,7 @@ unittest("Redash: remote postUrl") {
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>https://remote/url/</BaseURL>
+      <BaseURL>.</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>
