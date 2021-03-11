@@ -25,6 +25,7 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	opt.add("o", "output-mpd-filename", &cfg.mpdFn, "Manifest filename. If not specified the input filename is copied.");
 	opt.add("p", "post", &cfg.postUrl, "Path or URL where the content is posted.");
 	opt.addFlag("h", "help", &cfg.help, "Print usage and exit.");
+	opt.addFlag("i", "shell", &cfg.shell, "Enable the interactive shell.");
 
 	auto urls = opt.parse(argc, argv);
 
@@ -105,13 +106,16 @@ void safeMain(int argc, const char* argv[]) {
 		return;
 
 	bool exit = false;
-	auto shell = std::shared_ptr<Shell>(new Shell, [&](Shell *s) {
-		safeStop();
-		delete s;
-		exit = true;
-	}) ;
-	shell->addAction("set", std::bind(setAction, &cfg, std::placeholders::_1));
-	std::thread shellThread(&Shell::run, shell.get());
+
+	if (cfg.shell) {
+		auto shell = std::shared_ptr<Shell>(new Shell, [&](Shell *s) {
+			safeStop();
+			delete s;
+			exit = true;
+		}) ;
+		shell->addAction("set", std::bind(setAction, &cfg, std::placeholders::_1));
+		std::thread shellThread(&Shell::run, shell.get());
+	}
 
 	while (!exit) {
 		auto pipeline = buildPipeline(cfg);

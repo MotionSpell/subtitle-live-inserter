@@ -14,4 +14,5 @@ struct Config {
 	std::function<void(int/*delayInSec*/)> updateDelayInSec;
 
 	bool help = false;
+	bool shell = false;
 };

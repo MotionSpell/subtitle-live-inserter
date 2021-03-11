@@ -33,7 +33,9 @@ When no subtitle input is set, some synthetic content (showing timecodes) will b
 
 ## Interactive shell
 
-As of version 18, type 'help' in the terminal to list the available commands. The goal is to dynamically the tool.
+As of version 18, use the ```-i``` or ```--shell``` to enable the interactive shell.
+
+When enabled type 'help' in the terminal to list the available commands. The goal is to dynamically control the tool with minimal impact on the output session.
 
 ## Technical details
 

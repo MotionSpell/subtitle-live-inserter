@@ -1,3 +1,6 @@
+Version 20 (11/03/2021):
+- Add an option and disable the shell by default.
+
 Version 19 (04/03/2021):
 - Allow muxer to be rebooted for dynamic parameters support: the output stream
   timings could be discontinuous so make sure to restart the player.
