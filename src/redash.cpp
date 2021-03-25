@@ -7,10 +7,11 @@
 #include "lib_utils/tools.hpp" //enforce
 #include "lib_utils/time.hpp" //parseDate
 #include "lib_utils/sax_xml_parser.hpp"
+#include "lib_utils/system_clock.hpp"
 #include "lib_utils/xml.hpp"
 #include <ctime> //gmtime
-#include <thread>
 #include <chrono>
+#include <thread>
 #include <cassert>
 
 using namespace Modules;
@@ -73,7 +74,8 @@ std::string formatDate(int64_t timestamp) {
 class ReDash : public Module {
 	public:
 		ReDash(KHost* host, ReDashConfig *cfg)
-			: m_host(host), url(cfg->url), postUrl(cfg->postUrl), httpSrc(cfg->filePullerFactory->create()), delayInSec(cfg->delayInSec) {
+			: m_host(host), url(cfg->url), postUrl(cfg->postUrl), httpSrc(cfg->filePullerFactory->create()),
+			  nextAwakeTime(g_SystemClock->now()), delayInSec(cfg->delayInSec) {
 			std::string urlFn = cfg->mpdFn.empty() ? url : cfg->mpdFn;
 			auto i = urlFn.rfind('/');
 			if(i != urlFn.npos)
@@ -98,6 +100,13 @@ class ReDash : public Module {
 		}
 
 		void process() override {
+			// is it time?
+			if (g_SystemClock->now() < nextAwakeTime) {
+				auto const sleepInMs = 200;
+				std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
+				return;
+			}
+
 			// download the mpd
 			auto mpdAsText = download(httpSrc.get(), url.c_str());
 			if (mpdAsText.empty()) {
@@ -137,7 +146,7 @@ class ReDash : public Module {
 			auto sleepTimeInSec = std::abs(minUpdatePeriodInSec);
 			auto const maxSleepTimeInSec = 2; // some content put a long period but change some parameters along the way...
 			if (sleepTimeInSec > maxSleepTimeInSec) sleepTimeInSec = maxSleepTimeInSec;
-			std::this_thread::sleep_for(std::chrono::seconds(sleepTimeInSec));
+			nextAwakeTime = g_SystemClock->now() + sleepTimeInSec;
 		}
 
 	private:
@@ -274,6 +283,7 @@ class ReDash : public Module {
 		std::vector<uint8_t> lastMpdAsText;
 		std::unique_ptr<IFilePuller> httpSrc;
 		int64_t minUpdatePeriodInSec = 0;
+		Fraction nextAwakeTime;
 
 		std::mutex updateMutex;
 		int delayInSec = 0; // protected by updateMutex

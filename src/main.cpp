@@ -54,7 +54,6 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	return cfg;
 }
 
-
 void setAction(Config *cfg, std::string parameters) {
 	std::vector<std::string> vParams;
 	{
