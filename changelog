@@ -1,6 +1,7 @@
 Version 21 (//2021):
 - Remove sleeps from source loop: stops faster.
 - Add an explicit BaseURL option ().
+- Update log formatting.
 
 Version 20 (11/03/2021):
 - Add an option and disable the shell by default.

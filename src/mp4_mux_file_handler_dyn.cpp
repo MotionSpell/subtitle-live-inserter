@@ -4,6 +4,8 @@
 #include "lib_media/common/metadata_file.hpp"
 #include "lib_modules/utils/factory.hpp"
 #include "lib_modules/utils/loader.hpp"
+#include "lib_utils/format.hpp"
+#include "lib_utils/log_sink.hpp"
 #include "lib_utils/tools.hpp" // safe_cast
 #include <cassert>
 
@@ -15,7 +17,7 @@ struct Mp4MuxFileHandlerDyn : ModuleS {
 		Mp4MuxFileHandlerDyn(KHost *host, Mp4MuxFileHandlerDynConfig *cfg)
 			: output(addOutput()), segDurInMs(cfg->mp4MuxCfg->segmentDurationInMs), timeshiftBufferDepth(timescaleToClock(cfg->timeshiftBufferDepthInSec, 1)) {
 			delegate = safe_cast<ModuleS>(loadModule("GPACMuxMP4", host, (void *)cfg->mp4MuxCfg));
-			ConnectOutput(delegate->getOutput(0), [&](Data data) {
+			ConnectOutput(delegate->getOutput(0), [=](Data data) {
 				auto out = std::make_shared<DataBaseRef>(data);
 				out->copyAttributes(*data);
 				auto meta = std::make_shared<MetadataFile>(*safe_cast<const MetadataFile>(data->getMetadata()));
@@ -28,6 +30,7 @@ struct Mp4MuxFileHandlerDyn : ModuleS {
 					timeshiftSegments.push_back({data->get<PresentationTime>().time, meta->filename});
 				}
 				assert(meta->EOS); //we don't support the muxer flush mem flag
+				host->log(Info, format("Segment %s created.", meta->filename).c_str());
 				out->setMetadata(meta);
 				getOutput(0)->post(out);
 

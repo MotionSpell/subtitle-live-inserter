@@ -1,6 +1,7 @@
 #include "lib_pipeline/pipeline.hpp"
-#include "lib_utils/system_clock.hpp"
+#include "lib_utils/log.hpp"
 #include "lib_utils/os.hpp"
+#include "lib_utils/system_clock.hpp"
 #include "lib_utils/time.hpp"
 #include "lib_utils/tools.hpp" // operator|
 #include "options.hpp"
@@ -36,6 +37,7 @@ bool startsWith(std::string s, std::string prefix) {
 
 std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	auto pipeline = std::make_unique<Pipeline>();
+	setGlobalLogLevel(Info);
 
 	struct FilePullerFactory : In::IFilePullerFactory {
 		std::unique_ptr<In::IFilePuller> create() override {
