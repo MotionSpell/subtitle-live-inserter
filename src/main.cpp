@@ -23,7 +23,8 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	opt.add("s", "subtitle-delay", &cfg.subtitleForwardTimeInSec, "Subtitle delay in seconds (signed).");
 	opt.add("f", "file-playlist", &cfg.subListFn, "File path of the ever-growing playlist. If not set then synthetic content is generated.");
 	opt.add("o", "output-mpd-filename", &cfg.mpdFn, "Manifest filename. If not specified the input filename is copied.");
-	opt.add("p", "post", &cfg.postUrl, "Path or URL where the content is posted.");
+	opt.add("b", "base-url", &cfg.baseUrl, "Explicit URL where the content can be played back.");
+	opt.add("p", "post", &cfg.postUrl, "Path or URL where the content is posted. If not set the content is generated locally.");
 	opt.addFlag("h", "help", &cfg.help, "Print usage and exit.");
 	opt.addFlag("i", "shell", &cfg.shell, "Enable the interactive shell.");
 

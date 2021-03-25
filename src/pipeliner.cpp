@@ -48,6 +48,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	rdCfg.utcStartTime = &utcStartTime;
 	rdCfg.delayInSec = cfg.delayInSec;
 	rdCfg.mpdFn = cfg.mpdFn;
+	rdCfg.baseUrl = cfg.baseUrl;
 	rdCfg.postUrl = cfg.postUrl;
 	FilePullerFactory filePullerFactory;
 	rdCfg.filePullerFactory = &filePullerFactory;

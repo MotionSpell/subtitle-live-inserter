@@ -33,6 +33,7 @@ struct FilePullerFactory : In::IFilePullerFactory {
 ReDashConfig createRDCfg() {
 	ReDashConfig cfg;
 	cfg.url = "http://url/for/the.mpd";
+	cfg.baseUrl = ".";
 	cfg.mpdFn = "redash.mpd";
 	cfg.postUrl = "/root/output/";
 	UtcStartTime utcStartTime;
@@ -434,11 +435,11 @@ unittest("Redash: add version when ProgramInfo title is present") {
 </MPD>
 )|", g_version);
 
-    check(mpd, expected);
+  check(mpd, expected);
 }
 
 unittest("Redash: add version when ProgramInfo title is absent") {
-    auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"/>)|";
+  auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"/>)|";
 
 	                                                auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
@@ -448,11 +449,11 @@ unittest("Redash: add version when ProgramInfo title is absent") {
 </MPD>
 )|", g_version);
 
-    check(mpd, expected);
+  check(mpd, expected);
 }
 
 unittest("Redash: remote postUrl") {
-    auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
+  auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
 	                                                        auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
@@ -473,6 +474,30 @@ unittest("Redash: remote postUrl") {
 
     auto cfg = createRDCfg();
     cfg.baseUrl = "https://remote/url/";
+    check(mpd, expected, cfg);
+}
+
+unittest("Redash: empty baseUrl") {
+    auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
+
+	                                                                auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
+  <ProgramInformation>
+    <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
+  </ProgramInformation>
+  <Period>
+    <AdaptationSet id="1789" lang="de" segmentAlignment="true">
+      <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+      <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
+      <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
+    </AdaptationSet>
+  </Period>
+</MPD>
+)|", g_version);
+
+    auto cfg = createRDCfg();
+    cfg.baseUrl = "";
     check(mpd, expected, cfg);
 }
 

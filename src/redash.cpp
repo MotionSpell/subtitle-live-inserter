@@ -129,7 +129,7 @@ class ReDash : public Module {
 			// add version of this tool
 			addVersion(mpd);
 
-			// add BaseURL whenever necessary
+			// add BaseURL whenever necessary for all but the subtitle adaptation sets
 			addBaseUrl(mpd, url);
 
 			// add our subtitles
@@ -245,14 +245,14 @@ class ReDash : public Module {
 		void addSubtitleAdaptationSet(Tag& mpd) const {
 			for (auto& e : mpd.children)
 				if (e.name == "Period") {
+					auto b = baseUrl.empty() ? std::string() : format("<BaseURL>%s</BaseURL>", baseUrl);
 					auto as = format(R"|(
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
         <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2" />
         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
-        <BaseURL>%s</BaseURL>
-        <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" />
+        %s<SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" />
         <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1" />
-    </AdaptationSet>)|", baseUrl);
+    </AdaptationSet>)|", b);
 					e.add(parseXml({ as.c_str(), as.size() }));
 				} else
 					addSubtitleAdaptationSet(e);
