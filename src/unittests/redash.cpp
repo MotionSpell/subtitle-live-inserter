@@ -30,16 +30,20 @@ struct FilePullerFactory : In::IFilePullerFactory {
 	const char *src = nullptr;
 };
 
-void check(const std::string &mpd, const std::string &expected, std::string postUrl = "/root/output/") {
+ReDashConfig createRDCfg() {
 	ReDashConfig cfg;
 	cfg.url = "http://url/for/the.mpd";
+	cfg.mpdFn = "redash.mpd";
+	cfg.postUrl = "/root/output/";
 	UtcStartTime utcStartTime;
 	utcStartTime.startTime = 1789;
 	cfg.utcStartTime = &utcStartTime;
 	cfg.delayInSec = 0;
 	cfg.timeshiftBufferDepthInSec = 17;
-	cfg.mpdFn = "redash.mpd";
-	cfg.postUrl = postUrl;
+	return cfg;
+}
+
+void check(const std::string &mpd, const std::string &expected, ReDashConfig cfg = createRDCfg()) {
 	FilePullerFactory filePullerFactory(mpd.c_str());
 	cfg.filePullerFactory = &filePullerFactory;
 	auto redash = loadModule("reDASH", &NullHost, &cfg);
@@ -459,7 +463,7 @@ unittest("Redash: remote postUrl") {
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>.</BaseURL>
+      <BaseURL>https://remote/url/</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>
@@ -467,7 +471,9 @@ unittest("Redash: remote postUrl") {
 </MPD>
 )|", g_version);
 
-    check(mpd, expected, "https://remote/url/");
+    auto cfg = createRDCfg();
+    cfg.baseUrl = "https://remote/url/";
+    check(mpd, expected, cfg);
 }
 
 }

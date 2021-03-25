@@ -74,8 +74,8 @@ std::string formatDate(int64_t timestamp) {
 class ReDash : public Module {
 	public:
 		ReDash(KHost* host, ReDashConfig *cfg)
-			: m_host(host), url(cfg->url), postUrl(cfg->postUrl), httpSrc(cfg->filePullerFactory->create()),
-			  nextAwakeTime(g_SystemClock->now()), delayInSec(cfg->delayInSec) {
+			: m_host(host), url(cfg->url), baseUrl(cfg->baseUrl), postUrl(cfg->postUrl),
+			  httpSrc(cfg->filePullerFactory->create()), nextAwakeTime(g_SystemClock->now()), delayInSec(cfg->delayInSec) {
 			std::string urlFn = cfg->mpdFn.empty() ? url : cfg->mpdFn;
 			auto i = urlFn.rfind('/');
 			if(i != urlFn.npos)
@@ -134,7 +134,7 @@ class ReDash : public Module {
 
 			// add our subtitles
 			removeExistingSubtitleAdaptationSets(mpd);
-			addSubtitleAdaptationSet(mpd, postUrl);
+			addSubtitleAdaptationSet(mpd);
 
 			// publish modified mpd
 			auto const modifiedMpdAsText = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + serializeXml(mpd);
@@ -242,15 +242,7 @@ class ReDash : public Module {
 
 		}
 
-		void addSubtitleAdaptationSet(Tag& mpd, const std::string &/*url*/) const {
-			std::string baseUrl;
-
-			// What follows doesn't work when the push URL is not the publish URL.
-			//if (isUrlAbsolute(url))
-			//	baseUrl = url;
-			//else
-				baseUrl = ".";
-
+		void addSubtitleAdaptationSet(Tag& mpd) const {
 			for (auto& e : mpd.children)
 				if (e.name == "Period") {
 					auto as = format(R"|(
@@ -263,7 +255,7 @@ class ReDash : public Module {
     </AdaptationSet>)|", baseUrl);
 					e.add(parseXml({ as.c_str(), as.size() }));
 				} else
-					addSubtitleAdaptationSet(e, baseUrl);
+					addSubtitleAdaptationSet(e);
 		}
 
 		void postManifest(const std::string &contents) {
@@ -279,7 +271,7 @@ class ReDash : public Module {
 		KHost* const m_host;
 		OutputDefault* output;
 
-		std::string url, postUrl;
+		std::string url, baseUrl, postUrl;
 		std::vector<uint8_t> lastMpdAsText;
 		std::unique_ptr<IFilePuller> httpSrc;
 		int64_t minUpdatePeriodInSec = 0;
