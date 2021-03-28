@@ -6,6 +6,7 @@
 #include "lib_utils/tools.hpp" // operator|
 #include "options.hpp"
 #include <thread>
+#include <ctime>
 
 // modules
 #include "mp4_mux_file_handler_dyn.hpp"
@@ -33,10 +34,44 @@ void ensureDir(std::string path) {
 bool startsWith(std::string s, std::string prefix) {
 	return s.substr(0, prefix.size()) == prefix;
 }
+
+struct Logger : LogSink {
+	void log(Level level, const char *msg) override {
+		if (level == Level::Debug)
+			return;
+
+		auto const now = (double)g_SystemClock->now();
+		fprintf(stderr, "[%s][%.1f][%s#%p][%s]%s\n", getTime().c_str(), now,
+				g_appName, this, getLogLevelName(level), msg);
+		fflush(stderr);
+	}
+
+private:
+	const char *getLogLevelName(Level level) {
+		switch (level) {
+		case Level::Debug:   return "debug";
+		case Level::Info:    return "info";
+		case Level::Warning: return "warning";
+		case Level::Error:   return "error";
+		default:             return "internal error";
+		}
+	}
+
+	std::string getTime() {
+		char szOut[255];
+		const std::time_t t = std::time(nullptr);
+		const std::tm tm = *std::gmtime(&t);
+		auto const size = strftime(szOut, sizeof szOut, "%Y/%m/%d %H:%M:%S", &tm);
+		auto timeString = std::string(szOut, size);
+		snprintf(szOut, sizeof szOut, "%s", timeString.c_str());
+		return szOut;
+	}
+};
 }
 
 std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
-	auto pipeline = std::make_unique<Pipeline>();
+	static Logger logger;
+	auto pipeline = std::make_unique<Pipeline>(&logger);
 	setGlobalLogLevel(Info);
 
 	struct FilePullerFactory : In::IFilePullerFactory {

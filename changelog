@@ -1,6 +1,6 @@
-Version 21 (//2021):
+Version 21 (26/03/2021):
 - Remove sleeps from source loop: stops faster.
-- Add an explicit BaseURL option ().
+- Add an explicit BaseURL option (-b or --base-url).
 - Update log formatting.
 
 Version 20 (11/03/2021):
