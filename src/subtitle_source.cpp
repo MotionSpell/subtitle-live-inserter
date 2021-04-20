@@ -34,7 +34,10 @@ class SubtitleSource : public Module {
 				std::ifstream file(filename);
 				if (!file.is_open())
 					throw error(format("Can't open subtitle source file \"%s\"", filename).c_str());
-			}
+				
+				processContent = std::bind(&SubtitleSource::processEverGrowingFile, this, std::placeholders::_1);
+			} else
+				processContent = std::bind(&SubtitleSource::processSynthetic, this, std::placeholders::_1);
 
 			m_host->activate(true);
 		}
@@ -42,34 +45,13 @@ class SubtitleSource : public Module {
 		void process() override {
 			ensureStartTime();
 
-			if (filename.empty()) {
-				//fallback: synthetic content
-				auto const content = processSynthetic();
-				auto const timestamp = timescaleToClock(numSegment * (int64_t)segmentDurationInMs, 1000);
-				post(content, timestamp);
-				numSegment++;
-				return;
-			}
-
 			int64_t timestamp = -1;
-			auto const input = processEverGrowingFile(timestamp);
-			if (input.empty()) {
+			auto const content = processContent(timestamp);
+			if (content.empty()) {
 				std::this_thread::sleep_for(sleepInMs);
 				return;
 			}
-
-			//deserialize
-			auto ttml = parseXml({ input.data(), input.size() });
-			assert(ttml.name == "tt:tt");
-
-			//find timings and increment them
-			incrementTtmlTimings(ttml, startTimeInMs);
-
-			//reserialize
-			auto const newTtml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + serializeXml(ttml);
-			post(newTtml, timestamp);
-
-			//counting segments allows to keep input sources (synthetic, evergrowing file, ...) in sync
+			post(content, timestamp);
 			numSegment++;
 		}
 
@@ -110,7 +92,7 @@ class SubtitleSource : public Module {
 			}
 		}
 
-		std::string processSynthetic() {
+		std::string processSynthetic(int64_t &timestamp) {
 			//generate timecode strings
 			const size_t timecodeSize = 24;
 			char timecodeShow[timecodeSize] = {};
@@ -152,10 +134,12 @@ class SubtitleSource : public Module {
 </tt>
 )|", timecodeShow, timecodeHide, timecodeShow, timecodeHide, timecodeUtc);
 
+			timestamp = timescaleToClock(numSegment * (int64_t)segmentDurationInMs, 1000);
+
 			return content;
 		}
 
-		std::vector<char> processEverGrowingFile(int64_t &timestamp) {
+		std::string processEverGrowingFile(int64_t &timestamp) {
 			std::ifstream file(filename);
 			if (!file.is_open()) {
 				m_host->log(Error, format("Can't open subtitle playlist file \"%s\". Sleeping for %sms.", filename, sleepInMs.count()).c_str());
@@ -180,6 +164,10 @@ class SubtitleSource : public Module {
 				return {};
 			}
 
+			timestamp = timescaleToClock((((int64_t)hour * 60 + minute) * 60 + second) * 1000 + ms, 1000);
+			lastFilePos = lastFilePos + line.size() + 1;
+			m_host->log(Warning, format("Current file position: %s, timestamp=%s\n", (int)lastFilePos, timestamp).c_str());
+
 			//open file
 			std::ifstream ifs(filename);
 			if (!ifs.is_open()) {
@@ -197,11 +185,15 @@ class SubtitleSource : public Module {
 			pbuf->sgetn(input.data(), size);
 			ifs.close();
 
-			timestamp = timescaleToClock((((int64_t)hour * 60 + minute) * 60 + second) * 1000 + ms, 1000);
-			lastFilePos = lastFilePos + line.size() + 1;
-			m_host->log(Warning, format("Current file position: %s, timestamp=%s\n", (int)lastFilePos, timestamp).c_str());
+			//deserialize
+			auto ttml = parseXml({ input.data(), input.size() });
+			assert(ttml.name == "tt:tt");
 
-			return input;
+			//find timings and increment them
+			incrementTtmlTimings(ttml, startTimeInMs);
+
+			//reserialize and return
+			return std::string("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n") + serializeXml(ttml);
 		}
 
 		void post(const std::string &content, int64_t timestamp) {
@@ -227,6 +219,7 @@ class SubtitleSource : public Module {
 		IUtcStartTimeQuery const *utcStartTime;
 		const std::chrono::milliseconds sleepInMs;
 		int lastFilePos = 0;
+		std::function<std::string(int64_t&)> processContent;
 };
 
 IModule* createObject(KHost* host, void* va) {
