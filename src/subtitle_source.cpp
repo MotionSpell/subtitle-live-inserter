@@ -89,12 +89,8 @@ class SubtitleSource : public Module {
 				auto const size = content.size();
 				auto pkt = output->allocData<DataRaw>(size);
 				memcpy(pkt->buffer->data().ptr, content.c_str(), size);
-				CueFlags flags{};
-				flags.keyframe = true;
-				pkt->set(flags);
-				pkt->set(DecodingTime{timescaleToClock(numSegment * (int64_t)segmentDurationInMs, 1000)});
-				pkt->setMediaTime(numSegment * segmentDurationInMs, 1000);
-				output->post(pkt);
+				auto const timestamp = timescaleToClock(numSegment * (int64_t)segmentDurationInMs, 1000);
+				post(pkt, timestamp);
 
 				numSegment++;
 			} else {
@@ -156,13 +152,8 @@ class SubtitleSource : public Module {
 				auto pkt = output->allocData<DataRaw>(newTtmlSize);
 				memcpy(pkt->buffer->data().ptr, newTtml.c_str(), newTtmlSize);
 
-				CueFlags flags{};
-				flags.keyframe = true;
-				pkt->set(flags);
 				auto timestamp = timescaleToClock((((int64_t)hour * 60 + minute) * 60 + second) * 1000 + ms, 1000);
-				pkt->set(DecodingTime{timestamp});
-				pkt->setMediaTime(timestamp);
-				output->post(pkt);
+				post(pkt, timestamp);
 				ifs.close();
 
 				lastFilePos = lastFilePos + line.size() + 1;
@@ -202,6 +193,15 @@ class SubtitleSource : public Module {
 
 				incrementTtmlTimings(elt, incrementInMs);
 			}
+		}
+
+		void post(std::shared_ptr<DataRaw> &pkt, int64_t timestamp) {
+			CueFlags flags{};
+			flags.keyframe = true;
+			pkt->set(flags);
+			pkt->set(DecodingTime{timestamp});
+			pkt->setMediaTime(timestamp);
+			output->post(pkt);
 		}
 
 		KHost *const m_host;
