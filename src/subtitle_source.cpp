@@ -6,13 +6,13 @@
 #include "lib_utils/tools.hpp" //enforce
 #include "lib_utils/log_sink.hpp"
 #include "lib_utils/format.hpp"
+#include "lib_utils/system_clock.hpp"
 #include "lib_utils/time.hpp" //timeInMsToStr
 #include "lib_utils/xml.hpp"
 #include <cassert>
 #include <fstream>
 #include <thread> //this_thread
 
-extern const uint64_t g_segmentDurationInMs;
 Tag parseXml(span<const char> text);
 
 namespace {
@@ -23,7 +23,8 @@ class SubtitleSource : public Module {
 	public:
 		SubtitleSource(KHost* host, SubtitleSourceConfig const& cfg)
 			: m_host(host), filename(cfg.filename), segmentDurationInMs(cfg.segmentDurationInMs),
-			  utcStartTime(cfg.utcStartTime), sleepInMs(std::chrono::milliseconds(200)) {
+			  rectify(cfg.rectify), utcStartTime(cfg.utcStartTime),
+			  sleepInMs(std::chrono::milliseconds(200)) {
 			output = addOutput();
 
 			auto meta = std::make_shared<MetadataPktSubtitle>();
@@ -37,7 +38,7 @@ class SubtitleSource : public Module {
 				
 				processContent = std::bind(&SubtitleSource::processEverGrowingFile, this, std::placeholders::_1);
 			} else
-				processContent = std::bind(&SubtitleSource::processSynthetic, this, std::placeholders::_1);
+				processContent = std::bind(&SubtitleSource::processSynthetic, this, std::placeholders::_1, false);
 
 			m_host->activate(true);
 		}
@@ -46,10 +47,16 @@ class SubtitleSource : public Module {
 			ensureStartTime();
 
 			int64_t timestamp = -1;
-			auto const content = processContent(timestamp);
+			auto content = processContent(timestamp);
 			if (content.empty()) {
-				std::this_thread::sleep_for(sleepInMs);
-				return;
+				if (rectify && isLate()) {
+					m_host->log(Warning, "Late: inserting empty content");
+					// TODO: should we also discard some content if it really arrives afterward?
+					content = processSynthetic(timestamp, true);
+				} else {
+					std::this_thread::sleep_for(sleepInMs);
+					return;
+				}
 			}
 			post(content, timestamp);
 			numSegment++;
@@ -57,8 +64,17 @@ class SubtitleSource : public Module {
 
 	private:
 		void ensureStartTime() {
-			if (!startTimeInMs)
+			if (!startTimeInMs) {
 				startTimeInMs = clockToTimescale(utcStartTime->query(), 1000);
+				initClockTimeInMs = (int64_t)(g_SystemClock->now() * 1000);
+			}
+		}
+
+		bool isLate() const {
+			if (initClockTimeInMs + (numSegment+1) * segmentDurationInMs >= (uint64_t)(g_SystemClock->now() * 1000))
+				return true;
+			
+			return false;
 		}
 
 		void incrementTtmlTimings(Tag &xml, int64_t incrementInMs) {
@@ -92,7 +108,7 @@ class SubtitleSource : public Module {
 			}
 		}
 
-		std::string processSynthetic(int64_t &timestamp) {
+		std::string processSynthetic(int64_t &timestamp, bool empty = false) const {
 			//generate timecode strings
 			const size_t timecodeSize = 24;
 			char timecodeShow[timecodeSize] = {};
@@ -105,6 +121,18 @@ class SubtitleSource : public Module {
 			timeInMsToStr((uint64_t)(getUTC() * 1000), timecodeUtc, ".");
 
 			//generate samples
+			std::string timing;
+			
+			if (!empty) {
+				timing = format(R"|(
+      <p region="Region" style="textAlignment_0" begin="%s" end="%s" xml:id="sub_0">
+        <span style="Style0_0">IRT/GPAC-Licensing live subtitle inserter:</span>
+        <br/>
+        <span style="Style0_0">%s - %s (UTC=%s)</span>
+      </p>)|",
+				timecodeShow, timecodeHide, timecodeShow, timecodeHide, timecodeUtc);
+			}
+
 			auto content = format(R"|(
 <?xml version="1.0" encoding="UTF-8" ?>
 <tt xmlns="http://www.w3.org/ns/ttml" xmlns:tt="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:tts="http://www.w3.org/ns/ttml#styling" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:ebutts="urn:ebu:tt:style" xmlns:ebuttm="urn:ebu:tt:metadata" xml:lang="" ttp:timeBase="media">
@@ -123,16 +151,11 @@ class SubtitleSource : public Module {
     </layout>
   </head>
   <body>
-    <div>
-      <p region="Region" style="textAlignment_0" begin="%s" end="%s" xml:id="sub_0">
-        <span style="Style0_0">IRT/GPAC-Licensing live subtitle inserter:</span>
-        <br/>
-        <span style="Style0_0">%s - %s (UTC=%s)</span>
-      </p>
+    <div>%s
     </div>
   </body>
 </tt>
-)|", timecodeShow, timecodeHide, timecodeShow, timecodeHide, timecodeUtc);
+)|", timing);
 
 			timestamp = timescaleToClock(numSegment * (int64_t)segmentDurationInMs, 1000);
 
@@ -211,12 +234,15 @@ class SubtitleSource : public Module {
 		}
 
 		KHost *const m_host;
-		std::string filename;
 		OutputDefault *output;
+
+		std::string filename;
 		const uint64_t segmentDurationInMs;
-		int numSegment = 0;
-		int64_t startTimeInMs = 0;
+		bool rectify = false;
 		IUtcStartTimeQuery const *utcStartTime;
+		
+		int64_t startTimeInMs = 0, initClockTimeInMs = 0;
+		int numSegment = 0;
 		const std::chrono::milliseconds sleepInMs;
 		int lastFilePos = 0;
 		std::function<std::string(int64_t&)> processContent;

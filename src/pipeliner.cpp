@@ -20,8 +20,7 @@ using namespace Modules;
 using namespace Pipelines;
 
 extern const char *g_appName;
-extern const uint64_t g_segmentDurationInMs = 2000;
-
+const uint64_t g_segmentDurationInMs = 2000;
 static UtcStartTime utcStartTime;
 std::unique_ptr<In::IFilePuller> createHttpSource();
 
@@ -81,7 +80,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	};
 	ReDashConfig rdCfg;
 	rdCfg.url = cfg.url;
-	rdCfg.utcStartTime = &utcStartTime;
+	rdCfg.utcStartTime = &utcStartTime; // set by this module: keep it first in module declarations
 	rdCfg.delayInSec = cfg.delayInSec;
 	rdCfg.mpdFn = cfg.mpdFn;
 	rdCfg.baseUrl = cfg.baseUrl;
@@ -109,6 +108,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	SubtitleSourceConfig subconfig;
 	subconfig.filename = cfg.subListFn;
 	subconfig.segmentDurationInMs = g_segmentDurationInMs;
+	subconfig.rectify = cfg.rectify;
 	subconfig.utcStartTime = &utcStartTime;
 	auto subSource = pipeline->add("SubtitleSource", &subconfig);
 	auto source = GetOutputPin(subSource, 0);

@@ -1,3 +1,8 @@
+Version 22 (XX/04/2021):
+- Add sanity checks on input MPD to fail fast and explicitly.
+- Expose output transfer logs.
+- Add regulate option (generates empty samples when late).
+
 Version 21 (26/03/2021):
 - Remove sleeps from source loop: stops faster.
 - Add an explicit BaseURL option (-b or --base-url).

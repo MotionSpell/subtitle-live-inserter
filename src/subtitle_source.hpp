@@ -5,6 +5,7 @@
 
 struct SubtitleSourceConfig {
 	std::string filename;
-	uint64_t segmentDurationInMs;
-	IUtcStartTimeQuery const *utcStartTime;
+	uint64_t segmentDurationInMs = 2000;
+	bool rectify = false;
+	IUtcStartTimeQuery const *utcStartTime = nullptr;
 };

@@ -11,6 +11,7 @@ struct Config {
 	std::string baseUrl = ".";
 	std::string postUrl = ".";
 	std::string mpdFn;
+	bool rectify = false;
 
 	std::function<void(int/*delayInSec*/)> updateDelayInSec;
 

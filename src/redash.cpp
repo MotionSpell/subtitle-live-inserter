@@ -20,7 +20,6 @@ using namespace Modules::In;
 const char *g_appName = "subtitle-live-inserter";
 
 extern const char *g_version;
-extern const uint64_t g_segmentDurationInMs;
 std::unique_ptr<IFilePuller> createHttpSource();
 int64_t parseIso8601Period(std::string input);
 
