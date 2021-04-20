@@ -73,12 +73,12 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	static Logger logger;
 	auto pipeline = std::make_unique<Pipeline>(&logger);
 
+	// ReDash
 	struct FilePullerFactory : In::IFilePullerFactory {
 		std::unique_ptr<In::IFilePuller> create() override {
 			return createHttpSource();
 		}
 	};
-
 	ReDashConfig rdCfg;
 	rdCfg.url = cfg.url;
 	rdCfg.utcStartTime = &utcStartTime;
@@ -103,16 +103,26 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 		ensureDir(sinkCfg.directory);
 		sink = pipeline->add("FileSystemSink", &sinkCfg);
 	}
+	pipeline->connect(redasher, sink);
 
+	// SubtitleSource
+	SubtitleSourceConfig subconfig;
+	subconfig.filename = cfg.subListFn;
+	subconfig.segmentDurationInMs = g_segmentDurationInMs;
+	subconfig.utcStartTime = &utcStartTime;
+	auto subSource = pipeline->add("SubtitleSource", &subconfig);
+	auto source = GetOutputPin(subSource, 0);
+
+	// Regulate
 	auto regulate = [&](OutputPin source) -> OutputPin {
 		RegulatorMonoConfig rmCfg;
 		auto regulator = pipeline->add("RegulatorMono", &rmCfg);
 		pipeline->connect(source, regulator);
 		return GetOutputPin(regulator);
 	};
+	source = regulate(source);
 
-	pipeline->connect(redasher, sink);
-
+	// Muxer
 	auto mux = [&](OutputPin compressed) -> OutputPin {
 		Mp4MuxConfig mp4config;
 		mp4config.segmentDurationInMs = g_segmentDurationInMs;
@@ -129,18 +139,10 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 		pipeline->connect(compressed, muxer);
 		return muxer;
 	};
-
-	SubtitleSourceConfig subconfig;
-	subconfig.filename = cfg.subListFn;
-	subconfig.segmentDurationInMs = g_segmentDurationInMs;
-	subconfig.utcStartTime = &utcStartTime;
-	auto subSource = pipeline->add("SubtitleSource", &subconfig);
-	auto source = GetOutputPin(subSource, 0);
-	source = regulate(source);
 	auto muxer = mux(source);
 	pipeline->connect(muxer, sink, true);
 
-	//diff retrieved AST from MPD with the local clock
+	// Diff retrieved AST from MPD with the local clock
 	auto const granularityInMs = g_segmentDurationInMs;
 	auto const t = int64_t(getUTC() * granularityInMs);
 	auto const remainderInMs = granularityInMs - (t % granularityInMs);
