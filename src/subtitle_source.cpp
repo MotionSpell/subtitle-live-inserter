@@ -14,34 +14,9 @@
 #include <thread> //this_thread
 
 extern const uint64_t g_segmentDurationInMs;
+Tag parseXml(span<const char> text);
 
 namespace {
-
-//FIXME: duplicate from redash
-Tag parseXml(span<const char> text) {
-	Tag root;
-	std::vector<Tag*> tagStack = { &root };
-
-	auto onNodeStart = [&](std::string name, SmallMap<std::string, std::string> &attr) {
-		Tag tag{name};
-
-		for (auto &a : attr)
-			tag.attr.push_back({a.key, a.value});
-
-		tagStack.back()->add(tag);
-		tagStack.push_back(&tagStack.back()->children.back());
-	};
-
-	auto onNodeEnd = [&](std::string /*id*/, std::string content) {
-		tagStack.back()->content = content;
-		tagStack.pop_back();
-	};
-
-	saxParse(text, onNodeStart, onNodeEnd);
-
-	assert(tagStack.front()->children.size() == 1);
-	return tagStack.front()->children[0];
-}
 
 using namespace Modules;
 

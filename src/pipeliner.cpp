@@ -72,7 +72,6 @@ private:
 std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	static Logger logger;
 	auto pipeline = std::make_unique<Pipeline>(&logger);
-	setGlobalLogLevel(Info);
 
 	struct FilePullerFactory : In::IFilePullerFactory {
 		std::unique_ptr<In::IFilePuller> create() override {

@@ -24,13 +24,6 @@ extern const uint64_t g_segmentDurationInMs;
 std::unique_ptr<IFilePuller> createHttpSource();
 int64_t parseIso8601Period(std::string input);
 
-namespace {
-
-bool isUrlAbsolute(const std::string &url) {
-	const std::string prefix = "http";
-	return url.substr(0, prefix.size()) == prefix;
-};
-
 Tag parseXml(span<const char> text) {
 	Tag root;
 	std::vector<Tag*> tagStack = { &root };
@@ -55,6 +48,13 @@ Tag parseXml(span<const char> text) {
 	assert(tagStack.front()->children.size() == 1);
 	return tagStack.front()->children[0];
 }
+
+namespace {
+
+bool isUrlAbsolute(const std::string &url) {
+	const std::string prefix = "http";
+	return url.substr(0, prefix.size()) == prefix;
+};
 
 std::string formatDate(int64_t timestamp) {
 	auto t = (time_t)timestamp;
