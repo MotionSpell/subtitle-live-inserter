@@ -7,7 +7,6 @@
 #include "lib_utils/log_sink.hpp"
 #include "lib_utils/format.hpp"
 #include "lib_utils/time.hpp" //timeInMsToStr
-#include "lib_utils/sax_xml_parser.hpp"
 #include "lib_utils/xml.hpp"
 #include <cassert>
 #include <fstream>
@@ -23,7 +22,8 @@ using namespace Modules;
 class SubtitleSource : public Module {
 	public:
 		SubtitleSource(KHost* host, SubtitleSourceConfig const& cfg)
-			: m_host(host), filename(cfg.filename), segmentDurationInMs(cfg.segmentDurationInMs), utcStartTime(cfg.utcStartTime) {
+			: m_host(host), filename(cfg.filename), segmentDurationInMs(cfg.segmentDurationInMs),
+			  utcStartTime(cfg.utcStartTime), sleepInMs(std::chrono::milliseconds(200)) {
 			output = addOutput();
 
 			auto meta = std::make_shared<MetadataPktSubtitle>();
@@ -43,61 +43,23 @@ class SubtitleSource : public Module {
 			ensureStartTime();
 
 			if (filename.empty()) {
-				//synthetic content
-				auto const content = generateSyntheticSample();
+				//fallback: synthetic content
+				auto const content = processSynthetic();
 				auto const timestamp = timescaleToClock(numSegment * (int64_t)segmentDurationInMs, 1000);
 				post(content, timestamp);
 				numSegment++;
 				return;
 			}
 
-			auto const sleepInMs = 200;
-			std::ifstream file(filename);
-			if (!file.is_open()) {
-				m_host->log(Error, format("Can't open subtitle playlist file \"%s\". Sleeping for %sms.", filename, sleepInMs).c_str());
-				std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
+			int64_t timestamp = -1;
+			auto const input = processEverGrowingFile(timestamp);
+			if (input.empty()) {
+				std::this_thread::sleep_for(sleepInMs);
 				return;
 			}
-			file.seekg(lastFilePos);
-
-			std::string line;
-			if (!std::getline(file, line)) {
-				std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
-				return;
-			}
-
-			m_host->log(Warning, format("Opening \"%s\"", line).c_str());
-
-			//scan line
-			auto const MAX_PATH = 4096;
-			char filename[MAX_PATH];
-			int hour, minute, second, ms;
-			int ret = sscanf(line.c_str(), "%d:%02d:%02d.%03d,%4095s",
-					&hour, &minute, &second, &ms, filename);
-			if(ret != 5) {
-				m_host->log(Error, format("Invalid timing in line \"%s\": will retry in %sms.", line, sleepInMs).c_str());
-				std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
-				return;
-			}
-
-			//open file
-			std::ifstream ifs(filename);
-			if (!ifs.is_open()) {
-				m_host->log(Error, format("Can't open subtitle media file \"%s\": will retry in %sms.", filename, sleepInMs).c_str());
-				std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
-				return;
-			}
-
-			auto pbuf = ifs.rdbuf();
-			std::size_t size = pbuf->pubseekoff(0, ifs.end, ifs.in);
-			pbuf->pubseekpos(0, ifs.in);
-
-			//get a buffer
-			std::vector<char> input(size);
-			pbuf->sgetn(input.data(), size);
 
 			//deserialize
-			auto ttml = parseXml({ input.data(), size });
+			auto ttml = parseXml({ input.data(), input.size() });
 			assert(ttml.name == "tt:tt");
 
 			//find timings and increment them
@@ -105,13 +67,9 @@ class SubtitleSource : public Module {
 
 			//reserialize
 			auto const newTtml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + serializeXml(ttml);
-			auto timestamp = timescaleToClock((((int64_t)hour * 60 + minute) * 60 + second) * 1000 + ms, 1000);
 			post(newTtml, timestamp);
-			ifs.close();
 
-			lastFilePos = lastFilePos + line.size() + 1;
-			m_host->log(Warning, format("Current file position: %s\n", (int)lastFilePos).c_str());
-
+			//counting segments allows to keep input sources (synthetic, evergrowing file, ...) in sync
 			numSegment++;
 		}
 
@@ -152,7 +110,7 @@ class SubtitleSource : public Module {
 			}
 		}
 
-		std::string generateSyntheticSample() {
+		std::string processSynthetic() {
 			//generate timecode strings
 			const size_t timecodeSize = 24;
 			char timecodeShow[timecodeSize] = {};
@@ -197,6 +155,55 @@ class SubtitleSource : public Module {
 			return content;
 		}
 
+		std::vector<char> processEverGrowingFile(int64_t &timestamp) {
+			std::ifstream file(filename);
+			if (!file.is_open()) {
+				m_host->log(Error, format("Can't open subtitle playlist file \"%s\". Sleeping for %sms.", filename, sleepInMs.count()).c_str());
+				return {};
+			}
+			file.seekg(lastFilePos);
+
+			std::string line;
+			if (!std::getline(file, line))
+				return {};
+
+			m_host->log(Warning, format("Opening \"%s\"", line).c_str());
+
+			//scan line
+			auto const MAX_PATH = 4096;
+			char filename[MAX_PATH];
+			int hour, minute, second, ms;
+			int ret = sscanf(line.c_str(), "%d:%02d:%02d.%03d,%4095s",
+					&hour, &minute, &second, &ms, filename);
+			if(ret != 5) {
+				m_host->log(Error, format("Invalid timing in line \"%s\": will retry in %sms.", line, sleepInMs.count()).c_str());
+				return {};
+			}
+
+			//open file
+			std::ifstream ifs(filename);
+			if (!ifs.is_open()) {
+				m_host->log(Error, format("Can't open subtitle media file \"%s\": will retry in %sms.", filename, sleepInMs.count()).c_str());
+				return {};
+			}
+
+			//get size
+			auto pbuf = ifs.rdbuf();
+			std::size_t size = pbuf->pubseekoff(0, ifs.end, ifs.in);
+			pbuf->pubseekpos(0, ifs.in);
+
+			//get data as a buffer
+			std::vector<char> input(size);
+			pbuf->sgetn(input.data(), size);
+			ifs.close();
+
+			timestamp = timescaleToClock((((int64_t)hour * 60 + minute) * 60 + second) * 1000 + ms, 1000);
+			lastFilePos = lastFilePos + line.size() + 1;
+			m_host->log(Warning, format("Current file position: %s, timestamp=%s\n", (int)lastFilePos, timestamp).c_str());
+
+			return input;
+		}
+
 		void post(const std::string &content, int64_t timestamp) {
 			auto const size = content.size();
 			auto pkt = output->allocData<DataRaw>(size);
@@ -218,6 +225,7 @@ class SubtitleSource : public Module {
 		int numSegment = 0;
 		int64_t startTimeInMs = 0;
 		IUtcStartTimeQuery const *utcStartTime;
+		const std::chrono::milliseconds sleepInMs;
 		int lastFilePos = 0;
 };
 
