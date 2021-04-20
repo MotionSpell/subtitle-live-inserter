@@ -40,52 +40,11 @@ class SubtitleSource : public Module {
 		}
 
 		void process() override {
-			if (!startTimeInMs)
-				startTimeInMs = clockToTimescale(utcStartTime->query(), 1000);
+			ensureStartTime();
 
 			if (filename.empty()) {
-				//generate timecode strings
-				const size_t timecodeSize = 24;
-				char timecodeShow[timecodeSize] = {};
-				timeInMsToStr(startTimeInMs + numSegment * segmentDurationInMs, timecodeShow, ".");
-				timecodeShow[timecodeSize - 1] = 0;
-				char timecodeHide[timecodeSize] = {};
-				timeInMsToStr(startTimeInMs + (numSegment + 1) * segmentDurationInMs, timecodeHide, ".");
-				timecodeHide[timecodeSize - 1] = 0;
-				char timecodeUtc[timecodeSize] = {};
-				timeInMsToStr((uint64_t)(getUTC() * 1000), timecodeUtc, ".");
-
-				//generate samples
-				auto content = format(R"|(
-<?xml version="1.0" encoding="UTF-8" ?>
-<tt xmlns="http://www.w3.org/ns/ttml" xmlns:tt="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:tts="http://www.w3.org/ns/ttml#styling" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:ebutts="urn:ebu:tt:style" xmlns:ebuttm="urn:ebu:tt:metadata" xml:lang="" ttp:timeBase="media">
-  <head>
-    <metadata>
-      <ebuttm:documentMetadata>
-        <ebuttm:conformsToStandard>urn:ebu:tt:distribution:2014-01</ebuttm:conformsToStandard>
-      </ebuttm:documentMetadata>
-    </metadata>
-    <styling>
-      <style xml:id="Style0_0" tts:fontFamily="proportionalSansSerif" tts:backgroundColor="#00000099" tts:color="#FFFF00" tts:fontSize="100%%" tts:lineHeight="normal" ebutts:linePadding="0.5c" />
-      <style xml:id="textAlignment_0" tts:textAlign="center" />
-    </styling>
-    <layout>
-      <region xml:id="Region" tts:origin="10%% 10%%" tts:extent="80%% 80%%" tts:displayAlign="after" />
-    </layout>
-  </head>
-  <body>
-    <div>
-      <p region="Region" style="textAlignment_0" begin="%s" end="%s" xml:id="sub_0">
-        <span style="Style0_0">IRT/GPAC-Licensing live subtitle inserter:</span>
-        <br/>
-        <span style="Style0_0">%s - %s (UTC=%s)</span>
-      </p>
-    </div>
-  </body>
-</tt>
-)|", timecodeShow, timecodeHide, timecodeShow, timecodeHide, timecodeUtc);
-
-				//send sample
+				//synthetic content
+				auto const content = generateSyntheticSample();
 				auto const size = content.size();
 				auto pkt = output->allocData<DataRaw>(size);
 				memcpy(pkt->buffer->data().ptr, content.c_str(), size);
@@ -164,6 +123,11 @@ class SubtitleSource : public Module {
 		}
 
 	private:
+		void ensureStartTime() {
+			if (!startTimeInMs)
+				startTimeInMs = clockToTimescale(utcStartTime->query(), 1000);
+		}
+
 		void incrementTtmlTimings(Tag &xml, int64_t incrementInMs) {
 			for (auto& elt : xml.children) {
 				for (auto& attr : elt.attr) {
@@ -193,6 +157,51 @@ class SubtitleSource : public Module {
 
 				incrementTtmlTimings(elt, incrementInMs);
 			}
+		}
+
+		std::string generateSyntheticSample() {
+			//generate timecode strings
+			const size_t timecodeSize = 24;
+			char timecodeShow[timecodeSize] = {};
+			timeInMsToStr(startTimeInMs + numSegment * segmentDurationInMs, timecodeShow, ".");
+			timecodeShow[timecodeSize - 1] = 0;
+			char timecodeHide[timecodeSize] = {};
+			timeInMsToStr(startTimeInMs + (numSegment + 1) * segmentDurationInMs, timecodeHide, ".");
+			timecodeHide[timecodeSize - 1] = 0;
+			char timecodeUtc[timecodeSize] = {};
+			timeInMsToStr((uint64_t)(getUTC() * 1000), timecodeUtc, ".");
+
+			//generate samples
+			auto content = format(R"|(
+<?xml version="1.0" encoding="UTF-8" ?>
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:tt="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:tts="http://www.w3.org/ns/ttml#styling" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:ebutts="urn:ebu:tt:style" xmlns:ebuttm="urn:ebu:tt:metadata" xml:lang="" ttp:timeBase="media">
+  <head>
+    <metadata>
+      <ebuttm:documentMetadata>
+        <ebuttm:conformsToStandard>urn:ebu:tt:distribution:2014-01</ebuttm:conformsToStandard>
+      </ebuttm:documentMetadata>
+    </metadata>
+    <styling>
+      <style xml:id="Style0_0" tts:fontFamily="proportionalSansSerif" tts:backgroundColor="#00000099" tts:color="#FFFF00" tts:fontSize="100%%" tts:lineHeight="normal" ebutts:linePadding="0.5c" />
+      <style xml:id="textAlignment_0" tts:textAlign="center" />
+    </styling>
+    <layout>
+      <region xml:id="Region" tts:origin="10%% 10%%" tts:extent="80%% 80%%" tts:displayAlign="after" />
+    </layout>
+  </head>
+  <body>
+    <div>
+      <p region="Region" style="textAlignment_0" begin="%s" end="%s" xml:id="sub_0">
+        <span style="Style0_0">IRT/GPAC-Licensing live subtitle inserter:</span>
+        <br/>
+        <span style="Style0_0">%s - %s (UTC=%s)</span>
+      </p>
+    </div>
+  </body>
+</tt>
+)|", timecodeShow, timecodeHide, timecodeShow, timecodeHide, timecodeUtc);
+
+			return content;
 		}
 
 		void post(std::shared_ptr<DataRaw> &pkt, int64_t timestamp) {
