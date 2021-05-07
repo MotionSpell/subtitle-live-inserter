@@ -1,4 +1,4 @@
-Version 22 (XX/04/2021):
+Version 22 (07/05/2021):
 - Add sanity checks on input MPD to fail fast and explicitly.
 - Expose output transfer logs.
 - Add regulate option (generates empty samples when late).
