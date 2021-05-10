@@ -15,8 +15,9 @@ namespace {
 
 struct Mp4MuxFileHandlerDyn : ModuleS {
 		Mp4MuxFileHandlerDyn(KHost *host, Mp4MuxFileHandlerDynConfig *cfg)
-			: output(addOutput()), segDurInMs(cfg->mp4MuxCfg->segmentDurationInMs), timeshiftBufferDepth(timescaleToClock(cfg->timeshiftBufferDepthInSec, 1)) {
-			delegate = safe_cast<ModuleS>(loadModule("GPACMuxMP4", host, (void *)cfg->mp4MuxCfg));
+			: m_host(host), output(addOutput()),
+			  segDurInMs(cfg->mp4MuxCfg->segmentDurationInMs), timeshiftBufferDepth(timescaleToClock(cfg->timeshiftBufferDepthInSec, 1)) {
+			delegate = safe_cast<ModuleS>(loadModule("GPACMuxMP4", m_host, (void *)cfg->mp4MuxCfg));
 			ConnectOutput(delegate->getOutput(0), [&](Data data) {
 				auto out = std::make_shared<DataBaseRef>(data);
 				out->copyAttributes(*data);
@@ -30,7 +31,7 @@ struct Mp4MuxFileHandlerDyn : ModuleS {
 					timeshiftSegments.push_back({data->get<PresentationTime>().time, meta->filename});
 				}
 				assert(meta->EOS); //we don't support the muxer flush mem flag
-				host->log(Info, format("Segment %s created.", meta->filename).c_str());
+				m_host->log(Info, format("Segment %s created.", meta->filename).c_str());
 				out->setMetadata(meta);
 				getOutput(0)->post(out);
 
@@ -58,6 +59,7 @@ struct Mp4MuxFileHandlerDyn : ModuleS {
 
 	private:
 		std::shared_ptr<ModuleS> delegate;
+		KHost* const m_host;
 		OutputDefault *const output;
 		const uint64_t segDurInMs;
 		const int64_t timeshiftBufferDepth;
