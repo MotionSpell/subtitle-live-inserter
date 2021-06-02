@@ -187,16 +187,16 @@ class SubtitleSource : public Module {
 				return {};
 			}
 
-			timestamp = timescaleToClock((((int64_t)hour * 60 + minute) * 60 + second) * 1000 + ms, 1000);
-			lastFilePos = lastFilePos + line.size() + 1;
-			m_host->log(Warning, format("Current file position: %s, timestamp=%s\n", (int)lastFilePos, timestamp).c_str());
-
 			//open file
 			std::ifstream ifs(filename);
 			if (!ifs.is_open()) {
 				m_host->log(Error, format("Can't open subtitle media file \"%s\": will retry in %sms.", filename, sleepInMs.count()).c_str());
 				return {};
 			}
+
+			timestamp = timescaleToClock((((int64_t)hour * 60 + minute) * 60 + second) * 1000 + ms, 1000);
+			lastFilePos = lastFilePos + line.size() + 1;
+			m_host->log(Warning, format("Current file position: %s, timestamp=%s, media filename=%s\n", (int)lastFilePos, timestamp, filename).c_str());
 
 			//get size
 			auto pbuf = ifs.rdbuf();
