@@ -34,7 +34,7 @@ class SubtitleSource : public Module {
 			if (!playlistFn.empty()) {
 				std::ifstream file(playlistFn);
 				if (!file.is_open())
-					throw error(format("Can't open subtitle source file \"%s\"", playlistFn).c_str());
+					m_host->log(Error, format("Can't open subtitle playlist file \"%s\". Start may occur with a delay.", playlistFn).c_str());
 				
 				processContent = std::bind(&SubtitleSource::processEverGrowingFile, this, std::placeholders::_1);
 			} else
