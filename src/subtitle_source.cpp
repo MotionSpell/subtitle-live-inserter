@@ -36,7 +36,7 @@ class SubtitleSource : public Module {
 				if (!file.is_open())
 					m_host->log(Error, format("Can't open subtitle playlist file \"%s\". Start may occur with a delay.", playlistFn).c_str());
 				
-				std::string playlistDir = playlistFn;
+				playlistDir = playlistFn;
 				while(playlistDir.back() != '\\' && playlistDir.back() != '/')
 					playlistDir.pop_back();
 
@@ -196,7 +196,7 @@ class SubtitleSource : public Module {
 				subtitleFn = subtitleFnRaw;
 				timestamp = timescaleToClock((((int64_t)hour * 60 + minute) * 60 + second) * 1000 + ms, 1000);
 			}
-			subtitleFn = subtitleFn + playlistDir;
+			subtitleFn = playlistDir + subtitleFn;
 
 			//open file
 			std::ifstream ifs(subtitleFn);
