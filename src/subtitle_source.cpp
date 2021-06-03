@@ -36,6 +36,10 @@ class SubtitleSource : public Module {
 				if (!file.is_open())
 					m_host->log(Error, format("Can't open subtitle playlist file \"%s\". Start may occur with a delay.", playlistFn).c_str());
 				
+				std::string playlistDir = playlistFn;
+				while(playlistDir.back() != '\\' && playlistDir.back() != '/')
+					playlistDir.pop_back();
+
 				processContent = std::bind(&SubtitleSource::processEverGrowingFile, this, std::placeholders::_1);
 			} else
 				processContent = std::bind(&SubtitleSource::processSynthetic, this, std::placeholders::_1, false);
@@ -177,15 +181,22 @@ class SubtitleSource : public Module {
 			m_host->log(Warning, format("Opening \"%s\"", line).c_str());
 
 			//scan line
-			auto const MAX_PATH = 4096;
-			char subtitleFn[MAX_PATH];
-			int hour, minute, second, ms;
-			int ret = sscanf(line.c_str(), "%d:%02d:%02d.%03d,%4095s",
-					&hour, &minute, &second, &ms, subtitleFn);
-			if(ret != 5) {
-				m_host->log(Error, format("Invalid timing in line \"%s\": will retry in %sms.", line, sleepInMs.count()).c_str());
-				return {};
+			std::string subtitleFn;
+			{
+				auto const MAX_PATH = 4096;
+				char subtitleFnRaw[MAX_PATH];
+				int hour, minute, second, ms;
+				int ret = sscanf(line.c_str(), "%d:%02d:%02d.%03d,%4095s",
+						&hour, &minute, &second, &ms, subtitleFnRaw);
+				if(ret != 5) {
+					m_host->log(Error, format("Invalid arguments in line \"%s\": will retry in %sms.", line, sleepInMs.count()).c_str());
+					return {};
+				}
+
+				subtitleFn = subtitleFnRaw;
+				timestamp = timescaleToClock((((int64_t)hour * 60 + minute) * 60 + second) * 1000 + ms, 1000);
 			}
+			subtitleFn = subtitleFn + playlistDir;
 
 			//open file
 			std::ifstream ifs(subtitleFn);
@@ -194,7 +205,6 @@ class SubtitleSource : public Module {
 				return {};
 			}
 
-			timestamp = timescaleToClock((((int64_t)hour * 60 + minute) * 60 + second) * 1000 + ms, 1000);
 			lastFilePos = lastFilePos + line.size() + 1;
 			m_host->log(Warning, format("Current file position: %s, timestamp=%s, media filename=%s\n", (int)lastFilePos, timestamp, subtitleFn).c_str());
 
@@ -236,7 +246,7 @@ class SubtitleSource : public Module {
 		KHost *const m_host;
 		OutputDefault *output;
 
-		std::string playlistFn;
+		std::string playlistFn, playlistDir;
 		const uint64_t segmentDurationInMs;
 		bool rectify = false;
 		IUtcStartTimeQuery const *utcStartTime;
