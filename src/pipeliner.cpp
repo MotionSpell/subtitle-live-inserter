@@ -106,7 +106,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 
 	// SubtitleSource
 	SubtitleSourceConfig subconfig;
-	subconfig.filename = cfg.subListFn;
+	subconfig.subtitleFn = cfg.subListFn;
 	subconfig.segmentDurationInMs = g_segmentDurationInMs;
 	subconfig.rectify = cfg.rectify;
 	subconfig.utcStartTime = &utcStartTime;

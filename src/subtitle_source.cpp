@@ -22,7 +22,7 @@ using namespace Modules;
 class SubtitleSource : public Module {
 	public:
 		SubtitleSource(KHost* host, SubtitleSourceConfig const& cfg)
-			: m_host(host), filename(cfg.filename), segmentDurationInMs(cfg.segmentDurationInMs),
+			: m_host(host), playlistFn(cfg.subtitleFn), segmentDurationInMs(cfg.segmentDurationInMs),
 			  rectify(cfg.rectify), utcStartTime(cfg.utcStartTime),
 			  sleepInMs(std::chrono::milliseconds(200)) {
 			output = addOutput();
@@ -31,10 +31,10 @@ class SubtitleSource : public Module {
 			meta->timeScale = { IClock::Rate, 1 };
 			output->setMetadata(meta);
 
-			if (!filename.empty()) {
-				std::ifstream file(filename);
+			if (!playlistFn.empty()) {
+				std::ifstream file(playlistFn);
 				if (!file.is_open())
-					throw error(format("Can't open subtitle source file \"%s\"", filename).c_str());
+					throw error(format("Can't open subtitle source file \"%s\"", playlistFn).c_str());
 				
 				processContent = std::bind(&SubtitleSource::processEverGrowingFile, this, std::placeholders::_1);
 			} else
@@ -163,9 +163,9 @@ class SubtitleSource : public Module {
 		}
 
 		std::string processEverGrowingFile(int64_t &timestamp) {
-			std::ifstream file(filename);
+			std::ifstream file(playlistFn);
 			if (!file.is_open()) {
-				m_host->log(Error, format("Can't open subtitle playlist file \"%s\". Sleeping for %sms.", filename, sleepInMs.count()).c_str());
+				m_host->log(Error, format("Can't open subtitle playlist file \"%s\". Sleeping for %sms.", playlistFn, sleepInMs.count()).c_str());
 				return {};
 			}
 			file.seekg(lastFilePos);
@@ -178,25 +178,25 @@ class SubtitleSource : public Module {
 
 			//scan line
 			auto const MAX_PATH = 4096;
-			char filename[MAX_PATH];
+			char subtitleFn[MAX_PATH];
 			int hour, minute, second, ms;
 			int ret = sscanf(line.c_str(), "%d:%02d:%02d.%03d,%4095s",
-					&hour, &minute, &second, &ms, filename);
+					&hour, &minute, &second, &ms, subtitleFn);
 			if(ret != 5) {
 				m_host->log(Error, format("Invalid timing in line \"%s\": will retry in %sms.", line, sleepInMs.count()).c_str());
 				return {};
 			}
 
 			//open file
-			std::ifstream ifs(filename);
+			std::ifstream ifs(subtitleFn);
 			if (!ifs.is_open()) {
-				m_host->log(Error, format("Can't open subtitle media file \"%s\": will retry in %sms.", filename, sleepInMs.count()).c_str());
+				m_host->log(Error, format("Can't open subtitle media file \"%s\": will retry in %sms.", subtitleFn, sleepInMs.count()).c_str());
 				return {};
 			}
 
 			timestamp = timescaleToClock((((int64_t)hour * 60 + minute) * 60 + second) * 1000 + ms, 1000);
 			lastFilePos = lastFilePos + line.size() + 1;
-			m_host->log(Warning, format("Current file position: %s, timestamp=%s, media filename=%s\n", (int)lastFilePos, timestamp, filename).c_str());
+			m_host->log(Warning, format("Current file position: %s, timestamp=%s, media filename=%s\n", (int)lastFilePos, timestamp, subtitleFn).c_str());
 
 			//get size
 			auto pbuf = ifs.rdbuf();
@@ -236,7 +236,7 @@ class SubtitleSource : public Module {
 		KHost *const m_host;
 		OutputDefault *output;
 
-		std::string filename;
+		std::string playlistFn;
 		const uint64_t segmentDurationInMs;
 		bool rectify = false;
 		IUtcStartTimeQuery const *utcStartTime;
