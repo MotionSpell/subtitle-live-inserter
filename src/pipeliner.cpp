@@ -35,7 +35,7 @@ bool startsWith(std::string s, std::string prefix) {
 }
 
 struct Logger : LogSink {
-	void log(Level level, const char *msg) override {
+	void send(Level level, const char *msg) override {
 		if (level == Level::Debug)
 			return;
 
