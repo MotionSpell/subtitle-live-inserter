@@ -19,12 +19,14 @@ namespace {
 
 using namespace Modules;
 
+static const int maxDelayInMs = 200;
+
 class SubtitleSource : public Module {
 	public:
 		SubtitleSource(KHost* host, SubtitleSourceConfig const& cfg)
 			: m_host(host), playlistFn(cfg.subtitleFn), segmentDurationInMs(cfg.segmentDurationInMs),
 			  rectify(cfg.rectify), utcStartTime(cfg.utcStartTime),
-			  sleepInMs(std::chrono::milliseconds(200)) {
+			  sleepInMs(std::chrono::milliseconds(maxDelayInMs)) {
 			output = addOutput();
 
 			auto meta = std::make_shared<MetadataPktSubtitle>();
@@ -53,10 +55,14 @@ class SubtitleSource : public Module {
 			int64_t timestamp = -1;
 			auto content = processContent(timestamp);
 			if (content.empty()) {
-				if (rectify && isLate()) {
-					m_host->log(Warning, "Late: inserting empty content");
-					// TODO: should we also discard some content if it really arrives afterward?
-					content = processSynthetic(timestamp, true);
+				const int64_t diffInMs = (int64_t)(g_SystemClock->now() * 1000) - (initClockTimeInMs + (numSegment+1) * segmentDurationInMs);
+				if (diffInMs < -maxDelayInMs) {
+					m_host->log(Warning, format("Late from %sms", -diffInMs).c_str());
+					if (rectify) {
+						m_host->log(Warning, format("Rectifier activated: inserting empty content").c_str());
+						// TODO: should we also discard some content if it really arrives afterward?
+						content = processSynthetic(timestamp, true);
+					}
 				} else {
 					std::this_thread::sleep_for(sleepInMs);
 					return;
@@ -72,13 +78,6 @@ class SubtitleSource : public Module {
 				startTimeInMs = clockToTimescale(utcStartTime->query(), 1000);
 				initClockTimeInMs = (int64_t)(g_SystemClock->now() * 1000);
 			}
-		}
-
-		bool isLate() const {
-			if (initClockTimeInMs + (numSegment+1) * segmentDurationInMs >= (uint64_t)(g_SystemClock->now() * 1000))
-				return true;
-			
-			return false;
 		}
 
 		void incrementTtmlTimings(Tag &xml, int64_t incrementInMs) {
@@ -248,7 +247,7 @@ class SubtitleSource : public Module {
 
 		std::string playlistFn, playlistDir;
 		const uint64_t segmentDurationInMs;
-		bool rectify = false;
+		const bool rectify = false;
 		IUtcStartTimeQuery const *utcStartTime;
 		
 		int64_t startTimeInMs = 0, initClockTimeInMs = 0;
