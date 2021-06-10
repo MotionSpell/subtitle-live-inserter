@@ -62,6 +62,9 @@ class SubtitleSource : public Module {
 						m_host->log(Warning, format("Rectifier activated: inserting empty content").c_str());
 						// TODO: should we also discard some content if it really arrives afterward?
 						content = processSynthetic(timestamp, true);
+					} else {
+						std::this_thread::sleep_for(sleepInMs);
+						return;
 					}
 				} else {
 					std::this_thread::sleep_for(sleepInMs);
