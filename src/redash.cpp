@@ -95,7 +95,6 @@ class ReDash : public Module {
 
 			sanity("availabilityStartTime");
 			sanity("minimumUpdatePeriod");
-			sanity("availabilityStartTime");
 			sanity("timeShiftBufferDepth");
 
 			cfg->utcStartTime->startTime = parseDate(mpd["availabilityStartTime"]) * IClock::Rate;

@@ -477,7 +477,7 @@ unittest("Redash: remote postUrl") {
     check(mpd, expected, cfg);
 }
 
-unittest("Redash: empty baseUrl (1)") {
+unittest("Redash: empty baseUrl") {
     auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
 	                                                                auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
