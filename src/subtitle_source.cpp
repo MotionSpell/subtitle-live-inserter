@@ -54,13 +54,16 @@ class SubtitleSource : public Module {
 
 			int64_t timestamp = -1;
 			auto content = processContent(timestamp);
+
+			//are we late?
 			if (content.empty()) {
 				const int64_t diffInMs = (int64_t)(g_SystemClock->now() * 1000) - (initClockTimeInMs + (numSegment+1) * segmentDurationInMs);
 				if (diffInMs < -maxDelayInMs) {
 					m_host->log(Warning, format("Late from %sms", -diffInMs).c_str());
+
 					if (rectify) {
 						m_host->log(Warning, format("Rectifier activated: inserting empty content").c_str());
-						// TODO: should we also discard some content if it really arrives afterward?
+						// TODO: should we also discard some content if it really arrives but afterward?
 						content = processSynthetic(timestamp, true);
 					} else {
 						std::this_thread::sleep_for(sleepInMs);
@@ -71,6 +74,7 @@ class SubtitleSource : public Module {
 					return;
 				}
 			}
+
 			post(content, timestamp);
 			numSegment++;
 		}
@@ -92,16 +96,40 @@ class SubtitleSource : public Module {
 						//serialize
 						int hour=0, min=0, sec=0, msec=0;
 						sscanf(attr.value.c_str(), fmt, &hour, &min, &sec, &msec);
+						int64_t timestampInMs = msec + 1000 * (sec + 60 * (min + 60 * hour));
+
+						//the value from the manifest may be jittered: considered ideal value
+						const int64_t referenceTimeInMs = numSegment * segmentDurationInMs;
+
+						//some inputs contain a media timestamp offset (e.g. local time of the day...)
+						//begin/end times should be less than referenceTimeInMs + segmentDurationInMs
+						int64_t offsetInMs = 0;
+						if (attr.name == "begin" && timestampInMs < referenceTimeInMs)
+							offsetInMs = referenceTimeInMs - timestampInMs;
+						else if (attr.name == "end" && timestampInMs > referenceTimeInMs + (int)segmentDurationInMs)
+							offsetInMs = timestampInMs - referenceTimeInMs - (int)segmentDurationInMs;
+
+						if (offsetInMs) {
+							if (ebuttdOffsetInMs == 0) {
+								m_host->log(Warning, format("Dealing with a media offset of %sms. Media times are expected to be zero-based.", ebuttdOffsetInMs).c_str());
+								ebuttdOffsetInMs = offsetInMs;
+							} else if (ebuttdOffsetInMs != offsetInMs) {
+								m_host->log(Error, format("Media offset change detected: %sms -> %sms.", ebuttdOffsetInMs, offsetInMs).c_str());
+								ebuttdOffsetInMs = offsetInMs;
+							}
+
+							timestampInMs += ebuttdOffsetInMs;
+						}
 
 						//increment
-						auto totalInMs = incrementInMs + msec + 1000 * (sec + 60 * (min + 60 * hour));
-						msec = totalInMs % 1000;
-						totalInMs /= 1000;
-						sec = totalInMs % 60;
-						totalInMs /= 60;
-						min = totalInMs % 60;
-						totalInMs /= 60;
-						hour = totalInMs;
+						timestampInMs += incrementInMs;
+						msec = timestampInMs % 1000;
+						timestampInMs /= 1000;
+						sec = timestampInMs % 60;
+						timestampInMs /= 60;
+						min = timestampInMs % 60;
+						timestampInMs /= 60;
+						hour = timestampInMs;
 
 						//deserialize
 						char buffer[256];
@@ -208,7 +236,8 @@ class SubtitleSource : public Module {
 			}
 
 			lastFilePos = lastFilePos + line.size() + 1;
-			m_host->log(Warning, format("Current file position: %s, timestamp=%s, media filename=%s\n", (int)lastFilePos, timestamp, subtitleFn).c_str());
+			m_host->log(Warning, format("Current file position=%s, timestamp=%s, media filename=%s, media start time=%s\n",
+				(int)lastFilePos, timestamp, subtitleFn, numSegment * segmentDurationInMs).c_str());
 
 			//get size
 			auto pbuf = ifs.rdbuf();
@@ -253,7 +282,7 @@ class SubtitleSource : public Module {
 		const bool rectify = false;
 		IUtcStartTimeQuery const *utcStartTime;
 		
-		int64_t startTimeInMs = 0, initClockTimeInMs = 0;
+		int64_t startTimeInMs = 0, initClockTimeInMs = 0, ebuttdOffsetInMs = 0;
 		int numSegment = 0;
 		const std::chrono::milliseconds sleepInMs;
 		int lastFilePos = 0;
