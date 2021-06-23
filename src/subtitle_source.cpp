@@ -87,7 +87,7 @@ class SubtitleSource : public Module {
 			}
 		}
 
-		void incrementTtmlTimings(Tag &xml, int64_t incrementInMs) {
+		void incrementTtmlTimings(Tag &xml, int64_t referenceTimeInMs, int64_t incrementInMs) {
 			for (auto& elt : xml.children) {
 				for (auto& attr : elt.attr) {
 					if (attr.name == "begin" || attr.name == "end") {
@@ -98,16 +98,13 @@ class SubtitleSource : public Module {
 						sscanf(attr.value.c_str(), fmt, &hour, &min, &sec, &msec);
 						int64_t timestampInMs = msec + 1000 * (sec + 60 * (min + 60 * hour));
 
-						//the value from the manifest may be jittered: considered ideal value
-						const int64_t referenceTimeInMs = numSegment * segmentDurationInMs;
-
 						//some inputs contain a media timestamp offset (e.g. local time of the day...)
 						//begin/end times should be less than referenceTimeInMs + segmentDurationInMs
 						int64_t offsetInMs = 0;
 						if (attr.name == "begin" && timestampInMs < referenceTimeInMs)
 							offsetInMs = referenceTimeInMs - timestampInMs;
 						else if (attr.name == "end" && timestampInMs > referenceTimeInMs + (int)segmentDurationInMs)
-							offsetInMs = timestampInMs - referenceTimeInMs - (int)segmentDurationInMs;
+							offsetInMs = referenceTimeInMs + (int)segmentDurationInMs - timestampInMs;
 
 						if (offsetInMs) {
 							if (ebuttdOffsetInMs == 0) {
@@ -117,9 +114,9 @@ class SubtitleSource : public Module {
 								m_host->log(Error, format("Media offset change detected: %sms -> %sms.", ebuttdOffsetInMs, offsetInMs).c_str());
 								ebuttdOffsetInMs = offsetInMs;
 							}
-
-							timestampInMs += ebuttdOffsetInMs;
 						}
+
+						timestampInMs += ebuttdOffsetInMs;
 
 						//increment
 						timestampInMs += incrementInMs;
@@ -138,7 +135,7 @@ class SubtitleSource : public Module {
 					}
 				}
 
-				incrementTtmlTimings(elt, incrementInMs);
+				incrementTtmlTimings(elt, referenceTimeInMs, incrementInMs);
 			}
 		}
 
@@ -235,9 +232,17 @@ class SubtitleSource : public Module {
 				return {};
 			}
 
+			//reference time: detect shifts in manifes timestamps
+			auto const computedNumSegment = divUp(clockToTimescale(timestamp, 1000), (int64_t)segmentDurationInMs);
+			if (computedNumSegment != numSegment) {
+				m_host->log(Warning, format("Shifting segment number from %s to %s.", numSegment, computedNumSegment).c_str());
+				numSegment = computedNumSegment;
+			}
+			const int64_t referenceTimeInMs = numSegment * segmentDurationInMs;
+
 			lastFilePos = lastFilePos + line.size() + 1;
-			m_host->log(Warning, format("Current file position=%s, timestamp=%s, media filename=%s, media start time=%s\n",
-				(int)lastFilePos, timestamp, subtitleFn, numSegment * segmentDurationInMs).c_str());
+			m_host->log(Warning, format("Manifest file position=%s, timestamp=%sms  ;  media filename=%s, media start time=%sms\n",
+				(int)lastFilePos, clockToTimescale(timestamp, 1000), subtitleFn, referenceTimeInMs).c_str());
 
 			//get size
 			auto pbuf = ifs.rdbuf();
@@ -254,7 +259,7 @@ class SubtitleSource : public Module {
 			assert(ttml.name == "tt:tt");
 
 			//find timings and increment them
-			incrementTtmlTimings(ttml, startTimeInMs);
+			incrementTtmlTimings(ttml, referenceTimeInMs, startTimeInMs);
 
 			//reserialize and return
 			return std::string("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n") + serializeXml(ttml);
