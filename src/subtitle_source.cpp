@@ -10,6 +10,7 @@
 #include "lib_utils/time.hpp" //timeInMsToStr
 #include "lib_utils/xml.hpp"
 #include <cassert>
+#include <cmath> //abs, lround
 #include <fstream>
 #include <thread> //this_thread
 
@@ -232,11 +233,13 @@ class SubtitleSource : public Module {
 				return {};
 			}
 
-			//reference time: detect shifts in manifes timestamps
-			auto const computedNumSegment = divUp(clockToTimescale(timestamp, 1000), (int64_t)segmentDurationInMs);
-			if (computedNumSegment != numSegment) {
-				m_host->log(Warning, format("Shifting segment number from %s to %s.", numSegment, computedNumSegment).c_str());
-				numSegment = computedNumSegment;
+			//reference time: detect shifts in manifest timestamps
+			auto const tolerance = 0.20;
+			auto computedNumSegment = clockToTimescale(timestamp, 1000) / (double)segmentDurationInMs;
+			if (std::abs(computedNumSegment - numSegment) > tolerance) {
+				computedNumSegment = std::lround(computedNumSegment);
+				m_host->log(Warning, format("Shifting segment number from %s to %s.", numSegment, (int)computedNumSegment).c_str());
+				numSegment = (int)computedNumSegment;
 			}
 			const int64_t referenceTimeInMs = numSegment * segmentDurationInMs;
 
