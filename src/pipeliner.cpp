@@ -128,7 +128,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 		mp4config.segmentDurationInMs = g_segmentDurationInMs;
 		mp4config.segmentPolicy = FragmentedSegment;
 		mp4config.fragmentPolicy = OneFragmentPerSegment;
-		mp4config.compatFlags = Browsers | ExactInputDur;
+		mp4config.compatFlags = Browsers | ExactInputDur | SegNumStartsAtZero;
 		mp4config.utcStartTime = &utcStartTime;
 
 		Mp4MuxFileHandlerDynConfig cfg;
@@ -147,7 +147,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	auto const t = int64_t(getUTC() * granularityInMs);
 	auto const remainderInMs = granularityInMs - (t % granularityInMs);
 	std::this_thread::sleep_for(std::chrono::milliseconds(remainderInMs));
-	utcStartTime.startTime = rescale(t + remainderInMs, granularityInMs, IClock::Rate) - utcStartTime.startTime;
+	utcStartTime.startTime = rescale(t + remainderInMs, granularityInMs, IClock::Rate);
 	utcStartTime.startTime += cfg.subtitleForwardTimeInSec * IClock::Rate;
 
 	cfg.updateDelayInSec = rdCfg.updateDelayInSec;
