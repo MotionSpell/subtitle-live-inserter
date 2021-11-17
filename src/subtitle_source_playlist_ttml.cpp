@@ -18,7 +18,7 @@ static void incrementTtmlTimings(Tag &xml, int64_t referenceTimeInMs, int64_t in
 				sscanf(attr.value.c_str(), fmt, &hour, &min, &sec, &msec);
 				int64_t timestampInMs = msec + 1000 * (sec + 60 * (min + 60 * hour));
 
-				//some inputs contain a media timestampIn180k offset (e.g. local time of the day...)
+				//some inputs contain a media timestamp offset (e.g. local time of the day...)
 				//begin/end times should be less than referenceTimeInMs + segmentDurationInMs
 				int64_t offsetInMs = 0;
 				if (attr.name == "begin" && timestampInMs < referenceTimeInMs)

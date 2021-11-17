@@ -58,21 +58,9 @@ class SubtitleSource : public Module {
 			int64_t timestampIn180k = -1;
 			auto content = processContent(timestampIn180k, segNum, startTimeInMs);
 
-			//are we late?
 			if (content.empty()) {
-				const int64_t diffInMs = (int64_t)(g_SystemClock->now() * 1000) - (initClockTimeInMs + (segNum+1) * segmentDurationInMs);
-				if (diffInMs < -maxDelayInMs) {
-					m_host->log(Warning, format("Late from %sms", -diffInMs).c_str());
-
-					if (rectify) {
-						m_host->log(Warning, format("Rectifier activated: inserting empty content").c_str());
-						// TODO: should we also discard some content if it really arrives but afterward?
-						content = processSynthetic(timestampIn180k, segNum, startTimeInMs, segmentDurationInMs, true);
-					} else {
-						std::this_thread::sleep_for(sleepInMs);
-						return;
-					}
-				} else {
+				content = processLate();
+				if (content.empty()) {
 					std::this_thread::sleep_for(sleepInMs);
 					return;
 				}
@@ -102,6 +90,21 @@ class SubtitleSource : public Module {
 			pkt->setMediaTime(timestampIn180k);
 
 			output->post(pkt);
+		}
+
+		std::string processLate() {
+			const int64_t diffInMs = (int64_t)(g_SystemClock->now() * 1000) - (initClockTimeInMs + (segNum+1) * segmentDurationInMs);
+			if (diffInMs < -maxDelayInMs) {
+				if (rectify) {
+					m_host->log(Warning, format("Late from %sms. Rectifier activated: inserting empty content", -diffInMs).c_str());
+					// TODO: should we also discard some content if it really arrives but afterward?
+					int64_t timestampIn180k = -1;
+					return processSynthetic(timestampIn180k, segNum, startTimeInMs, segmentDurationInMs, true);
+				} else {
+					m_host->log(Warning, format("Late from %sms. Sleep for %sms", -diffInMs, sleepInMs.count()).c_str());
+				}
+			}
+			return "";
 		}
 
 		KHost *const m_host;
