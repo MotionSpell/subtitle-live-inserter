@@ -35,36 +35,36 @@ bool startsWith(std::string s, std::string prefix) {
 }
 
 struct Logger : LogSink {
-	void send(Level level, const char *msg) override {
-		if (level == Level::Debug)
-			return;
+		void send(Level level, const char *msg) override {
+			if (level == Level::Debug)
+				return;
 
-		auto const now = (double)g_SystemClock->now();
-		fprintf(stderr, "[%s][%.1f][%s#%p][%s]%s\n", getTime().c_str(), now,
-				g_appName, this, getLogLevelName(level), msg);
-		fflush(stderr);
-	}
-
-private:
-	const char *getLogLevelName(Level level) {
-		switch (level) {
-		case Level::Debug:   return "debug";
-		case Level::Info:    return "info";
-		case Level::Warning: return "warning";
-		case Level::Error:   return "error";
-		default:             return "internal error";
+			auto const now = (double)g_SystemClock->now();
+			fprintf(stderr, "[%s][%.1f][%s#%p][%s]%s\n", getTime().c_str(), now,
+			    g_appName, this, getLogLevelName(level), msg);
+			fflush(stderr);
 		}
-	}
 
-	std::string getTime() {
-		char szOut[255];
-		const std::time_t t = std::time(nullptr);
-		const std::tm tm = *std::gmtime(&t);
-		auto const size = strftime(szOut, sizeof szOut, "%Y/%m/%d %H:%M:%S", &tm);
-		auto timeString = std::string(szOut, size);
-		snprintf(szOut, sizeof szOut, "%s", timeString.c_str());
-		return szOut;
-	}
+	private:
+		const char *getLogLevelName(Level level) {
+			switch (level) {
+			case Level::Debug:   return "debug";
+			case Level::Info:    return "info";
+			case Level::Warning: return "warning";
+			case Level::Error:   return "error";
+			default:             return "internal error";
+			}
+		}
+
+		std::string getTime() {
+			char szOut[255];
+			const std::time_t t = std::time(nullptr);
+			const std::tm tm = *std::gmtime(&t);
+			auto const size = strftime(szOut, sizeof szOut, "%Y/%m/%d %H:%M:%S", &tm);
+			auto timeString = std::string(szOut, size);
+			snprintf(szOut, sizeof szOut, "%s", timeString.c_str());
+			return szOut;
+		}
 };
 }
 

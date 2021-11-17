@@ -16,6 +16,9 @@ EXE_SUBTITLE_LIVE_INSERTER_SRCS:=\
 	$(MYDIR)/mp4_mux_file_handler_dyn.cpp\
 	$(MYDIR)/redash.cpp\
 	$(MYDIR)/subtitle_source.cpp\
+	$(MYDIR)/subtitle_source_synthetic.cpp\
+	$(MYDIR)/subtitle_source_playlist.cpp\
+	$(MYDIR)/subtitle_source_playlist_ttml.cpp\
 	$(MYDIR)/main.cpp\
 	$(MYDIR)/pipeliner.cpp\
 	$(MYDIR)/shell.cpp\

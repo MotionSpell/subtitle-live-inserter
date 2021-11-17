@@ -152,7 +152,7 @@ class ReDash : public Module {
 			lastMpdAsText = mpdAsText;
 
 			auto sleepTimeInSec = std::abs(minUpdatePeriodInSec);
-			auto const maxSleepTimeInSec = 2; // some content put a long period but change some parameters along the way...
+			auto const maxSleepTimeInSec = 2; // some contents refresh more often than advertised in the manifest
 			if (sleepTimeInSec > maxSleepTimeInSec) sleepTimeInSec = maxSleepTimeInSec;
 			nextAwakeTime = g_SystemClock->now() + sleepTimeInSec;
 		}

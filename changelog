@@ -1,3 +1,11 @@
+Version 23 (XX/11/2021):
+- TODO: HLS (WebVTT) output.
+- TODO: Add subtitle payload in debug log.
+- Reduce contention on evergrowing-playlist input.
+- Subtitle source: open media files in playlist directory .
+- Improve resiliency with late content, jittered/offset, and discontinuous input content and timestamps.
+- Subtitle timestamps are relative to UTC0.
+
 Version 22 (07/05/2021):
 - Add sanity checks on input MPD to fail fast and explicitly.
 - Expose output transfer logs.
