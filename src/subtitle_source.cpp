@@ -1,4 +1,5 @@
 #include "subtitle_source.hpp"
+#include "subtitle_source_interface.hpp"
 #include "lib_modules/utils/helper.hpp"
 #include "lib_media/common/metadata.hpp"
 #include "lib_media/common/attributes.hpp"
@@ -11,10 +12,6 @@
 #include <thread> //this_thread
 
 using namespace Modules;
-
-std::string processSynthetic(int64_t &timestampIn180k, int segNum, int64_t startTimeInMs, int64_t segmentDurationInMs, bool empty);
-std::string processEverGrowingFile(KHost *host, int64_t &timestampIn180k, int segNum, int64_t startTimeInMs, int64_t segmentDurationInMs,
-    const std::string &playlistFn, const std::string &playlistDir, int64_t sleepInMs, int lastFilePos, int64_t ebuttdOffsetInMs);
 
 namespace {
 
@@ -33,20 +30,10 @@ class SubtitleSource : public Module {
 			output->setMetadata(meta);
 
 			if (!playlistFn.empty()) {
-				std::ifstream file(playlistFn);
-				if (!file.is_open())
-					m_host->log(Error, format("Can't open subtitle playlist file \"%s\". Start may occur with a delay.", playlistFn).c_str());
-
-				playlistDir = playlistFn;
-				while(playlistDir.back() != '\\' && playlistDir.back() != '/')
-					playlistDir.pop_back();
-
-				processContent = std::bind(&processEverGrowingFile, m_host, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
-				        segmentDurationInMs, playlistFn, playlistDir, sleepInMs.count(), lastFilePos, ebuttdOffsetInMs);
+				generator = std::make_unique<SubtitleSourceProcessorEverGrowingFile>(m_host, playlistFn, segmentDurationInMs, sleepInMs.count());
 			} else {
 				// synthetic subtitle fallback
-				processContent = std::bind(&processSynthetic, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
-				        segmentDurationInMs, false);
+				generator = std::make_unique<SubtitleSourceProcessorSyntheticTtml>(segmentDurationInMs);
 			}
 
 			m_host->activate(true);
@@ -55,18 +42,17 @@ class SubtitleSource : public Module {
 		void process() override {
 			ensureStartTime();
 
-			int64_t timestampIn180k = -1;
-			auto content = processContent(timestampIn180k, segNum, startTimeInMs);
+			auto content = generator->process(segNum, startTimeInMs);
 
-			if (content.empty()) {
+			if (content.text.empty()) {
 				content = processLate();
-				if (content.empty()) {
+				if (content.text.empty()) {
 					std::this_thread::sleep_for(sleepInMs);
 					return;
 				}
 			}
 
-			post(content, timestampIn180k);
+			post(content.text, content.timestampIn180k);
 			segNum++;
 		}
 
@@ -92,36 +78,32 @@ class SubtitleSource : public Module {
 			output->post(pkt);
 		}
 
-		std::string processLate() {
+		ISubtitleSourceProcessor::Result processLate() {
 			const int64_t diffInMs = (int64_t)(g_SystemClock->now() * 1000) - (initClockTimeInMs + (segNum+1) * segmentDurationInMs);
 			if (diffInMs < -maxDelayInMs) {
 				if (rectify) {
 					m_host->log(Warning, format("Late from %sms. Rectifier activated: inserting empty content", -diffInMs).c_str());
 					// TODO: should we also discard some content if it really arrives but afterward?
-					int64_t timestampIn180k = -1;
-					return processSynthetic(timestampIn180k, segNum, startTimeInMs, segmentDurationInMs, true);
+					return SubtitleSourceProcessorSyntheticTtml::generate(segNum, startTimeInMs, segmentDurationInMs, true);
 				} else {
 					m_host->log(Warning, format("Late from %sms. Sleep for %sms", -diffInMs, sleepInMs.count()).c_str());
 				}
 			}
-			return "";
+			return { "", -1 };
 		}
 
 		KHost *const m_host;
 		OutputDefault *output;
 
 		const std::string playlistFn;
-		std::string playlistDir;
 		const uint64_t segmentDurationInMs;
 		const bool rectify = false;
 		IUtcStartTimeQuery const *utcStartTime;
 
 		int64_t startTimeInMs = 0, initClockTimeInMs = 0;
-		int64_t ebuttdOffsetInMs = 0;
 		int segNum = 0;
 		const std::chrono::milliseconds sleepInMs;
-		int lastFilePos = 0;
-		std::function<std::string(int64_t&, int, int64_t)> processContent;
+		std::unique_ptr<ISubtitleSourceProcessor> generator;
 };
 
 IModule* createObject(KHost* host, void* va) {

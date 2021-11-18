@@ -15,6 +15,7 @@ EXE_SUBTITLE_LIVE_INSERTER_SRCS:=\
 	$(MYDIR)/../signals/src/lib_appcommon/options.cpp\
 	$(MYDIR)/mp4_mux_file_handler_dyn.cpp\
 	$(MYDIR)/redash.cpp\
+	$(MYDIR)/rehls.cpp\
 	$(MYDIR)/subtitle_source.cpp\
 	$(MYDIR)/subtitle_source_synthetic_ttml.cpp\
 	$(MYDIR)/subtitle_source_playlist.cpp\

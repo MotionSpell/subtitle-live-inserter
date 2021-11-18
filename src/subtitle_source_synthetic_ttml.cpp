@@ -1,9 +1,13 @@
+#include "subtitle_source_interface.hpp"
 #include "lib_utils/format.hpp"
 #include "lib_utils/time.hpp" //timeInMsToStr
 #include "lib_utils/clock.hpp"
 #include <string>
 
-std::string processSynthetic(int64_t &timestampIn180k, int segNum, int64_t startTimeInMs, int64_t segmentDurationInMs, bool empty) {
+SubtitleSourceProcessorSyntheticTtml::SubtitleSourceProcessorSyntheticTtml(uint64_t segmentDurationInMs) : segmentDurationInMs(segmentDurationInMs) {
+}
+
+ISubtitleSourceProcessor::Result SubtitleSourceProcessorSyntheticTtml::generate(int64_t startTimeInMs, int segNum, int64_t segmentDurationInMs, bool empty) {
 	//generate timecode strings
 	const size_t timecodeSize = 24;
 	char timecodeShow[timecodeSize] = {};
@@ -52,7 +56,10 @@ std::string processSynthetic(int64_t &timestampIn180k, int segNum, int64_t start
 </tt>
 )|", timing);
 
-			timestampIn180k = timescaleToClock(segNum * (int64_t)segmentDurationInMs, 1000);
+  auto timestampIn180k = timescaleToClock(segNum * (int64_t)segmentDurationInMs, 1000);
+  return { content, timestampIn180k };
+}
 
-			return content;
-		}
+ISubtitleSourceProcessor::Result SubtitleSourceProcessorSyntheticTtml::process(int64_t startTimeInMs, int segNum) {
+  return SubtitleSourceProcessorSyntheticTtml::generate(startTimeInMs, segNum, segmentDurationInMs, false);
+}

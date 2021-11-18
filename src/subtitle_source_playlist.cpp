@@ -1,15 +1,29 @@
-#include "lib_modules/core/module.hpp"
+#include "subtitle_source_interface.hpp"
+#include "lib_modules/core/module.hpp" // KHost
 #include "lib_utils/clock.hpp"
 #include "lib_utils/format.hpp"
 #include "lib_utils/log_sink.hpp"
 #include "lib_utils/time.hpp" //timeInMsToStr
+#include <cassert>
 #include <cmath> //abs, lround
 #include <fstream>
 
 std::string getContentTtml(const std::vector<char> &input, int64_t referenceTimeInMs, uint64_t segmentDurationInMs, int64_t startTimeInMs, int64_t ebuttdOffsetInMs, Modules::KHost *host);
 
-std::string processEverGrowingFile(Modules::KHost *host, int64_t &timestampIn180k, int segNum, int64_t startTimeInMs, int64_t segmentDurationInMs,
-    const std::string &playlistFn, const std::string &playlistDir, int64_t sleepInMs, int lastFilePos, int64_t ebuttdOffsetInMs) {
+SubtitleSourceProcessorEverGrowingFile::SubtitleSourceProcessorEverGrowingFile(Modules::KHost *host, const std::string &playlistFn, uint64_t segmentDurationInMs, int64_t sleepInMs)
+	: host(host), playlistFn(playlistFn), segmentDurationInMs(segmentDurationInMs), sleepInMs(sleepInMs) {
+	assert(!playlistFn.empty());
+
+	std::ifstream file(playlistFn);
+	if (!file.is_open())
+		host->log(Error, format("Can't open subtitle playlist file \"%s\". Start may occur with a delay.", playlistFn).c_str());
+
+	playlistDir = playlistFn;
+	while(playlistDir.back() != '\\' && playlistDir.back() != '/')
+		playlistDir.pop_back();
+}
+
+ISubtitleSourceProcessor::Result SubtitleSourceProcessorEverGrowingFile::process(int64_t startTimeInMs, int segNum) {
 	std::ifstream file(playlistFn);
 	if (!file.is_open()) {
 		host->log(Error, format("Can't open subtitle playlist file \"%s\". Sleeping for %sms.",
@@ -26,6 +40,7 @@ std::string processEverGrowingFile(Modules::KHost *host, int64_t &timestampIn180
 
 	//scan line
 	std::string subtitleFn;
+	int64_t timestampIn180k;
 	{
 		auto const MAX_PATH = 4096;
 		char subtitleFnRaw[MAX_PATH];
@@ -75,5 +90,5 @@ std::string processEverGrowingFile(Modules::KHost *host, int64_t &timestampIn180
 	pbuf->sgetn(input.data(), size);
 	ifs.close();
 
-	return getContentTtml(input, referenceTimeInMs, segmentDurationInMs, startTimeInMs, ebuttdOffsetInMs, host);
+	return { getContentTtml(input, referenceTimeInMs, segmentDurationInMs, startTimeInMs, ebuttdOffsetInMs, host), timestampIn180k };
 }

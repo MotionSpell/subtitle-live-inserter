@@ -504,7 +504,7 @@ unittest("Redash: empty baseUrl") {
 unittest("Redash: general delay") {
     auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
-	  auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	                                                                        auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:40Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -528,9 +528,9 @@ unittest("Redash: general delay") {
 
 unittest("Redash: sanity checks") {
     auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S"><Period/></MPD>)|";
-    auto cfg = createRDCfg();
-    cfg.baseUrl = "";
-    ASSERT_THROWN(check(mpd, "", cfg));
+	                                                                                auto cfg = createRDCfg();
+	                                                                                cfg.baseUrl = "";
+	                                                                                ASSERT_THROWN(check(mpd, "", cfg));
 }
 
 }
