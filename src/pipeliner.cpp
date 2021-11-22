@@ -14,7 +14,7 @@
 #include "lib_media/out/filesystem.hpp"
 #include "lib_media/out/http_sink.hpp"
 #include "plugins/RegulatorMono/regulator_mono.hpp"
-#include "redash.hpp"
+#include "re_dash.hpp"
 #include "subtitle_source.hpp"
 
 using namespace Modules;

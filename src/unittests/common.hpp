@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tests/tests.hpp"
-#include "../redash.hpp"
+#include "../re_dash.hpp"
 #include "lib_modules/core/connection.hpp"
 #include "lib_modules/utils/helper.hpp" // NullHost
 #include "lib_modules/utils/loader.hpp"
