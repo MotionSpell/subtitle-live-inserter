@@ -14,6 +14,7 @@
 #include "lib_media/out/filesystem.hpp"
 #include "lib_media/out/http_sink.hpp"
 #include "plugins/RegulatorMono/regulator_mono.hpp"
+#include "hls_webvtt_rephaser.hpp"
 #include "re_dash.hpp"
 #include "subtitle_source.hpp"
 
@@ -150,7 +151,10 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 		source = mux(source);
 	} else {
 		assert(cfg.outputFormat == "hls");
-		auto rephaser = pipeline->add("HlsWebvttRephaser", nullptr);
+		HlsWebvttRephaserConfig hwrCfg;
+		hwrCfg.url = cfg.url;
+		hwrCfg.segmentDurationInMs = g_segmentDurationInMs;
+		auto rephaser = pipeline->add("HlsWebvttRephaser", &hwrCfg);
 		pipeline->connect(source, rephaser);
 		source = rephaser;
 	}

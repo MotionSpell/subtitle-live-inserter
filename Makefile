@@ -8,7 +8,7 @@ SIGNALS_HAS_APPS?=0
 #------------------------------------------------------------------------------
 
 EXE_OTHER_SRCS+=$(shell find src/ -path "*/unittests/*.cpp" | sort)
-EXE_OTHER_SRCS+=src/re_dash.cpp src/re_hls.cpp
+EXE_OTHER_SRCS+=src/re_dash.cpp src/re_hls.cpp src/hls_webvtt_rephaser.cpp
 
 include signals/Makefile
 
