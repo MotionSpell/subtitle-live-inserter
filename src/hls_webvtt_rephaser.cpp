@@ -99,9 +99,7 @@ class HlsWebvttRephaser : public ModuleS {
 			std::stringstream ss((const char*)data->data().ptr);
 			while(std::getline(ss, line)) {
 				auto addLine = [&]() {
-					for (auto c : line)
-						output.push_back(c);
-
+					output += line;
 					output.push_back('\n');
 				};
 

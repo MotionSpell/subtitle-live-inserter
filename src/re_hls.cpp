@@ -72,8 +72,7 @@ class ReHLS : public Module {
 					return line.size() > 2 && line[0] == '#' && line[1] == '#';
 				};
 				auto addLine = [&]() {
-					for (auto c : line)
-						m3u8MasterNew.push_back(c);
+					m3u8MasterNew += line;
 				};
 
 				if(empty() || comment()) {
@@ -88,9 +87,7 @@ class ReHLS : public Module {
 
 					auto i = url.rfind('/');
 					auto const baseURL = url.substr(0, i);
-
-					for (auto c : baseURL)
-						m3u8MasterNew.push_back(c);
+					m3u8MasterNew += baseURL;
 
 					if (!startsWith(line, "/"))
 						m3u8MasterNew.push_back('/');
@@ -114,11 +111,8 @@ class ReHLS : public Module {
 					}
 
 					//add subtitle to video
-					if (line.find("RESOLUTION=") != std::string::npos) {
-						std::string suffix(",SUBTITLES=\"subtitles\"");
-						for (auto c : suffix)
-							m3u8MasterNew.push_back(c);
-					}
+					if (line.find("RESOLUTION=") != std::string::npos)
+						m3u8MasterNew += ",SUBTITLES=\"subtitles\"";
 				} else {
 					ensureAbsoluteUrl();
 					addLine();
@@ -130,13 +124,11 @@ class ReHLS : public Module {
 			m3u8MasterNew.push_back('\n');
 
 			auto const author = std::string("## Updated with Motion Spell / GPAC Licensing ") + g_appName + " version " + g_version + "\n";
-			for (auto c : author)
-				m3u8MasterNew.push_back(c);
+			m3u8MasterNew += author;
 
 			//add a final entry to the master playlist
 			auto const subVariant = format("#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subtitles\",NAME=\"subtitles\",LANGUAGE=\"de\",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI=\"%s/%s\"\n", baseUrl, variantPlaylistFn);
-			for (auto c : subVariant)
-				m3u8MasterNew.push_back(c);
+			m3u8MasterNew += subVariant;
 
 			postManifest(outputMaster, m3u8MasterNew);
 		}
