@@ -23,7 +23,7 @@ struct SubtitleSourceProcessorEverGrowingFile : ISubtitleSourceProcessor {
 	private:
 		Modules::KHost *host;
 		const std::string playlistFn;
-        const uint64_t segmentDurationInMs;
+		const uint64_t segmentDurationInMs;
 		const int64_t sleepInMs;
 		int64_t ebuttdOffsetInMs = 0;
 		int lastFilePos = 0;
@@ -32,11 +32,11 @@ struct SubtitleSourceProcessorEverGrowingFile : ISubtitleSourceProcessor {
 
 
 struct SubtitleSourceProcessorSyntheticTtml : ISubtitleSourceProcessor {
-	SubtitleSourceProcessorSyntheticTtml(uint64_t segmentDurationInMs);
-	Result process(int64_t startTimeInMs, int segNum) final;
+		SubtitleSourceProcessorSyntheticTtml(uint64_t segmentDurationInMs);
+		Result process(int64_t startTimeInMs, int segNum) final;
 
-	static Result generate(int64_t startTimeInMs, int segNum, int64_t segmentDurationInMs, bool empty);
+		static Result generate(int64_t startTimeInMs, int segNum, int64_t segmentDurationInMs, bool empty);
 
-private:
-    const uint64_t segmentDurationInMs;
+	private:
+		const uint64_t segmentDurationInMs;
 };

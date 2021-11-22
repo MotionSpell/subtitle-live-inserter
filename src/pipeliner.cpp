@@ -5,6 +5,7 @@
 #include "lib_utils/time.hpp"
 #include "lib_utils/tools.hpp" // operator|
 #include "options.hpp"
+#include <cassert>
 #include <thread>
 #include <ctime>
 
@@ -73,21 +74,27 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	auto pipeline = std::make_unique<Pipeline>(&logger);
 
 	// ReDash
+	IFilter *redasher = nullptr;
 	struct FilePullerFactory : In::IFilePullerFactory {
 		std::unique_ptr<In::IFilePuller> create() override {
 			return createHttpSource();
 		}
 	};
 	ReDashConfig rdCfg;
+	rdCfg.segmentDurationInMs = cfg.segmentDurationInMs;
 	rdCfg.url = cfg.url;
 	rdCfg.utcStartTime = &utcStartTime; // set by this module: keep it first in module declarations
 	rdCfg.delayInSec = cfg.delayInSec;
-	rdCfg.mpdFn = cfg.mpdFn;
+	rdCfg.manifestFn = cfg.manifestFn;
 	rdCfg.baseUrl = cfg.baseUrl;
 	rdCfg.postUrl = cfg.postUrl;
 	FilePullerFactory filePullerFactory;
 	rdCfg.filePullerFactory = &filePullerFactory;
-	auto redasher = pipeline->add("reDASH", &rdCfg);
+	if (cfg.outputFormat == "dash") {
+		redasher = pipeline->add("reDASH", &rdCfg);
+	} else {
+		redasher = pipeline->add("reHLS", &rdCfg);
+	}
 
 	// Create sink
 	IFilter *sink = nullptr;
@@ -122,25 +129,32 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	};
 	source = regulate(source);
 
-	// Muxer
-	auto mux = [&](OutputPin compressed) -> OutputPin {
-		Mp4MuxConfig mp4config;
-		mp4config.segmentDurationInMs = g_segmentDurationInMs;
-		mp4config.segmentPolicy = FragmentedSegment;
-		mp4config.fragmentPolicy = OneFragmentPerSegment;
-		mp4config.compatFlags = Browsers | ExactInputDur | SegNumStartsAtZero;
-		mp4config.utcStartTime = &utcStartTime;
+	if (cfg.outputFormat == "dash") {
+		// Muxer
+		auto mux = [&](OutputPin compressed) -> OutputPin {
+			Mp4MuxConfig mp4config;
+			mp4config.segmentDurationInMs = g_segmentDurationInMs;
+			mp4config.segmentPolicy = FragmentedSegment;
+			mp4config.fragmentPolicy = OneFragmentPerSegment;
+			mp4config.compatFlags = Browsers | ExactInputDur | SegNumStartsAtZero;
+			mp4config.utcStartTime = &utcStartTime;
 
-		Mp4MuxFileHandlerDynConfig cfg;
-		cfg.mp4MuxCfg = &mp4config;
-		cfg.timeshiftBufferDepthInSec = rdCfg.timeshiftBufferDepthInSec;
+			Mp4MuxFileHandlerDynConfig cfg;
+			cfg.mp4MuxCfg = &mp4config;
+			cfg.timeshiftBufferDepthInSec = rdCfg.timeshiftBufferDepthInSec;
 
-		auto muxer = pipeline->add("Mp4MuxFileHandlerDyn", &cfg);
-		pipeline->connect(compressed, muxer);
-		return muxer;
-	};
-	auto muxer = mux(source);
-	pipeline->connect(muxer, sink, true);
+			auto muxer = pipeline->add("Mp4MuxFileHandlerDyn", &cfg);
+			pipeline->connect(compressed, muxer);
+			return muxer;
+		};
+		source = mux(source);
+	} else {
+		assert(cfg.outputFormat == "hls");
+		auto rephaser = pipeline->add("HlsWebvttRephaser", nullptr);
+		pipeline->connect(source, rephaser);
+		source = rephaser;
+	}
+	pipeline->connect(source, sink, true);
 
 	// Diff retrieved AST from MPD with the local clock
 	auto const granularityInMs = g_segmentDurationInMs;

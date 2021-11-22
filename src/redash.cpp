@@ -17,8 +17,7 @@
 using namespace Modules;
 using namespace Modules::In;
 
-const char *g_appName = "subtitle-live-inserter";
-
+extern const char *g_appName;
 extern const char *g_version;
 std::unique_ptr<IFilePuller> createHttpSource();
 int64_t parseIso8601Period(std::string input);
@@ -73,9 +72,9 @@ std::string formatDate(int64_t timestamp) {
 class ReDash : public Module {
 	public:
 		ReDash(KHost* host, ReDashConfig *cfg)
-			: m_host(host), url(cfg->url), baseUrl(cfg->baseUrl), postUrl(cfg->postUrl),
+			: m_host(host), url(cfg->url), baseUrl(cfg->baseUrl), segmentDurationInMs(cfg->segmentDurationInMs),
 			  httpSrc(cfg->filePullerFactory->create()), nextAwakeTime(g_SystemClock->now()), delayInSec(cfg->delayInSec) {
-			std::string urlFn = cfg->mpdFn.empty() ? url : cfg->mpdFn;
+			std::string urlFn = cfg->manifestFn.empty() ? url : cfg->manifestFn;
 			auto i = urlFn.rfind('/');
 			if(i != urlFn.npos)
 				urlFn = urlFn.substr(i+1, urlFn.npos);
@@ -254,13 +253,14 @@ class ReDash : public Module {
 			for (auto& e : mpd.children)
 				if (e.name == "Period") {
 					auto b = baseUrl.empty() ? std::string() : format("<BaseURL>%s</BaseURL>", baseUrl);
+					auto const timescale = 10000000;
 					auto as = format(R"|(
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
         <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2" />
         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
-        %s<SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" />
+        %s<SegmentTemplate timescale="%s" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" />
         <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1" />
-    </AdaptationSet>)|", b);
+    </AdaptationSet>)|", b, timescale, rescale(segmentDurationInMs, 1000, timescale));
 					e.add(parseXml({ as.c_str(), as.size() }));
 				} else
 					addSubtitleAdaptationSet(e);
@@ -279,7 +279,8 @@ class ReDash : public Module {
 		KHost* const m_host;
 		OutputDefault* output;
 
-		std::string url, baseUrl, postUrl;
+		const std::string url, baseUrl;
+		const int segmentDurationInMs;
 		std::vector<uint8_t> lastMpdAsText;
 		std::unique_ptr<IFilePuller> httpSrc;
 		int64_t minUpdatePeriodInSec = 0;

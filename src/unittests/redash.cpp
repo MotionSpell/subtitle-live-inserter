@@ -1,77 +1,11 @@
-#include "tests/tests.hpp"
-#include "../redash.hpp"
-#include "lib_modules/utils/loader.hpp"
-#include "lib_modules/utils/helper.hpp" // NullHost
-#include "lib_media/common/file_puller.hpp"
-#include "lib_media/common/metadata_file.hpp"
-#include "lib_media/utils/recorder.hpp"
-#include "lib_modules/core/connection.hpp"
+#include "common.hpp"
 #include "lib_utils/format.hpp"
 
-using namespace Modules;
-
-extern const char *g_version;
+const char *g_appName = "subtitle-live-inserter";
 
 namespace {
-struct MemoryFileSystem : In::IFilePuller {
-	MemoryFileSystem(const char *src) : src(src) {}
-	void wget(const char* /*szUrl*/, std::function<void(SpanC)> callback) override {
-		ASSERT(src != nullptr);
-		callback({(const uint8_t*)src, strlen(src)});
-	}
-	const char *src = nullptr;
-};
 
-struct FilePullerFactory : In::IFilePullerFactory {
-	FilePullerFactory(const char *src) : src(src) {}
-	std::unique_ptr<In::IFilePuller> create() override {
-		return std::make_unique<MemoryFileSystem>(src);
-	}
-	const char *src = nullptr;
-};
-
-ReDashConfig createRDCfg() {
-	ReDashConfig cfg;
-	cfg.url = "http://url/for/the.mpd";
-	cfg.baseUrl = ".";
-	cfg.mpdFn = "redash.mpd";
-	cfg.postUrl = "/root/output/";
-	UtcStartTime utcStartTime;
-	utcStartTime.startTime = 1789;
-	cfg.utcStartTime = &utcStartTime;
-	cfg.delayInSec = 0;
-	cfg.timeshiftBufferDepthInSec = 17;
-	return cfg;
-}
-
-void check(const std::string &mpd, const std::string &expected, ReDashConfig cfg = createRDCfg()) {
-	FilePullerFactory filePullerFactory(mpd.c_str());
-	cfg.filePullerFactory = &filePullerFactory;
-	auto redash = loadModule("reDASH", &NullHost, &cfg);
-	auto recorder = createModule<Utils::Recorder>(&NullHost);
-	ConnectOutputToInput(redash->getOutput(0), recorder->getInput(0));
-
-	redash->process();
-
-	Data data;
-	auto ret = recorder->tryPop(data);
-	ASSERT_EQUALS(true, ret);
-
-	auto dataRaw = std::dynamic_pointer_cast<const DataRaw>(data);
-	ASSERT(dataRaw);
-
-	ret = recorder->tryPop(data);
-	ASSERT_EQUALS(false, ret);
-
-	auto meta = std::dynamic_pointer_cast<const MetadataFile>(data->getMetadata());
-	ASSERT(meta);
-
-	ASSERT_EQUALS(cfg.mpdFn, meta->filename.substr(meta->filename.size() - cfg.mpdFn.size(), meta->filename.size()));
-
-	ASSERT_EQUALS(expected, std::string((const char*)data->data().ptr, data->data().len).c_str());
-}
-
-unittest("Redash: manifest from Keepixo/Anevia/Ateme") {
+unittest("reDash: manifest from Keepixo/Anevia/Ateme") {
 	auto mpd = R"|(
 <?xml version="1.0" encoding="UTF-8" ?>
 <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:mspr="urn:microsoft:playready" xmlns:cenc="urn:mpeg:cenc:2013" profiles="urn:dvb:dash:profile:dvb-dash:2014,urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011" type="dynamic" availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" publishTime="2020-10-02T17:27:38Z" timeShiftBufferDepth="PT24H0.00S" minBufferTime="PT10.00S">
@@ -147,10 +81,10 @@ unittest("Redash: manifest from Keepixo/Anevia/Ateme") {
 </MPD>
 )|", g_version);
 
-    check(mpd, expected);
+    check("reDASH", mpd, expected);
 }
 
-unittest("Redash: manifest from Elemental for ARD") {
+unittest("reDash: manifest from Elemental for ARD") {
     auto mpd = R"|(
 <?xml version="1.0" encoding="UTF-8"?>
 <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-11T15:39:24Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-02-05T08:27:46Z" minBufferTime="PT22S" suggestedPresentationDelay="PT2S" timeShiftBufferDepth="PT1M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
@@ -215,10 +149,10 @@ unittest("Redash: manifest from Elemental for ARD") {
 </MPD>
 )|", g_version);
 
-    check(mpd, expected);
+    check("reDASH", mpd, expected);
 }
 
-unittest("Redash: manifest from Elemental for RBB (MDR)") {
+unittest("reDash: manifest from Elemental for RBB (MDR)") {
     auto mpd = R"|(
 <?xml version="1.0" encoding="UTF-8" ?>
 <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:mspr="urn:microsoft:playready" xmlns:cenc="urn:mpeg:cenc:2013" profiles="urn:dvb:dash:profile:dvb-dash:2014,urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011" type="dynamic" availabilityStartTime="1970-01-01T00:00:00Z" minimumUpdatePeriod="PT6.000S" publishTime="2021-02-03T10:31:43Z" timeShiftBufferDepth="PT8H0.000S" minBufferTime="PT6.000S">
@@ -279,10 +213,10 @@ unittest("Redash: manifest from Elemental for RBB (MDR)") {
 </MPD>
 )|", g_version);
 
-    check(mpd, expected);
+    check("reDASH", mpd, expected);
 }
 
-unittest("Redash: manifest from Keepixo for RBB") {
+unittest("reDash: manifest from Keepixo for RBB") {
     auto mpd = R"|(
 <?xml version="1.0" encoding="UTF-8"?>
 <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-03T10:34:30Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-01-27T17:13:30Z" minBufferTime="PT6S" suggestedPresentationDelay="PT20S" timeShiftBufferDepth="PT2H0M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
@@ -348,10 +282,10 @@ unittest("Redash: manifest from Keepixo for RBB") {
 </MPD>
 )|", g_version);
 
-    check(mpd, expected);
+    check("reDASH", mpd, expected);
 }
 
-unittest("Redash: manifest from Elemental for RBB (WDR)") {
+unittest("reDash: manifest from Elemental for RBB (WDR)") {
     auto mpd = R"|(
 <?xml version="1.0" encoding="UTF-8"?>
 <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-03T11:14:54Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-01-26T10:25:50Z" minBufferTime="PT22S" suggestedPresentationDelay="PT2S" timeShiftBufferDepth="PT2H0M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
@@ -417,10 +351,10 @@ unittest("Redash: manifest from Elemental for RBB (WDR)") {
 </MPD>
 )|", g_version);
 
-    check(mpd, expected);
+    check("reDASH", mpd, expected);
 }
 
-unittest("Redash: add version when ProgramInfo title is present") {
+unittest("reDash: add version when ProgramInfo title is present") {
     auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">    
   <ProgramInformation>
     <Title>TEST</Title>
@@ -435,10 +369,10 @@ unittest("Redash: add version when ProgramInfo title is present") {
 </MPD>
 )|", g_version);
 
-  check(mpd, expected);
+  check("reDASH", mpd, expected);
 }
 
-unittest("Redash: add version when ProgramInfo title is absent") {
+unittest("reDash: add version when ProgramInfo title is absent") {
   auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"/>)|";
 
 	                                                auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
@@ -449,10 +383,10 @@ unittest("Redash: add version when ProgramInfo title is absent") {
 </MPD>
 )|", g_version);
 
-  check(mpd, expected);
+  check("reDASH", mpd, expected);
 }
 
-unittest("Redash: remote postUrl") {
+unittest("reDash: remote postUrl") {
   auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
 	                                                        auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
@@ -474,10 +408,10 @@ unittest("Redash: remote postUrl") {
 
     auto cfg = createRDCfg();
     cfg.baseUrl = "https://remote/url/";
-    check(mpd, expected, cfg);
+    check("reDASH", mpd, expected, cfg);
 }
 
-unittest("Redash: empty baseUrl") {
+unittest("reDash: empty baseUrl") {
     auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
 	                                                                auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
@@ -498,10 +432,10 @@ unittest("Redash: empty baseUrl") {
 
     auto cfg = createRDCfg();
     cfg.baseUrl = "";
-    check(mpd, expected, cfg);
+    check("reDASH", mpd, expected, cfg);
 }
 
-unittest("Redash: general delay") {
+unittest("reDash: general delay") {
     auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
 	                                                                        auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
@@ -523,14 +457,14 @@ unittest("Redash: general delay") {
     auto cfg = createRDCfg();
     cfg.baseUrl = "";
     cfg.delayInSec = 2;
-    check(mpd, expected, cfg);
+    check("reDASH", mpd, expected, cfg);
 }
 
-unittest("Redash: sanity checks") {
+unittest("reDash: sanity checks") {
     auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S"><Period/></MPD>)|";
 	                                                                                auto cfg = createRDCfg();
 	                                                                                cfg.baseUrl = "";
-	                                                                                ASSERT_THROWN(check(mpd, "", cfg));
+	                                                                                ASSERT_THROWN(check("reDASH", mpd, "", cfg));
 }
 
 }

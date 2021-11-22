@@ -9,7 +9,7 @@
 #include <sstream> // istringstream
 #include <thread>
 
-extern const char *g_appName;
+const char *g_appName = "subtitle-live-inserter";
 
 std::unique_ptr<Pipelines::Pipeline> buildPipeline(Config&);
 static Pipelines::Pipeline *g_Pipeline = nullptr;
@@ -22,7 +22,8 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	opt.add("g", "general-delay", &cfg.delayInSec, "General delay in seconds (signed).");
 	opt.add("s", "subtitle-delay", &cfg.subtitleForwardTimeInSec, "Subtitle delay in seconds (signed).");
 	opt.add("f", "file-playlist", &cfg.subListFn, "File path of the ever-growing playlist. If not set then synthetic content is generated.");
-	opt.add("o", "output-mpd-filename", &cfg.mpdFn, "Manifest filename. If not specified the input filename is copied.");
+	opt.add("u", "output-format", &cfg.outputFormat, "Output format: \"dash\" (default) or \"hls\"");
+	opt.add("o", "output-manifest-filename", &cfg.manifestFn, "Manifest filename. If not specified the input filename is copied.");
 	opt.add("b", "base-url", &cfg.baseUrl, "Explicit URL where the content can be played back.");
 	opt.add("p", "post", &cfg.postUrl, "Path or URL where the content is posted. If not set the content is generated locally.");
 	opt.addFlag("r", "rectify", &cfg.rectify, "Add empty samples when input content is not available on time. Default off.");
@@ -36,6 +37,9 @@ Config parseCommandLine(int argc, char const* argv[]) {
 		return cfg;
 	}
 
+	if (cfg.outputFormat != "dash" && cfg.outputFormat != "hls")
+		throw std::runtime_error("invalid output format, shall be \"dash\" or \"hls\"");
+
 	if (urls.size() != 1) {
 		opt.printHelp();
 		if (urls.empty())
@@ -46,12 +50,13 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	cfg.url = urls[0];
 
 	std::cerr << "Detected options:\n"
-	    "\turl=\"" << cfg.url << "\"\n"
-	    "\tdelayInSec=" << cfg.delayInSec << "\n"
+	    "\turl                     =\"" << cfg.url << "\"\n"
+	    "\toutput format           =\"" << cfg.outputFormat << "\"\n"
+	    "\tdelayInSec              =" << cfg.delayInSec << "\n"
 	    "\tsubtitleForwardTimeInSec=" << cfg.subtitleForwardTimeInSec << "\n"
-	    "\tsubListFn=\"" << cfg.subListFn << "\"\n"
-	    "\tmpdFn=\"" << cfg.mpdFn << "\"\n"
-	    "\tpost=\"" << cfg.postUrl << "\"\n";
+	    "\tsubListFn               =\"" << cfg.subListFn << "\"\n"
+	    "\tmanifestFn                   =\"" << cfg.manifestFn << "\"\n"
+	    "\tpost                    =\"" << cfg.postUrl << "\"\n";
 
 	return cfg;
 }

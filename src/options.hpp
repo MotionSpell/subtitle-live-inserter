@@ -5,12 +5,14 @@
 
 struct Config {
 	std::string url;
+	int segmentDurationInMs = 2000;
 	int delayInSec = 0;
 	int subtitleForwardTimeInSec = 0;
 	std::string subListFn;
 	std::string baseUrl = ".";
 	std::string postUrl = ".";
-	std::string mpdFn;
+	std::string manifestFn;
+	std::string outputFormat = "dash";
 	bool rectify = false;
 
 	std::function<void(int/*delayInSec*/)> updateDelayInSec;

@@ -16,8 +16,9 @@ struct ReDashConfig {
 	std::string url;
 	UtcStartTime *utcStartTime = nullptr;
 	int delayInSec = 0;
+	int segmentDurationInMs = 0;
 	int64_t timeshiftBufferDepthInSec = 24 * 60 * 60;
-	std::string mpdFn;
+	std::string manifestFn;
 	std::string baseUrl;
 	std::string postUrl;
 	Modules::In::IFilePullerFactory *filePullerFactory = nullptr;
