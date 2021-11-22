@@ -98,11 +98,18 @@ void updateMasterPlaylist() {
 			continue;
 		}
 
-		auto addBaseUrl = [&]() {
-			for (auto c : baseUrl)
+		auto ensureAbsoluteUrl = [&]() {
+			if (startsWith(line, "http"))
+				return;
+
+			auto i = url.rfind('/');
+			auto const baseURL = url.substr(0, i);
+
+			for (auto c : baseURL)
 				m3u8MasterNew.push_back(c);
 
-			m3u8MasterNew.push_back('/');
+			if (!startsWith(line, "/"))
+				m3u8MasterNew.push_back('/');
 		};
 
 		if (line[0] == '#') {
@@ -114,7 +121,7 @@ void updateMasterPlaylist() {
 				for ( ; i < pos + strlen(pattern); ++i)
 					m3u8MasterNew.push_back(line[i]);
 
-				addBaseUrl();
+				ensureAbsoluteUrl();
 
 				for ( ; i < line.size(); ++i)
 					m3u8MasterNew.push_back(line[i]);
@@ -129,10 +136,7 @@ void updateMasterPlaylist() {
 					m3u8MasterNew.push_back(c);
 			}
 		} else {
-			//make sure URLs are absolute
-			if (!startsWith(line, "http"))
-				addBaseUrl();
-
+			ensureAbsoluteUrl();
 			addLine();
 		}
 
@@ -141,13 +145,11 @@ void updateMasterPlaylist() {
 
 	m3u8MasterNew.push_back('\n');
 
-	//TODO: add signals version here too
 	auto const author = std::string("## Updated with Motion Spell / GPAC Licensing ") + g_appName + " version " + g_version + "\n";
 	for (auto c : author)
 		m3u8MasterNew.push_back(c);
 
 	//add a final entry to the master playlist
-	//TODO: handle lang
 	auto const subVariant = format("#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subtitles\",NAME=\"subtitles\",LANGUAGE=\"de\",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI=\"%s/%s\"\n", baseUrl, variantPlaylistFn);
 	for (auto c : subVariant)
 		m3u8MasterNew.push_back(c);
