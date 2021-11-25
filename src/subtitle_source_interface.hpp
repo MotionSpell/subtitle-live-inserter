@@ -30,9 +30,18 @@ struct SubtitleSourceProcessorEverGrowingFile : ISubtitleSourceProcessor {
 		std::string playlistDir;
 };
 
-
 struct SubtitleSourceProcessorSyntheticTtml : ISubtitleSourceProcessor {
 		SubtitleSourceProcessorSyntheticTtml(uint64_t segmentDurationInMs);
+		Result process(int64_t startTimeInMs, int segNum) final;
+
+		static Result generate(int64_t startTimeInMs, int segNum, int64_t segmentDurationInMs, bool empty);
+
+	private:
+		const uint64_t segmentDurationInMs;
+};
+
+struct SubtitleSourceProcessorSyntheticWebvtt : ISubtitleSourceProcessor {
+		SubtitleSourceProcessorSyntheticWebvtt(uint64_t segmentDurationInMs);
 		Result process(int64_t startTimeInMs, int segNum) final;
 
 		static Result generate(int64_t startTimeInMs, int segNum, int64_t segmentDurationInMs, bool empty);

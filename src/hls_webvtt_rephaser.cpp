@@ -8,8 +8,11 @@
 #include "lib_utils/format.hpp"
 #include "lib_utils/log_sink.hpp"
 #include "lib_utils/tools.hpp" //enforce
+#include "lib_utils/time.hpp" // getUTC
 #include "plugins/HlsDemuxer/hls_demux.hpp"
 #include "plugins/TsDemuxer/ts_demuxer.hpp"
+#include <ctime> //gmtime
+#include <list>
 #include <sstream>
 
 using namespace Modules;
@@ -24,12 +27,28 @@ bool startsWith(std::string s, std::string prefix) {
 	return s.substr(0, prefix.size()) == prefix;
 }
 
+std::string formatDate(int64_t timestamp) {
+	auto t = (time_t)timestamp;
+	std::tm date = *std::gmtime(&t);
+
+	char buffer[256];
+	sprintf(buffer, "%04d-%02d-%02dT%02d:%02d:%02dZ",
+	    1900 + date.tm_year,
+	    1 + date.tm_mon,
+	    date.tm_mday,
+	    date.tm_hour,
+	    date.tm_min,
+	    date.tm_sec);
+	return buffer;
+}
+
 // Compute the phase between the media (first PTS) and the subtitles (WebVTT first timestamp)
 // Also handles the variant playlist generation for subtitles
-// TODO: also support CMAF
+// TODO: also support CMAF/fMP4
 class HlsWebvttRephaser : public ModuleS {
 	public:
-		HlsWebvttRephaser(KHost* host, HlsWebvttRephaserConfig *cfg) : m_host(host), url(cfg->url), segmentDurationInMs(cfg->segmentDurationInMs) {
+		HlsWebvttRephaser(KHost* host, HlsWebvttRephaserConfig *cfg)
+			: m_host(host), utcStartTime(cfg->utcStartTime), url(cfg->url), segmentDurationInMs(cfg->segmentDurationInMs) {
 			auto meta = std::make_shared<MetadataFile>(PLAYLIST);
 			meta->filename = variantPlaylistFn;
 			outputVariantPlaylist = addOutput();
@@ -39,49 +58,52 @@ class HlsWebvttRephaser : public ModuleS {
 		}
 
 		void processOne(Data data) override {
-			if (phase == -1) {
-				phase = computePhase(); //TODO: do we need to recompute it from time to time? e.g. after stopping streams at night?
+			if (sourceInfo.firstPtsIn90k == -1) {
+				sourceInfo = getSourceInfo(); //TODO: do we need to recompute it from time to time? e.g. after stopping streams at night?
 			}
 			updatePhaseInWebvttSample(data);
 			genVariantPlaylist();
 			segNum++;
 		}
 
-		int64_t computePhase() {
-			int64_t firstPts = INT64_MAX;
+	private:
+		struct SourceInfo {
+			int64_t firstPtsIn90k = -1; // this is the first PTS in HLS corresponding to WebVTT timing zero.
+			int64_t programDateTimeIn180k = -1; // absolute time from the source: may differe significantly from UTC times
+		};
+
+		SourceInfo getSourceInfo() {
+			int64_t firstPtsIn90k = INT64_MAX, programDateTimeIn180k = 0;
 
 			try {
-				struct MyHost : NullHostType {
-					bool finished = false;
-					void activate(bool activated) override {
-						if(!activated)
-							finished = true;
-					}
-				};
-
-				MyHost host;
-
+				// get the last segment
+				Data lastHLSSegment;
 				HlsDemuxConfig hlsCfg;
 				hlsCfg.url = url;
-				auto hls = loadModule("HlsDemuxer", &host, &hlsCfg);
-
-				TsDemuxerConfig tsCfg;
-				tsCfg.pids = {};
-				tsCfg.timestampStartsAtZero = false;
-				auto ts = loadModule("TsDemuxer", &host, &tsCfg);
-
-				ConnectOutputToInput(hls->getOutput(0), ts->getInput(0));
-				ConnectOutput(ts->getOutput(0), [&](Data data) {
-					firstPts = data->get<PresentationTime>().time ;
+				auto hls = loadModule("HlsDemuxer", m_host, &hlsCfg);
+				ConnectOutput(hls->getOutput(0), [&](Data data) {
+					lastHLSSegment = data;
 				});
+				hls->process();
 
-				while (firstPts != INT64_MAX && !host.finished)
-					hls->process();
+				// compute first PTS of last segment
+				TsDemuxerConfig tsCfg;
+				tsCfg.pids = { TsDemuxerConfig::ANY_VIDEO() };
+				tsCfg.timestampStartsAtZero = false;
+				auto ts = loadModule("TsDemuxer", m_host, &tsCfg);
+				ConnectOutput(ts->getOutput(0), [&](Data data) {
+					firstPtsIn90k = clockToTimescale(data->get<PresentationTime>().time, 90000);
+				});
+				ts->getInput(0)->push(lastHLSSegment);
 
-				if (firstPts == INT64_MAX) {
+				if (firstPtsIn90k == INT64_MAX) {
 					m_host->log(Error, "Phase couldn't be computed. Set to zero until next iteration. Contact your vendor.");
-					firstPts = -1;
+					firstPtsIn90k = -1;
 				}
+				/* If any Media Playlist in a Master Playlist contains an EXT-X-PROGRAM-DATE-TIME tag, then all
+				   Media Playlists in that Master Playlist MUST contain EXT-X-PROGRAM-DATE-TIME tags with consistent mappings
+				   of date and time to media timestamps. */
+				programDateTimeIn180k = lastHLSSegment->get<PresentationTime>().time;
 
 				ts->getOutput(0)->disconnect();
 			} catch (std::exception const& e) {
@@ -89,11 +111,11 @@ class HlsWebvttRephaser : public ModuleS {
 			}
 
 			//instanciate HLS and grab first PTS
-			return firstPts;
+			return { firstPtsIn90k, programDateTimeIn180k };
 		}
 
 		void updatePhaseInWebvttSample(Data data) {
-			auto phase = this->phase == -1 ? 0 : this->phase;
+			auto const phase = sourceInfo.firstPtsIn90k == -1 ? 0 : sourceInfo.firstPtsIn90k;
 
 			std::string line, output;
 			std::stringstream ss((const char*)data->data().ptr);
@@ -114,6 +136,11 @@ class HlsWebvttRephaser : public ModuleS {
 
 			auto const segName = format("subs_%s.vtt", segNum);
 			segEntries.push_back(segName);
+			if (timeshiftBufferDepthInSeg > 0) {
+				int toRemove = segEntries.size() - timeshiftBufferDepthInSeg;
+				while (toRemove-- > 0)
+					segEntries.pop_front();
+			}
 
 			auto out = outputSegment->allocData<DataRaw>(output.size());
 			auto metadata = make_shared<MetadataFile>(PLAYLIST);
@@ -130,13 +157,16 @@ class HlsWebvttRephaser : public ModuleS {
 			variantPl << "#EXT-X-VERSION:3\n";
 			variantPl << std::string("## Updated with Motion Spell / GPAC Licensing ") + g_appName + " version " + g_version + "\n";
 			variantPl << "#EXT-X-TARGETDURATION: " << segmentDurationInMs/1000.0 << "\n";
-			variantPl << "#EXT-X-MEDIA-SEQUENCE:" << segNum << "\n";
+			variantPl << "#EXT-X-MEDIA-SEQUENCE:" << (timeshiftBufferDepthInSeg ? segNum - timeshiftBufferDepthInSeg : 0) << "\n";
 			variantPl << "\n";
 
-			for (auto fn : segEntries) {
-				//variantPl << "#EXT-X-PROGRAM-DATE-TIME:2021-11-22T12:53:24.540+02:00" << ",\n";
+			int entryNum = segNum - timeshiftBufferDepthInSeg;
+			for (auto &fn : segEntries) {
+				auto absoluteTimeBaseIn180k = sourceInfo.programDateTimeIn180k == -1 ? utcStartTime->query() : sourceInfo.programDateTimeIn180k;
+				variantPl << "#EXT-X-PROGRAM-DATE-TIME:" << formatDate(absoluteTimeBaseIn180k / IClock::Rate + entryNum * segmentDurationInMs / 1000) << "\n";
 				variantPl << "#EXTINF:" << segmentDurationInMs/1000.0 << ",\n";
 				variantPl << fn << "\n";
+				entryNum++;
 			}
 
 			variantPl << "\n";
@@ -151,14 +181,15 @@ class HlsWebvttRephaser : public ModuleS {
 			outputVariantPlaylist->post(out);
 		}
 
-	private:
 		KHost *m_host;
+		IUtcStartTimeQuery const *utcStartTime;
 		OutputDefault *outputSegment, *outputVariantPlaylist;
 		const std::string url;
 		const int segmentDurationInMs;
-		int segNum = 0;
-		std::vector<std::string> segEntries;
-		int64_t phase = -1; // this is the first PTS in HLS corresponding to WebVTT timing zero.
+		const int timeshiftBufferDepthInSeg = 0; // TODO: should be the same as for audio and video
+		int segNum = timeshiftBufferDepthInSeg;
+		std::list<std::string> segEntries;
+		SourceInfo sourceInfo;
 };
 
 IModule* createObject(KHost* host, void* va) {

@@ -117,6 +117,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	subconfig.subtitleFn = cfg.subListFn;
 	subconfig.segmentDurationInMs = g_segmentDurationInMs;
 	subconfig.rectify = cfg.rectify;
+	subconfig.format = cfg.outputFormat == "dash" ? "ttml" : "webvtt";
 	subconfig.utcStartTime = &utcStartTime;
 	auto subSource = pipeline->add("SubtitleSource", &subconfig);
 	auto source = GetOutputPin(subSource, 0);
@@ -154,20 +155,25 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 		HlsWebvttRephaserConfig hwrCfg;
 		hwrCfg.url = cfg.url;
 		hwrCfg.segmentDurationInMs = g_segmentDurationInMs;
+		hwrCfg.utcStartTime = &utcStartTime;
 		auto rephaser = pipeline->add("HlsWebvttRephaser", &hwrCfg);
 		pipeline->connect(source, rephaser);
 		source = rephaser;
+		pipeline->connect(GetOutputPin(rephaser, 1), sink, true);
 	}
 	pipeline->connect(source, sink, true);
 
-	// Diff retrieved AST from MPD with the local clock
-	auto const granularityInMs = g_segmentDurationInMs;
-	auto const t = int64_t(getUTC() * granularityInMs);
-	auto const remainderInMs = granularityInMs - (t % granularityInMs);
-	std::this_thread::sleep_for(std::chrono::milliseconds(remainderInMs));
-	utcStartTime.startTime = rescale(t + remainderInMs, granularityInMs, IClock::Rate);
+	if (cfg.outputFormat != "dash") {
+		utcStartTime.startTime = fractionToClock(getUTC());
+	} else {
+		// Diff retrieved AST from MPD with the local clock
+		auto const granularityInMs = g_segmentDurationInMs;
+		auto const t = int64_t(getUTC() * granularityInMs);
+		auto const remainderInMs = granularityInMs - (t % granularityInMs);
+		std::this_thread::sleep_for(std::chrono::milliseconds(remainderInMs));
+		utcStartTime.startTime = rescale(t + remainderInMs, granularityInMs, IClock::Rate);
+	}
 	utcStartTime.startTime += cfg.subtitleForwardTimeInSec * IClock::Rate;
-
 	cfg.updateDelayInSec = rdCfg.updateDelayInSec;
 
 	return pipeline;

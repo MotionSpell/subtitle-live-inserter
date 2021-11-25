@@ -18,6 +18,7 @@ EXE_SUBTITLE_LIVE_INSERTER_SRCS:=\
 	$(MYDIR)/re_hls.cpp\
 	$(MYDIR)/subtitle_source.cpp\
 	$(MYDIR)/subtitle_source_synthetic_ttml.cpp\
+	$(MYDIR)/subtitle_source_synthetic_webvtt.cpp\
 	$(MYDIR)/subtitle_source_playlist.cpp\
 	$(MYDIR)/subtitle_source_playlist_ttml.cpp\
 	$(MYDIR)/hls_webvtt_rephaser.cpp\

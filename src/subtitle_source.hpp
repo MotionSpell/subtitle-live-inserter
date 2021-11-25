@@ -7,5 +7,6 @@ struct SubtitleSourceConfig {
 	std::string subtitleFn;
 	uint64_t segmentDurationInMs = 2000;
 	bool rectify = false;
+	std::string format = "ttml";
 	IUtcStartTimeQuery const *utcStartTime = nullptr;
 };

@@ -2,7 +2,6 @@
 #include "lib_utils/format.hpp"
 #include "lib_utils/time.hpp" //timeInMsToStr
 #include "lib_utils/clock.hpp"
-#include <string>
 
 SubtitleSourceProcessorSyntheticTtml::SubtitleSourceProcessorSyntheticTtml(uint64_t segmentDurationInMs) : segmentDurationInMs(segmentDurationInMs) {
 }

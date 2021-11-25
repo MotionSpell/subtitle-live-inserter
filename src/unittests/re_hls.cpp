@@ -107,21 +107,21 @@ unittest("reHLS: manifest from Elemental (absolute URLs)") {
 #EXT-X-VERSION:3
 #EXT-X-INDEPENDENT-SEGMENTS
 #EXT-X-STREAM-INF:BANDWIDTH=5349696,AVERAGE-BANDWIDTH=3990800,CODECS="avc1.640020,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=50.000,SUBTITLES="subtitles"
-http://url/for/hls/live/2018025/wdrlz_muensterland/master_3628.m3u8
+http://url/hls/live/2018025/wdrlz_muensterland/master_3628.m3u8
 #EXT-X-STREAM-INF:BANDWIDTH=5349696,AVERAGE-BANDWIDTH=3990800,CODECS="avc1.640020,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=50.000,SUBTITLES="subtitles"
-http://url/for/hls/live/2018025-b/wdrlz_muensterland/master_3628.m3u8
+http://url/hls/live/2018025-b/wdrlz_muensterland/master_3628.m3u8
 #EXT-X-STREAM-INF:BANDWIDTH=2794000,AVERAGE-BANDWIDTH=2120800,CODECS="avc1.4d401f,mp4a.40.2",RESOLUTION=960x540,FRAME-RATE=50.000,SUBTITLES="subtitles"
-http://url/for/hls/live/2018025/wdrlz_muensterland/master_1928.m3u8
+http://url/hls/live/2018025/wdrlz_muensterland/master_1928.m3u8
 #EXT-X-STREAM-INF:BANDWIDTH=2794000,AVERAGE-BANDWIDTH=2120800,CODECS="avc1.4d401f,mp4a.40.2",RESOLUTION=960x540,FRAME-RATE=50.000,SUBTITLES="subtitles"
-http://url/for/hls/live/2018025-b/wdrlz_muensterland/master_1928.m3u8
+http://url/hls/live/2018025-b/wdrlz_muensterland/master_1928.m3u8
 #EXT-X-STREAM-INF:BANDWIDTH=1526800,AVERAGE-BANDWIDTH=1130800,CODECS="avc1.4d401f,mp4a.40.2",RESOLUTION=640x360,FRAME-RATE=50.000,SUBTITLES="subtitles"
-http://url/for/hls/live/2018025/wdrlz_muensterland/master_1028.m3u8
+http://url/hls/live/2018025/wdrlz_muensterland/master_1028.m3u8
 #EXT-X-STREAM-INF:BANDWIDTH=1526800,AVERAGE-BANDWIDTH=1130800,CODECS="avc1.4d401f,mp4a.40.2",RESOLUTION=640x360,FRAME-RATE=50.000,SUBTITLES="subtitles"
-http://url/for/hls/live/2018025-b/wdrlz_muensterland/master_1028.m3u8
+http://url/hls/live/2018025-b/wdrlz_muensterland/master_1028.m3u8
 #EXT-X-STREAM-INF:BANDWIDTH=804100,AVERAGE-BANDWIDTH=635800,CODECS="avc1.66.30,mp4a.40.2",RESOLUTION=480x270,FRAME-RATE=50.000,SUBTITLES="subtitles"
-http://url/for/hls/live/2018025/wdrlz_muensterland/master_578.m3u8
+http://url/hls/live/2018025/wdrlz_muensterland/master_578.m3u8
 #EXT-X-STREAM-INF:BANDWIDTH=804100,AVERAGE-BANDWIDTH=635800,CODECS="avc1.66.30,mp4a.40.2",RESOLUTION=480x270,FRAME-RATE=50.000,SUBTITLES="subtitles"
-http://url/for/hls/live/2018025-b/wdrlz_muensterland/master_578.m3u8
+http://url/hls/live/2018025-b/wdrlz_muensterland/master_578.m3u8
 
 ## Updated with Motion Spell / GPAC Licensing %s version %s
 #EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitles",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="./index_sub.m3u8"

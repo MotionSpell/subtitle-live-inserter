@@ -22,7 +22,7 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	opt.add("g", "general-delay", &cfg.delayInSec, "General delay in seconds (signed).");
 	opt.add("s", "subtitle-delay", &cfg.subtitleForwardTimeInSec, "Subtitle delay in seconds (signed).");
 	opt.add("f", "file-playlist", &cfg.subListFn, "File path of the ever-growing playlist. If not set then synthetic content is generated.");
-	opt.add("u", "output-format", &cfg.outputFormat, "Output format: \"dash\" (default) or \"hls\"");
+	opt.add("u", "output-format", &cfg.outputFormat, "Output format: \"dash\" (default) or \"hls\".");
 	opt.add("o", "output-manifest-filename", &cfg.manifestFn, "Manifest filename. If not specified the input filename is copied.");
 	opt.add("b", "base-url", &cfg.baseUrl, "Explicit URL where the content can be played back.");
 	opt.add("p", "post", &cfg.postUrl, "Path or URL where the content is posted. If not set the content is generated locally.");
@@ -55,7 +55,7 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	    "\tdelayInSec              =" << cfg.delayInSec << "\n"
 	    "\tsubtitleForwardTimeInSec=" << cfg.subtitleForwardTimeInSec << "\n"
 	    "\tsubListFn               =\"" << cfg.subListFn << "\"\n"
-	    "\tmanifestFn                   =\"" << cfg.manifestFn << "\"\n"
+	    "\tmanifestFn              =\"" << cfg.manifestFn << "\"\n"
 	    "\tpost                    =\"" << cfg.postUrl << "\"\n";
 
 	return cfg;
@@ -118,7 +118,7 @@ void safeMain(int argc, const char* argv[]) {
 			safeStop();
 			delete s;
 			exit = true;
-		}) ;
+		});
 		shell->addAction("set", std::bind(setAction, &cfg, std::placeholders::_1));
 		std::thread shellThread(&Shell::run, shell.get());
 	}

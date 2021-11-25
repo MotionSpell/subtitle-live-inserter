@@ -21,7 +21,7 @@ class SubtitleSource : public Module {
 	public:
 		SubtitleSource(KHost* host, SubtitleSourceConfig const& cfg)
 			: m_host(host), playlistFn(cfg.subtitleFn), segmentDurationInMs(cfg.segmentDurationInMs),
-			  rectify(cfg.rectify), utcStartTime(cfg.utcStartTime),
+			  rectify(cfg.rectify), ttml(cfg.format == "ttml"), utcStartTime(cfg.utcStartTime),
 			  sleepInMs(std::chrono::milliseconds(maxDelayInMs)) {
 			output = addOutput();
 
@@ -33,7 +33,10 @@ class SubtitleSource : public Module {
 				generator = std::make_unique<SubtitleSourceProcessorEverGrowingFile>(m_host, playlistFn, segmentDurationInMs, sleepInMs.count());
 			} else {
 				// synthetic subtitle fallback
-				generator = std::make_unique<SubtitleSourceProcessorSyntheticTtml>(segmentDurationInMs);
+				if (ttml)
+					generator = std::make_unique<SubtitleSourceProcessorSyntheticTtml>(segmentDurationInMs);
+				else
+					generator = std::make_unique<SubtitleSourceProcessorSyntheticWebvtt>(segmentDurationInMs);
 			}
 
 			m_host->activate(true);
@@ -42,7 +45,7 @@ class SubtitleSource : public Module {
 		void process() override {
 			ensureStartTime();
 
-			auto content = generator->process(segNum, startTimeInMs);
+			auto content = generator->process(startTimeInMs, segNum);
 
 			if (content.text.empty()) {
 				content = processLate();
@@ -84,7 +87,10 @@ class SubtitleSource : public Module {
 				if (rectify) {
 					m_host->log(Warning, format("Late from %sms. Rectifier activated: inserting empty content", -diffInMs).c_str());
 					// TODO: should we also discard some content if it really arrives but afterward?
-					return SubtitleSourceProcessorSyntheticTtml::generate(segNum, startTimeInMs, segmentDurationInMs, true);
+					if (ttml)
+						return SubtitleSourceProcessorSyntheticTtml::generate(segNum, startTimeInMs, segmentDurationInMs, true);
+					else
+						return SubtitleSourceProcessorSyntheticWebvtt::generate(segNum, startTimeInMs, segmentDurationInMs, true);
 				} else {
 					m_host->log(Warning, format("Late from %sms. Sleep for %sms", -diffInMs, sleepInMs.count()).c_str());
 				}
@@ -97,7 +103,8 @@ class SubtitleSource : public Module {
 
 		const std::string playlistFn;
 		const uint64_t segmentDurationInMs;
-		const bool rectify = false;
+		const bool rectify;
+		const bool ttml;
 		IUtcStartTimeQuery const *utcStartTime;
 
 		int64_t startTimeInMs = 0, initClockTimeInMs = 0;

@@ -22,6 +22,14 @@ bool startsWith(std::string s, std::string prefix) {
 	return s.substr(0, prefix.size()) == prefix;
 }
 
+std::string serverName(std::string path) {
+	auto const prefixLen = startsWith(path, "https://") ? 8 : startsWith(path, "http://") ? 7 : 0 /*assume no prefix*/;
+	auto const i = path.substr(prefixLen).find('/');
+	if(i != path.npos)
+		path = path.substr(0, prefixLen + i);
+	return path;
+}
+
 // Only handles the master playlist
 class ReHLS : public Module {
 	public:
@@ -82,15 +90,18 @@ class ReHLS : public Module {
 				}
 
 				auto ensureAbsoluteUrl = [&]() {
-					if (startsWith(line, "http"))
+					if (startsWith(line, "http")) {
 						return;
-
-					auto i = url.rfind('/');
-					auto const baseURL = url.substr(0, i);
-					m3u8MasterNew += baseURL;
-
-					if (!startsWith(line, "/"))
+					} else if (startsWith(line, "/")) {
+						m3u8MasterNew += serverName(url);
+					} else {
+						auto i = url.rfind('/');
+						if (i != std::string::npos) {
+							auto const baseURL = url.substr(0, i);
+							m3u8MasterNew += baseURL;
+						}
 						m3u8MasterNew.push_back('/');
+					}
 				};
 
 				if (line[0] == '#') {
