@@ -1,9 +1,6 @@
-TODO:
-- Support HLS/CMAF
-
-Version 23 (XX/11/2021):
-- TODO: HLS (WebVTT) output (HLS/TS input supported only).
+Version 23 (XX/12/2021):
 - TODO: Add subtitle payload in debug log.
+- HLS (WebVTT) output (HLS/TS input supported only).
 - Reduce contention on evergrowing-playlist input.
 - Subtitle source: open media files in playlist directory .
 - Improve resiliency with late content, jittered/offset, and discontinuous input content and timestamps.

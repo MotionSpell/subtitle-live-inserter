@@ -42,9 +42,8 @@ std::string formatDate(int64_t timestamp) {
 	return buffer;
 }
 
-// Compute the phase between the media (first PTS) and the subtitles (WebVTT first timestamp)
+// Compute the phase between the TS media (first PTS) and the subtitles (WebVTT first timestamp)
 // Also handles the variant playlist generation for subtitles
-// TODO: also support CMAF/fMP4
 class HlsWebvttRephaser : public ModuleS {
 	public:
 		HlsWebvttRephaser(KHost* host, HlsWebvttRephaserConfig *cfg)
@@ -103,7 +102,9 @@ class HlsWebvttRephaser : public ModuleS {
 				/* If any Media Playlist in a Master Playlist contains an EXT-X-PROGRAM-DATE-TIME tag, then all
 				   Media Playlists in that Master Playlist MUST contain EXT-X-PROGRAM-DATE-TIME tags with consistent mappings
 				   of date and time to media timestamps. */
-				programDateTimeIn180k = lastHLSSegment->get<PresentationTime>().time;
+				auto max_ts_in_hour = 27; // 33 bits at 90khz
+				if (programDateTimeIn180k > max_ts_in_hour * 3600 * IClock::Rate)
+					programDateTimeIn180k = lastHLSSegment->get<PresentationTime>().time;
 
 				ts->getOutput(0)->disconnect();
 			} catch (std::exception const& e) {
