@@ -8,7 +8,6 @@
 #include "lib_utils/format.hpp"
 #include "lib_utils/log_sink.hpp"
 #include "lib_utils/tools.hpp" //enforce
-#include "lib_utils/time.hpp" // getUTC
 #include "plugins/HlsDemuxer/hls_demux.hpp"
 #include "plugins/TsDemuxer/ts_demuxer.hpp"
 #include <ctime> //gmtime
@@ -47,7 +46,7 @@ std::string formatDate(int64_t timestamp) {
 class HlsWebvttRephaser : public ModuleS {
 	public:
 		HlsWebvttRephaser(KHost* host, HlsWebvttRephaserConfig *cfg)
-			: m_host(host), utcStartTime(cfg->utcStartTime), url(cfg->url), segmentDurationInMs(cfg->segmentDurationInMs) {
+			: m_host(host), url(cfg->url), segmentDurationInMs(cfg->segmentDurationInMs) {
 			auto meta = std::make_shared<MetadataFile>(PLAYLIST);
 			meta->filename = variantPlaylistFn;
 			outputVariantPlaylist = addOutput();
@@ -163,8 +162,8 @@ class HlsWebvttRephaser : public ModuleS {
 
 			int entryNum = segNum - timeshiftBufferDepthInSeg;
 			for (auto &fn : segEntries) {
-				auto absoluteTimeBaseIn180k = sourceInfo.programDateTimeIn180k == -1 ? utcStartTime->query() : sourceInfo.programDateTimeIn180k;
-				variantPl << "#EXT-X-PROGRAM-DATE-TIME:" << formatDate(absoluteTimeBaseIn180k / IClock::Rate + entryNum * segmentDurationInMs / 1000) << "\n";
+				if (sourceInfo.programDateTimeIn180k != -1)
+					variantPl << "#EXT-X-PROGRAM-DATE-TIME:" << formatDate(sourceInfo.programDateTimeIn180k / IClock::Rate + entryNum * segmentDurationInMs / 1000) << "\n";
 				variantPl << "#EXTINF:" << segmentDurationInMs/1000.0 << ",\n";
 				variantPl << fn << "\n";
 				entryNum++;
@@ -182,8 +181,7 @@ class HlsWebvttRephaser : public ModuleS {
 			outputVariantPlaylist->post(out);
 		}
 
-		KHost *m_host;
-		IUtcStartTimeQuery const *utcStartTime;
+		KHost * const m_host;
 		OutputDefault *outputSegment, *outputVariantPlaylist;
 		const std::string url;
 		const int segmentDurationInMs;
