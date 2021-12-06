@@ -130,4 +130,29 @@ http://url/hls/live/2018025-b/wdrlz_muensterland/master_578.m3u8
     check("reHLS", m3u8, expected);
 }
 
+unittest("reHLS: replace existing subtitle") {
+	auto m3u8 = R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXT-X-STREAM-INF:BANDWIDTH=1229800,AVERAGE-BANDWIDTH=1130800,CODECS="avc1.4d401f,mp4a.40.2",RESOLUTION=640x360,FRAME-RATE=50.000,SUBTITLES="subs"
+https://wdrfsww247.akamaized.net/hls/live/2009628/wdr_msl4_fs247ww/master_1028.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=1229800,AVERAGE-BANDWIDTH=1130800,CODECS="avc1.4d401f,mp4a.40.2",RESOLUTION=640x360,FRAME-RATE=50.000,SUBTITLES="subs"
+https://wdrfsww247.akamaized.net/hls/live/2009628-b/wdr_msl4_fs247ww/master_1028.m3u8
+#EXT-X-MEDIA:TYPE=SUBTITLES,NAME="Untertitel",DEFAULT=YES,AUTOSELECT=YES,FORCED=NO,LANGUAGE="ger",GROUP-ID="subs",URI="https://wdrfsww247.akamaized.net/hls/live/2009628/wdr_msl4_fs247ww/master_subs.m3u8")|";
+
+	                auto expected = format(R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXT-X-STREAM-INF:BANDWIDTH=1229800,AVERAGE-BANDWIDTH=1130800,CODECS="avc1.4d401f,mp4a.40.2",RESOLUTION=640x360,FRAME-RATE=50.000,SUBTITLES="subs",SUBTITLES="subtitles"
+https://wdrfsww247.akamaized.net/hls/live/2009628/wdr_msl4_fs247ww/master_1028.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=1229800,AVERAGE-BANDWIDTH=1130800,CODECS="avc1.4d401f,mp4a.40.2",RESOLUTION=640x360,FRAME-RATE=50.000,SUBTITLES="subs",SUBTITLES="subtitles"
+https://wdrfsww247.akamaized.net/hls/live/2009628-b/wdr_msl4_fs247ww/master_1028.m3u8
+
+## Updated with Motion Spell / GPAC Licensing %s version %s
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitles",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="./index_sub.m3u8"
+)|", g_appName, g_version);
+
+    check("reHLS", m3u8, expected);
+}
+
 }

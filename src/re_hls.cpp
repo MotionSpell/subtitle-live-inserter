@@ -105,6 +105,10 @@ class ReHLS : public Module {
 				};
 
 				if (line[0] == '#') {
+					//ditch existing subtitles
+					if (line.find("TYPE=SUBTITLES") != std::string::npos)
+						continue;
+
 					//make sure URLs are absolute
 					auto const pattern = "URI=\"";
 					auto const pos = line.find(pattern);
