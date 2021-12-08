@@ -17,6 +17,7 @@
 using namespace Modules;
 
 const char *variantPlaylistFn = "index_sub.m3u8";
+const int magicOffsetInSec = 24; // FIXME
 extern const char *g_appName;
 extern const char *g_version;
 
@@ -101,11 +102,12 @@ class HlsWebvttRephaser : public ModuleS {
 				/* If any Media Playlist in a Master Playlist contains an EXT-X-PROGRAM-DATE-TIME tag, then all
 				   Media Playlists in that Master Playlist MUST contain EXT-X-PROGRAM-DATE-TIME tags with consistent mappings
 				   of date and time to media timestamps. */
-				auto max_ts_in_hour = 27; // 33 bits at 90khz
-				if (programDateTimeIn180k > max_ts_in_hour * 3600 * IClock::Rate)
+				auto max_ts_in_hour = 27; // 33 bits at 90khz: if greater, consider this is an absolute clock time
+				if (lastHLSSegment->get<PresentationTime>().time > max_ts_in_hour * 3600 * IClock::Rate)
 					programDateTimeIn180k = lastHLSSegment->get<PresentationTime>().time;
 
-				ts->getOutput(0)->disconnect();
+				programDateTimeIn180k -= magicOffsetInSec * IClock::Rate;
+				firstPtsIn90k -= magicOffsetInSec * 90000; //Romain: change to never become negative
 			} catch (std::exception const& e) {
 				m_host->log(Error, (std::string("error caught while computing phase between media and subtitles: ") + e.what()).c_str());
 			}

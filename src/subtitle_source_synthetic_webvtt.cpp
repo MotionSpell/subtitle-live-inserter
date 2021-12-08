@@ -3,6 +3,8 @@
 #include "lib_utils/time.hpp" //timeInMsToStr
 #include "lib_utils/clock.hpp"
 
+const int magicOffsetInSec = 24;
+
 SubtitleSourceProcessorSyntheticWebvtt::SubtitleSourceProcessorSyntheticWebvtt(uint64_t segmentDurationInMs) : segmentDurationInMs(segmentDurationInMs) {
 }
 
@@ -10,10 +12,10 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorSyntheticWebvtt::generat
 	//generate timecode strings
 	const size_t timecodeSize = 24;
 	char timecodeShow[timecodeSize] = {};
-	timeInMsToStr(/*startTimeInMs + */segNum * segmentDurationInMs, timecodeShow, ".");
+	timeInMsToStr(/*startTimeInMs + */segNum * segmentDurationInMs + magicOffsetInSec, timecodeShow, ".");
 	timecodeShow[timecodeSize - 1] = 0;
 	char timecodeHide[timecodeSize] = {};
-	timeInMsToStr(/*startTimeInMs + */(segNum + 1) * segmentDurationInMs, timecodeHide, ".");
+	timeInMsToStr(/*startTimeInMs + */(segNum + 1) * segmentDurationInMs + magicOffsetInSec, timecodeHide, ".");
 	timecodeHide[timecodeSize - 1] = 0;
 	char timecodeUtc[timecodeSize] = {};
 	timeInMsToStr((uint64_t)(getUTC() * 1000), timecodeUtc, ".");

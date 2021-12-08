@@ -1,5 +1,6 @@
 Version 23 (XX/12/2021):
 - TODO: Add subtitle payload in debug log.
+- TODO (HLS?): If there is an error while downloading refresh the whole playlists
 - HLS (WebVTT) output (HLS/TS input supported only).
 - Reduce contention on evergrowing-playlist input.
 - Subtitle source: open media files in playlist directory .
