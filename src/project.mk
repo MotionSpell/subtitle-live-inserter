@@ -11,8 +11,8 @@ EXE_SUBTITLE_LIVE_INSERTER_SRCS:=\
 	$(LIB_MODULES_SRCS)\
 	$(LIB_PIPELINE_SRCS)\
 	$(LIB_UTILS_SRCS)\
-	$(MYDIR)/../signals/src/lib_appcommon/safemain.cpp\
-	$(MYDIR)/../signals/src/lib_appcommon/options.cpp\
+	$(SRC)/lib_appcommon/safemain.cpp\
+	$(SRC)/lib_appcommon/options.cpp\
 	$(MYDIR)/mp4_mux_file_handler_dyn.cpp\
 	$(MYDIR)/re_dash.cpp\
 	$(MYDIR)/re_hls.cpp\
