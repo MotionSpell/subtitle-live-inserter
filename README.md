@@ -6,12 +6,18 @@ This is the main repository of the Subtitle Live Inserter, a tool to insert subt
 
 You need a C++14 compiler and GNU Make. Dependencies (e.g. Signals extra) should give you guidance about thei prerequisites.
 
+Dependencies (shared by all the projects of the SubStance organization):
+```
+export EXTRA=/opt/msprod/extra
+git clone git@git.gpac-licensing.com:SubStance/signals.git && cd signals && PREFIX=$EXTRA ./extra.sh
+export SIGNALS_PATH=$PWD
+```
+
 Initially:
 ```
 git clone --recursive git@git.gpac-licensing.com:IRT/subtitle-live-inserter.git
 cd subtitle-live-inserter
-cd signals && PREFIX=/opt/msprod/extra ./extra.sh && cd -
-EXTRA=/opt/msprod/extra make -j
+make -j
 ```
 
 At each build:
