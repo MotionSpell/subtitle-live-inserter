@@ -62,7 +62,7 @@ static void incrementTtmlTimings(Tag &xml, int64_t referenceTimeInMs, int64_t in
 std::string getContentTtml(const std::vector<char> &input, int64_t referenceTimeInMs, uint64_t segmentDurationInMs, int64_t startTimeInMs, int64_t ebuttdOffsetInMs, Modules::KHost *host) {
 	//deserialize
 	auto ttml = parseXml({ input.data(), input.size() });
-	assert(ttml.name == "tt:tt");
+	assert(ttml.name == "tt" || ttml.name == "tt:tt");
 
 	//find timings and increment them
 	incrementTtmlTimings(ttml, referenceTimeInMs, startTimeInMs, segmentDurationInMs, ebuttdOffsetInMs, host);
