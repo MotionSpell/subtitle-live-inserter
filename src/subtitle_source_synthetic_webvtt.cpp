@@ -35,6 +35,6 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorSyntheticWebvtt::generat
   return { content, timestampIn180k };
 }
 
-ISubtitleSourceProcessor::Result SubtitleSourceProcessorSyntheticWebvtt::process(int64_t startTimeInMs, int segNum) {
+ISubtitleSourceProcessor::Result SubtitleSourceProcessorSyntheticWebvtt::process(int64_t startTimeInMs, int &segNum) {
   return SubtitleSourceProcessorSyntheticWebvtt::generate(startTimeInMs, segNum, segmentDurationInMs, false);
 }

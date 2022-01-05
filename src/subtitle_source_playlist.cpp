@@ -23,7 +23,7 @@ SubtitleSourceProcessorEverGrowingFile::SubtitleSourceProcessorEverGrowingFile(M
 		playlistDir.pop_back();
 }
 
-ISubtitleSourceProcessor::Result SubtitleSourceProcessorEverGrowingFile::process(int64_t startTimeInMs, int segNum) {
+ISubtitleSourceProcessor::Result SubtitleSourceProcessorEverGrowingFile::process(int64_t startTimeInMs, int &segNum) {
 	std::ifstream file(playlistFn);
 	if (!file.is_open()) {
 		host->log(Error, format("Can't open subtitle playlist file \"%s\". Sleeping for %sms.",
@@ -77,7 +77,7 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorEverGrowingFile::process
 	const int64_t referenceTimeInMs = segNum * segmentDurationInMs;
 
 	lastFilePos = lastFilePos + line.size() + 1;
-	host->log(Warning, format("Manifest file position=%s, timestampIn180k=%sms  ;  media filename=%s, media start time=%sms\n",
+	host->log(Warning, format("Manifest file position=%s, timestamp=%sms  ;  media filename=%s, media start time=%sms\n",
 	        (int)lastFilePos, clockToTimescale(timestampIn180k, 1000), subtitleFn, referenceTimeInMs).c_str());
 
 	//get size

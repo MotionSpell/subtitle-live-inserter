@@ -83,16 +83,17 @@ class SubtitleSource : public Module {
 
 		ISubtitleSourceProcessor::Result processLate() {
 			const int64_t diffInMs = (int64_t)(g_SystemClock->now() * 1000) - (initClockTimeInMs + (segNum+1) * segmentDurationInMs);
-			if (diffInMs < -maxDelayInMs) {
+			if (diffInMs > maxDelayInMs) {
 				if (rectify) {
-					m_host->log(Warning, format("Late from %sms. Rectifier activated: inserting empty content", -diffInMs).c_str());
+					m_host->log(Warning, format("Late from %sms. Rectifier activated: inserting empty content", diffInMs).c_str());
+
 					// TODO: should we also discard some content if it really arrives but afterward?
 					if (ttml)
-						return SubtitleSourceProcessorSyntheticTtml::generate(segNum, startTimeInMs, segmentDurationInMs, true);
+						return SubtitleSourceProcessorSyntheticTtml::generate(startTimeInMs, segNum, segmentDurationInMs, true);
 					else
-						return SubtitleSourceProcessorSyntheticWebvtt::generate(segNum, startTimeInMs, segmentDurationInMs, true);
+						return SubtitleSourceProcessorSyntheticWebvtt::generate(startTimeInMs, segNum, segmentDurationInMs, true);
 				} else {
-					m_host->log(Warning, format("Late from %sms. Sleep for %sms", -diffInMs, sleepInMs.count()).c_str());
+					m_host->log(Warning, format("Data is late from %sms. Sleep for %sms.", diffInMs, sleepInMs.count()).c_str());
 				}
 			}
 			return { "", -1 };

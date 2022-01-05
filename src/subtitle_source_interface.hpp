@@ -9,7 +9,7 @@ struct ISubtitleSourceProcessor {
 	};
 
 	virtual ~ISubtitleSourceProcessor() = default;
-	virtual Result process(int64_t startTimeInMs, int segNum) = 0;
+	virtual Result process(int64_t startTimeInMs, int &segNum) = 0;
 };
 
 namespace Modules {
@@ -18,7 +18,7 @@ struct KHost;
 
 struct SubtitleSourceProcessorEverGrowingFile : ISubtitleSourceProcessor {
 		SubtitleSourceProcessorEverGrowingFile(Modules::KHost *host, const std::string &playlistFn, uint64_t segmentDurationInMs, int64_t sleepInMs);
-		Result process(int64_t startTimeInMs, int segNum) final;
+		Result process(int64_t startTimeInMs, int &segNum) final;
 
 	private:
 		Modules::KHost *host;
@@ -32,7 +32,7 @@ struct SubtitleSourceProcessorEverGrowingFile : ISubtitleSourceProcessor {
 
 struct SubtitleSourceProcessorSyntheticTtml : ISubtitleSourceProcessor {
 		SubtitleSourceProcessorSyntheticTtml(uint64_t segmentDurationInMs);
-		Result process(int64_t startTimeInMs, int segNum) final;
+		Result process(int64_t startTimeInMs, int &segNum) final;
 
 		static Result generate(int64_t startTimeInMs, int segNum, int64_t segmentDurationInMs, bool empty);
 
@@ -42,7 +42,7 @@ struct SubtitleSourceProcessorSyntheticTtml : ISubtitleSourceProcessor {
 
 struct SubtitleSourceProcessorSyntheticWebvtt : ISubtitleSourceProcessor {
 		SubtitleSourceProcessorSyntheticWebvtt(uint64_t segmentDurationInMs);
-		Result process(int64_t startTimeInMs, int segNum) final;
+		Result process(int64_t startTimeInMs, int &segNum) final;
 
 		static Result generate(int64_t startTimeInMs, int segNum, int64_t segmentDurationInMs, bool empty);
 

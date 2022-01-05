@@ -59,6 +59,6 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorSyntheticTtml::generate(
   return { content, timestampIn180k };
 }
 
-ISubtitleSourceProcessor::Result SubtitleSourceProcessorSyntheticTtml::process(int64_t startTimeInMs, int segNum) {
+ISubtitleSourceProcessor::Result SubtitleSourceProcessorSyntheticTtml::process(int64_t startTimeInMs, int &segNum) {
   return SubtitleSourceProcessorSyntheticTtml::generate(startTimeInMs, segNum, segmentDurationInMs, false);
 }

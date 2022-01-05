@@ -52,6 +52,7 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	std::cerr << "Detected options:\n"
 	    "\turl                     =\"" << cfg.url << "\"\n"
 	    "\toutput format           =\"" << cfg.outputFormat << "\"\n"
+	    "\trectify                 =" << cfg.rectify << "\n"
 	    "\tdelayInSec              =" << cfg.delayInSec << "\n"
 	    "\tsubtitleForwardTimeInSec=" << cfg.subtitleForwardTimeInSec << "\n"
 	    "\tsubListFn               =\"" << cfg.subListFn << "\"\n"
@@ -99,13 +100,6 @@ void setAction(Config *cfg, std::string parameters) {
 }
 }
 
-void safeStop() {
-	if (g_Pipeline) {
-		g_Pipeline->exitSync();
-		g_Pipeline = nullptr;
-	}
-}
-
 void safeMain(int argc, const char* argv[]) {
 	auto cfg = parseCommandLine(argc, argv);
 	if(cfg.help)
@@ -115,7 +109,8 @@ void safeMain(int argc, const char* argv[]) {
 
 	if (cfg.shell) {
 		auto shell = std::shared_ptr<Shell>(new Shell, [&](Shell *s) {
-			safeStop();
+			if (g_Pipeline)
+				g_Pipeline->exitSync();
 			delete s;
 			exit = true;
 		});

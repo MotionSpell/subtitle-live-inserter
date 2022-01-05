@@ -21,6 +21,7 @@ struct MemoryFileSystem : In::IFilePuller {
 		ASSERT(src != nullptr);
 		callback({(const uint8_t*)src, strlen(src)});
 	}
+	void askToExit() override {}
 	const char *src = nullptr;
 };
 
