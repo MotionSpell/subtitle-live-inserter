@@ -7,6 +7,11 @@
 
 struct UtcStartTime : IUtcStartTimeQuery {
 	uint64_t query() const override {
+		//unused g_NullStartTime because ReDash makes an unusual "write" access
+		//to the the start time, so the module and the pipeline need to know
+		//the class, not the interface
+		(void)g_NullStartTime;
+
 		return startTime;
 	}
 	uint64_t startTime;

@@ -6,5 +6,5 @@
 struct HlsWebvttRephaserConfig {
 	std::string url;
 	int segmentDurationInMs = 0;
-	IUtcStartTimeQuery const *utcStartTime = nullptr;
+	IUtcStartTimeQuery const *utcStartTime = &g_NullStartTime;
 };
