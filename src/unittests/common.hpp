@@ -36,7 +36,7 @@ struct FilePullerFactory : In::IFilePullerFactory {
 ReDashConfig createRDCfg() {
 	ReDashConfig cfg;
 	cfg.url = "http://url/for/the.mpd";
-	cfg.baseUrl = ".";
+	cfg.baseUrlSub = ".";
 	cfg.manifestFn = "redash.mpd";
 	cfg.postUrl = "/root/output/";
 	UtcStartTime utcStartTime;

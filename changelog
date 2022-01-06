@@ -1,4 +1,4 @@
-Version 23 (XX/12/2021):
+Version 23 (XX/01/2022):
 - TODO: Add subtitle payload in debug log.
 - TODO (HLS?): If there is an error while downloading refresh the whole playlists
 - HLS (WebVTT) output (HLS/TS input supported only).
@@ -6,6 +6,7 @@ Version 23 (XX/12/2021):
 - Subtitle source: open media files in playlist directory .
 - Improve resiliency with late content, jittered/offset, and discontinuous input content and timestamps.
 - Subtitle timestamps are relative to UTC0.
+- Expose A/V baseUrl option in case our source stream is not available to the end users at the same URL.
 
 Version 22 (07/05/2021):
 - Add sanity checks on input MPD to fail fast and explicitly.

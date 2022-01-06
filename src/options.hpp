@@ -9,7 +9,8 @@ struct Config {
 	int delayInSec = 0;
 	int subtitleForwardTimeInSec = 0;
 	std::string subListFn;
-	std::string baseUrl = ".";
+	std::string baseUrlSub = ".";
+	std::string baseUrlAV; /*empty: copy from source*/
 	int timeshiftBufferDepthInSec = 0; /*0 = infinite, -1 = same as source*/
 	std::string postUrl = ".";
 	std::string manifestFn;

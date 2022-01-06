@@ -354,6 +354,77 @@ unittest("reDash: manifest from Elemental for RBB (WDR)") {
     check("reDASH", mpd, expected);
 }
 
+unittest("reDash: manifest from Elemental for RBB (WDR) with A/V BaseUrl") {
+    auto mpd = R"|(
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-03T11:14:54Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-01-26T10:25:50Z" minBufferTime="PT22S" suggestedPresentationDelay="PT2S" timeShiftBufferDepth="PT2H0M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
+  <Period start="PT0S" id="1">
+    <AdaptationSet mimeType="video/mp4" frameRate="50/1" segmentAlignment="true" subsegmentAlignment="true" startWithSAP="1" subsegmentStartsWithSAP="1" bitstreamSwitching="false">
+      <SegmentTemplate timescale="90000" duration="360000" startNumber="1611656746"/>
+      <Representation id="1" width="1280" height="720" bandwidth="3584000" codecs="avc1.640020" scanType="progressive">
+        <SegmentTemplate duration="360000" startNumber="1611656746" media="dash_1280x720_3584k-$Number$.mp4" initialization="dash_1280x720_3584k-init.mp4"/>
+      </Representation>
+      <Representation id="2" width="960" height="540" bandwidth="1800000" codecs="avc1.4d401f" scanType="progressive">
+        <SegmentTemplate duration="360000" startNumber="1611656746" media="dash_960x540_1800k-$Number$.mp4" initialization="dash_960x540_1800k-init.mp4"/>
+      </Representation>
+      <Representation id="3" width="640" height="360" bandwidth="1024000" codecs="avc1.4d401f" scanType="progressive">
+        <SegmentTemplate duration="360000" startNumber="1611656746" media="dash_640x360_1024k-$Number$.mp4" initialization="dash_640x360_1024k-init.mp4"/>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet mimeType="audio/mp4" lang="ger" segmentAlignment="0">
+      <SegmentTemplate timescale="48000" media="dash_128k_aac-$Number$.mp4" initialization="dash_128k_aac-init.mp4" duration="192000" startNumber="1611656746"/>
+      <Representation id="4" bandwidth="128000" audioSamplingRate="48000" codecs="mp4a.40.2">
+        <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+      </Representation>
+    </AdaptationSet>
+  </Period>
+</MPD>
+    )|";
+
+	                                        auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+<MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-03T11:14:54Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-01-26T10:25:50Z" minBufferTime="PT22S" suggestedPresentationDelay="PT2S" timeShiftBufferDepth="PT2H0M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
+  <ProgramInformation>
+    <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
+  </ProgramInformation>
+  <Period start="PT0S" id="1">
+    <AdaptationSet mimeType="video/mp4" frameRate="50/1" segmentAlignment="true" subsegmentAlignment="true" startWithSAP="1" subsegmentStartsWithSAP="1" bitstreamSwitching="false">
+      <SegmentTemplate timescale="90000" duration="360000" startNumber="1611656746"/>
+      <Representation id="1" width="1280" height="720" bandwidth="3584000" codecs="avc1.640020" scanType="progressive">
+        <BaseURL>http://test.com/a/</BaseURL>
+        <SegmentTemplate duration="360000" startNumber="1611656746" media="dash_1280x720_3584k-$Number$.mp4" initialization="dash_1280x720_3584k-init.mp4"/>
+      </Representation>
+      <Representation id="2" width="960" height="540" bandwidth="1800000" codecs="avc1.4d401f" scanType="progressive">
+        <BaseURL>http://test.com/a/</BaseURL>
+        <SegmentTemplate duration="360000" startNumber="1611656746" media="dash_960x540_1800k-$Number$.mp4" initialization="dash_960x540_1800k-init.mp4"/>
+      </Representation>
+      <Representation id="3" width="640" height="360" bandwidth="1024000" codecs="avc1.4d401f" scanType="progressive">
+        <BaseURL>http://test.com/a/</BaseURL>
+        <SegmentTemplate duration="360000" startNumber="1611656746" media="dash_640x360_1024k-$Number$.mp4" initialization="dash_640x360_1024k-init.mp4"/>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet mimeType="audio/mp4" lang="ger" segmentAlignment="0">
+      <SegmentTemplate timescale="48000" media="dash_128k_aac-$Number$.mp4" initialization="dash_128k_aac-init.mp4" duration="192000" startNumber="1611656746"/>
+      <Representation id="4" bandwidth="128000" audioSamplingRate="48000" codecs="mp4a.40.2">
+        <BaseURL>http://test.com/a/</BaseURL>
+        <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet id="1789" lang="de" segmentAlignment="true">
+      <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+      <BaseURL>.</BaseURL>
+      <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"/>
+      <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
+    </AdaptationSet>
+  </Period>
+</MPD>
+)|", g_version);
+
+    auto cfg = createRDCfg();
+    cfg.baseUrlAV = "http://test.com/a/";
+    check("reDASH", mpd, expected, cfg);
+}
+
 unittest("reDash: add version when ProgramInfo title is present") {
     auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">    
   <ProgramInformation>
@@ -361,7 +432,7 @@ unittest("reDash: add version when ProgramInfo title is present") {
   </ProgramInformation>
 </MPD>)|";
 
-	                                        auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	                                                auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>TEST - Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -375,7 +446,7 @@ unittest("reDash: add version when ProgramInfo title is present") {
 unittest("reDash: add version when ProgramInfo title is absent") {
   auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"/>)|";
 
-	                                                auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	                                                        auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -389,7 +460,7 @@ unittest("reDash: add version when ProgramInfo title is absent") {
 unittest("reDash: remote postUrl") {
   auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
-	                                                        auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	                                                                auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -407,14 +478,14 @@ unittest("reDash: remote postUrl") {
 )|", g_version);
 
     auto cfg = createRDCfg();
-    cfg.baseUrl = "https://remote/url/";
+    cfg.baseUrlSub = "https://remote/url/";
     check("reDASH", mpd, expected, cfg);
 }
 
 unittest("reDash: empty baseUrl") {
     auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
-	                                                                auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	                                                                        auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -431,14 +502,14 @@ unittest("reDash: empty baseUrl") {
 )|", g_version);
 
     auto cfg = createRDCfg();
-    cfg.baseUrl = "";
+    cfg.baseUrlSub = "";
     check("reDASH", mpd, expected, cfg);
 }
 
 unittest("reDash: general delay") {
     auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
-	                                                                        auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	                                                                                auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:40Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -455,16 +526,16 @@ unittest("reDash: general delay") {
 )|", g_version);
 
     auto cfg = createRDCfg();
-    cfg.baseUrl = "";
+    cfg.baseUrlSub = "";
     cfg.delayInSec = 2;
     check("reDASH", mpd, expected, cfg);
 }
 
 unittest("reDash: sanity checks") {
     auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S"><Period/></MPD>)|";
-	                                                                                auto cfg = createRDCfg();
-	                                                                                cfg.baseUrl = "";
-	                                                                                ASSERT_THROWN(check("reDASH", mpd, "", cfg));
+	                                                                                        auto cfg = createRDCfg();
+	                                                                                        cfg.baseUrlSub = "";
+	                                                                                        ASSERT_THROWN(check("reDASH", mpd, "", cfg));
 }
 
 }

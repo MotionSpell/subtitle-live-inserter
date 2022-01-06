@@ -72,7 +72,7 @@ std::string formatDate(int64_t timestamp) {
 class ReDash : public Module {
 	public:
 		ReDash(KHost* host, ReDashConfig *cfg)
-			: m_host(host), url(cfg->url), baseUrl(cfg->baseUrl), segmentDurationInMs(cfg->segmentDurationInMs),
+			: m_host(host), url(cfg->url), baseUrlAV(cfg->baseUrlAV), baseUrlSub(cfg->baseUrlSub), segmentDurationInMs(cfg->segmentDurationInMs),
 			  httpSrc(cfg->filePullerFactory->create()), nextAwakeTime(g_SystemClock->now()), delayInSec(cfg->delayInSec) {
 			std::string urlFn = cfg->manifestFn.empty() ? url : cfg->manifestFn;
 			auto i = urlFn.rfind('/');
@@ -192,10 +192,16 @@ class ReDash : public Module {
 
 		void addBaseUrl(Tag &mpd, const std::string &url) const {
 			// compute base URL
-			std::string baseUrl = url;
-			auto i = baseUrl.rfind('/');
-			if (i != baseUrl.npos)
-				baseUrl = baseUrl.substr(0, i+1);
+			std::string baseUrl;
+
+			if (baseUrlAV.empty()) {
+				baseUrl = url;
+				auto i = baseUrl.rfind('/');
+				if (i != baseUrl.npos)
+					baseUrl = baseUrl.substr(0, i+1);
+			} else {
+				baseUrl = baseUrlAV;
+			}
 
 			// ensure all the elements from @tag are covered by an absolute BaseURL
 			auto hasAbsoluteBaseUrl = [](Tag &tag) {
@@ -252,7 +258,7 @@ class ReDash : public Module {
 		void addSubtitleAdaptationSet(Tag& mpd) const {
 			for (auto& e : mpd.children)
 				if (e.name == "Period") {
-					auto b = baseUrl.empty() ? std::string() : format("<BaseURL>%s</BaseURL>", baseUrl);
+					auto b = baseUrlSub.empty() ? std::string() : format("<BaseURL>%s</BaseURL>", baseUrlSub);
 					auto const timescale = 10000000;
 					auto as = format(R"|(
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
@@ -279,7 +285,7 @@ class ReDash : public Module {
 		KHost* const m_host;
 		OutputDefault* output;
 
-		const std::string url, baseUrl;
+		const std::string url, baseUrlAV, baseUrlSub;
 		const int segmentDurationInMs;
 		std::vector<uint8_t> lastMpdAsText;
 		std::unique_ptr<IFilePuller> httpSrc;

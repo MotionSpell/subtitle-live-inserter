@@ -22,19 +22,31 @@ bool startsWith(std::string s, std::string prefix) {
 	return s.substr(0, prefix.size()) == prefix;
 }
 
+// http://example.com/yo/tmp.mpd -> http://example.com/
 std::string serverName(std::string path) {
 	auto const prefixLen = startsWith(path, "https://") ? 8 : startsWith(path, "http://") ? 7 : 0 /*assume no prefix*/;
 	auto const i = path.substr(prefixLen).find('/');
 	if(i != path.npos)
-		path = path.substr(0, prefixLen + i);
+		path = path.substr(0, prefixLen + i + 1);
 	return path;
+}
+
+// http://example.com/yo/tmp.mpd -> http://example.com/yo/
+std::string urlPath(std::string path) {
+	auto i = path.rfind('/');
+	if (i == std::string::npos)
+		return "";
+
+	return path.substr(0, i+1);
 }
 
 // Only handles the master playlist
 class ReHLS : public Module {
 	public:
 		ReHLS(KHost* host, ReDashConfig *cfg)
-			: m_host(host), url(cfg->url), baseUrl(cfg->baseUrl), segmentDurationInMs(cfg->segmentDurationInMs),
+			: m_host(host), url(cfg->url),
+			  baseUrlAV(cfg->baseUrlAV.empty() ? urlPath(url) : cfg->baseUrlAV), baseUrlSub(cfg->baseUrlSub),
+			  hasBaseUrlAV(!cfg->baseUrlAV.empty()), segmentDurationInMs(cfg->segmentDurationInMs),
 			  httpSrc(cfg->filePullerFactory->create()), nextAwakeTime(g_SystemClock->now()) {
 			std::string urlFn = cfg->manifestFn.empty() ? url : cfg->manifestFn;
 			auto i = urlFn.rfind('/');
@@ -79,29 +91,29 @@ class ReHLS : public Module {
 				auto comment = [&]() {
 					return line.size() > 2 && line[0] == '#' && line[1] == '#';
 				};
-				auto addLine = [&]() {
-					m3u8MasterNew += line;
+				auto addLine = [&](int offset) {
+					m3u8MasterNew += line.substr(offset);
 				};
 
 				if(empty() || comment()) {
-					addLine();
+					addLine(0);
 					m3u8MasterNew.push_back('\n');
 					continue;
 				}
 
-				auto ensureAbsoluteUrl = [&]() {
-					if (startsWith(line, "http")) {
-						return;
-					} else if (startsWith(line, "/")) {
-						m3u8MasterNew += serverName(url);
-					} else {
-						auto i = url.rfind('/');
-						if (i != std::string::npos) {
-							auto const baseURL = url.substr(0, i);
-							m3u8MasterNew += baseURL;
-						}
-						m3u8MasterNew.push_back('/');
+				size_t i = 0;
+				auto ensureAbsoluteUrl = [&]() -> size_t {
+					size_t skip = 0;
+					if (startsWith(line, "http")) { // absolute
+						//nothing to do
+					} else if (startsWith(&line[i], "/")) { // root
+						m3u8MasterNew += hasBaseUrlAV ? urlPath(baseUrlAV) : serverName(baseUrlAV);
+						skip = 1; // skip trailing '/'
+					} else { // relative
+						skip = urlPath(&line[i]).size();
+						m3u8MasterNew += baseUrlAV;
 					}
+					return skip;
 				};
 
 				if (line[0] == '#') {
@@ -113,24 +125,25 @@ class ReHLS : public Module {
 					auto const pattern = "URI=\"";
 					auto const pos = line.find(pattern);
 					if (pos != std::string::npos) {
-						size_t i = 0;
 						for ( ; i < pos + strlen(pattern); ++i)
 							m3u8MasterNew.push_back(line[i]);
 
-						ensureAbsoluteUrl();
+						auto skip = ensureAbsoluteUrl();
+						while (skip-- > 0)
+							i++;
 
 						for ( ; i < line.size(); ++i)
 							m3u8MasterNew.push_back(line[i]);
 					} else {
-						addLine();
+						addLine(0);
 					}
 
 					//add subtitle to video
 					if (line.find("RESOLUTION=") != std::string::npos)
 						m3u8MasterNew += ",SUBTITLES=\"subtitles\"";
 				} else {
-					ensureAbsoluteUrl();
-					addLine();
+					auto skip = ensureAbsoluteUrl();
+					addLine(skip);
 				}
 
 				m3u8MasterNew.push_back('\n');
@@ -142,7 +155,8 @@ class ReHLS : public Module {
 			m3u8MasterNew += author;
 
 			//add a final entry to the master playlist
-			auto const subVariant = format("#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subtitles\",NAME=\"subtitles\",LANGUAGE=\"de\",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI=\"%s/%s\"\n", baseUrl, variantPlaylistFn);
+			auto const subVariant = format("#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subtitles\",NAME=\"subtitles\",LANGUAGE=\"de\",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI=\"%s/%s\"\n",
+			        baseUrlSub, variantPlaylistFn);
 			m3u8MasterNew += subVariant;
 
 			postManifest(outputMaster, m3u8MasterNew);
@@ -160,7 +174,8 @@ class ReHLS : public Module {
 
 		KHost *m_host;
 		OutputDefault *outputMaster;
-		const std::string url, baseUrl;
+		const std::string url, baseUrlAV, baseUrlSub;
+		const bool hasBaseUrlAV;
 		const int segmentDurationInMs;
 		std::unique_ptr<IFilePuller> httpSrc;
 		Fraction nextAwakeTime;

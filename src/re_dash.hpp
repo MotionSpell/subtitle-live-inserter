@@ -24,7 +24,8 @@ struct ReDashConfig {
 	int segmentDurationInMs = 0;
 	int64_t timeshiftBufferDepthInSec = 24 * 60 * 60;
 	std::string manifestFn;
-	std::string baseUrl;
+	std::string baseUrlSub;
+	std::string baseUrlAV;
 	std::string postUrl;
 	Modules::In::IFilePullerFactory *filePullerFactory = nullptr;
 

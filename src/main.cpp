@@ -24,7 +24,8 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	opt.add("f", "file-playlist", &cfg.subListFn, "File path of the ever-growing playlist. If not set then synthetic content is generated.");
 	opt.add("u", "output-format", &cfg.outputFormat, "Output format: \"dash\" (default) or \"hls\".");
 	opt.add("o", "output-manifest-filename", &cfg.manifestFn, "Manifest filename. If not specified the input filename is copied.");
-	opt.add("b", "base-url", &cfg.baseUrl, "Explicit URL where the content can be played back.");
+	opt.add("a", "base-url-av", &cfg.baseUrlAV, "Explicit URL where the source A/V content can be played back by end-users. Useful when the source URL used by the tool is different from the one end-users access.");
+	opt.add("b", "base-url-sub", &cfg.baseUrlSub, "Explicit URL where the subtitle content can be played back by end-users. Useful when the content is accessible from a different URL than where we post.");
 	opt.add("t", "timeshift-buffer", &cfg.timeshiftBufferDepthInSec, "Default=0 (infinite). Same as source=-1. Value in seconds otherwise.");
 	opt.add("p", "post", &cfg.postUrl, "Path or URL where the content is posted. If not set the content is generated locally.");
 	opt.addFlag("r", "rectify", &cfg.rectify, "Add empty samples when input content is not available on time. Default off.");
@@ -58,6 +59,8 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	    "\tsubtitleForwardTimeInSec=" << cfg.subtitleForwardTimeInSec << "\n"
 	    "\tsubListFn               =\"" << cfg.subListFn << "\"\n"
 	    "\tmanifestFn              =\"" << cfg.manifestFn << "\"\n"
+	    "\tbaseUrlAV               =\"" << cfg.baseUrlAV << "\"\n"
+	    "\tbaseUrlSub              =\"" << cfg.baseUrlSub << "\"\n"
 	    "\ttimeshiftBufferDepth    =\"" << cfg.timeshiftBufferDepthInSec << "\"\n"
 	    "\tpost                    =\"" << cfg.postUrl << "\"\n";
 
