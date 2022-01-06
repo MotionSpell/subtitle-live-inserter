@@ -92,7 +92,7 @@ class SubtitleSource : public Module {
 						return SubtitleSourceProcessorSyntheticTtml::generate(startTimeInMs, segNum, segmentDurationInMs, true);
 					else
 						return SubtitleSourceProcessorSyntheticWebvtt::generate(startTimeInMs, segNum, segmentDurationInMs, true);
-				} else {
+				} else if (diffInMs > (int64_t)segmentDurationInMs / 2) {
 					m_host->log(Warning, format("Data is late from %sms. Sleep for %sms.", diffInMs, sleepInMs.count()).c_str());
 				}
 			}
