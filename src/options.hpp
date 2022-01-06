@@ -10,6 +10,7 @@ struct Config {
 	int subtitleForwardTimeInSec = 0;
 	std::string subListFn;
 	std::string baseUrl = ".";
+	int timeshiftBufferDepthInSec = 0; /*0 = infinite, -1 = same as source*/
 	std::string postUrl = ".";
 	std::string manifestFn;
 	std::string outputFormat = "dash";

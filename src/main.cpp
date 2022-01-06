@@ -25,6 +25,7 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	opt.add("u", "output-format", &cfg.outputFormat, "Output format: \"dash\" (default) or \"hls\".");
 	opt.add("o", "output-manifest-filename", &cfg.manifestFn, "Manifest filename. If not specified the input filename is copied.");
 	opt.add("b", "base-url", &cfg.baseUrl, "Explicit URL where the content can be played back.");
+	opt.add("t", "timeshift-buffer", &cfg.timeshiftBufferDepthInSec, "Default=0 (infinite). Same as source=-1. Value in seconds otherwise.");
 	opt.add("p", "post", &cfg.postUrl, "Path or URL where the content is posted. If not set the content is generated locally.");
 	opt.addFlag("r", "rectify", &cfg.rectify, "Add empty samples when input content is not available on time. Default off.");
 	opt.addFlag("h", "help", &cfg.help, "Print usage and exit.");
@@ -57,6 +58,7 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	    "\tsubtitleForwardTimeInSec=" << cfg.subtitleForwardTimeInSec << "\n"
 	    "\tsubListFn               =\"" << cfg.subListFn << "\"\n"
 	    "\tmanifestFn              =\"" << cfg.manifestFn << "\"\n"
+	    "\ttimeshiftBufferDepth    =\"" << cfg.timeshiftBufferDepthInSec << "\"\n"
 	    "\tpost                    =\"" << cfg.postUrl << "\"\n";
 
 	return cfg;

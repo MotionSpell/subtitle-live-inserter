@@ -28,7 +28,10 @@ struct Mp4MuxFileHandlerDyn : ModuleS {
 				} else {
 					meta->filename += std::to_string(data->get<PresentationTime>().time / timescaleToClock(segDurInMs, 1000));
 					meta->filename += ".m4s";
-					timeshiftSegments.push_back({data->get<PresentationTime>().time, meta->filename});
+
+					if (timeshiftBufferDepth > 0) {
+						timeshiftSegments.push_back({data->get<PresentationTime>().time, meta->filename});
+					}
 				}
 				assert(meta->EOS); //we don't support the muxer flush mem flag
 				m_host->log(Info, format("Segment %s created.", meta->filename).c_str());

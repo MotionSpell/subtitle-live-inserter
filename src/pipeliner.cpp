@@ -143,7 +143,8 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 
 			Mp4MuxFileHandlerDynConfig cfg;
 			cfg.mp4MuxCfg = &mp4config;
-			cfg.timeshiftBufferDepthInSec = rdCfg.timeshiftBufferDepthInSec;
+			cfg.timeshiftBufferDepthInSec = cfg.timeshiftBufferDepthInSec == -1/*auto*/ ?
+			rdCfg.timeshiftBufferDepthInSec : cfg.timeshiftBufferDepthInSec;
 
 			auto muxer = pipeline->add("Mp4MuxFileHandlerDyn", &cfg);
 			pipeline->connect(compressed, muxer);
