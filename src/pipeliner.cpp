@@ -38,9 +38,6 @@ bool startsWith(std::string s, std::string prefix) {
 
 struct Logger : LogSink {
 		void send(Level level, const char *msg) override {
-			if (level == Level::Debug)
-				return;
-
 			auto const now = (double)g_SystemClock->now();
 			fprintf(stderr, "[%s][%.1f][%s#%p][%s]%s\n", getTime().c_str(), now,
 			    g_appName, this, getLogLevelName(level), msg);
@@ -72,6 +69,7 @@ struct Logger : LogSink {
 
 std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	static Logger logger;
+	logger.m_logLevel = Info;
 	auto pipeline = std::make_unique<Pipeline>(&logger);
 
 	// ReDash
