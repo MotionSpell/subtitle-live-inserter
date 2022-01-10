@@ -103,11 +103,13 @@ class HlsWebvttRephaser : public ModuleS {
 				   Media Playlists in that Master Playlist MUST contain EXT-X-PROGRAM-DATE-TIME tags with consistent mappings
 				   of date and time to media timestamps. */
 				auto max_ts_in_hour = 27; // 33 bits at 90khz: if greater, consider this is an absolute clock time
-				if (lastHLSSegment->get<PresentationTime>().time > max_ts_in_hour * 3600 * IClock::Rate)
+				if (lastHLSSegment->get<PresentationTime>().time > max_ts_in_hour * 3600 * IClock::Rate) {
 					programDateTimeIn180k = lastHLSSegment->get<PresentationTime>().time;
+					programDateTimeIn180k -= magicOffsetInSec * IClock::Rate;
+				}
 
-				programDateTimeIn180k -= magicOffsetInSec * IClock::Rate;
-				firstPtsIn90k -= magicOffsetInSec * 90000; //Romain: change to never become negative
+				firstPtsIn90k -= magicOffsetInSec * 90000;
+				while (firstPtsIn90k < 0) firstPtsIn90k += ((int64_t)1 << 33);
 			} catch (std::exception const& e) {
 				m_host->log(Error, (std::string("error caught while computing phase between media and subtitles: ") + e.what()).c_str());
 			}
