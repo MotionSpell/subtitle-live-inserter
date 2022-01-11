@@ -85,6 +85,9 @@ class HlsWebvttRephaser : public ModuleS {
 				});
 				hls->process();
 
+				if (!lastHLSSegment)
+					return { -1, 0 }; // retry later
+
 				// compute first PTS of last segment
 				TsDemuxerConfig tsCfg;
 				tsCfg.pids = { TsDemuxerConfig::ANY_VIDEO() };
@@ -112,6 +115,7 @@ class HlsWebvttRephaser : public ModuleS {
 				while (firstPtsIn90k < 0) firstPtsIn90k += ((int64_t)1 << 33);
 			} catch (std::exception const& e) {
 				m_host->log(Error, (std::string("error caught while computing phase between media and subtitles: ") + e.what()).c_str());
+				return { -1, 0 }; // retry later
 			}
 
 			//instanciate HLS and grab first PTS
