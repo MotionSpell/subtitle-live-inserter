@@ -7,7 +7,7 @@
 
 Tag parseXml(span<const char> text);
 
-static void incrementTtmlTimings(Tag &xml, int64_t referenceTimeInMs, int64_t incrementInMs, int64_t segmentDurationInMs, int64_t ebuttdOffsetInMs, Modules::KHost *host) {
+static void incrementTtmlTimings(Modules::KHost *host, Tag &xml, int64_t referenceTimeInMs, int64_t incrementInMs, int64_t segmentDurationInMs, int64_t ebuttdOffsetInMs) {
 	for (auto& elt : xml.children) {
 		for (auto& attr : elt.attr) {
 			if (attr.name == "begin" || attr.name == "end") {
@@ -55,17 +55,17 @@ static void incrementTtmlTimings(Tag &xml, int64_t referenceTimeInMs, int64_t in
 			}
 		}
 
-		incrementTtmlTimings(elt, referenceTimeInMs, incrementInMs, segmentDurationInMs, ebuttdOffsetInMs, host);
+		incrementTtmlTimings(host, elt, referenceTimeInMs, incrementInMs, segmentDurationInMs, ebuttdOffsetInMs);
 	}
 }
 
-std::string getContentTtml(const std::vector<char> &input, int64_t referenceTimeInMs, uint64_t segmentDurationInMs, int64_t startTimeInMs, int64_t ebuttdOffsetInMs, Modules::KHost *host) {
+std::string getContentTtml(Modules::KHost *host, const std::vector<char> &input, int64_t referenceTimeInMs, uint64_t segmentDurationInMs, int64_t startTimeInMs, int64_t ebuttdOffsetInMs) {
 	//deserialize
 	auto ttml = parseXml({ input.data(), input.size() });
 	assert(ttml.name == "tt" || ttml.name == "tt:tt");
 
 	//find timings and increment them
-	incrementTtmlTimings(ttml, referenceTimeInMs, startTimeInMs, segmentDurationInMs, ebuttdOffsetInMs, host);
+	incrementTtmlTimings(host, ttml, referenceTimeInMs, startTimeInMs, segmentDurationInMs, ebuttdOffsetInMs);
 
 	//reserialize and return
 	return std::string("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n") + serializeXml(ttml);

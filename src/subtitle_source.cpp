@@ -30,7 +30,7 @@ class SubtitleSource : public Module {
 			output->setMetadata(meta);
 
 			if (!playlistFn.empty()) {
-				generator = std::make_unique<SubtitleSourceProcessorEverGrowingFile>(m_host, playlistFn, segmentDurationInMs, sleepInMs.count());
+				generator = std::make_unique<SubtitleSourceProcessorEverGrowingFile>(m_host, ttml, playlistFn, segmentDurationInMs, sleepInMs.count());
 			} else {
 				// synthetic subtitle fallback
 				if (ttml)

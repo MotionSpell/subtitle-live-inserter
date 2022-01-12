@@ -17,11 +17,12 @@ struct KHost;
 }
 
 struct SubtitleSourceProcessorEverGrowingFile : ISubtitleSourceProcessor {
-		SubtitleSourceProcessorEverGrowingFile(Modules::KHost *host, const std::string &playlistFn, uint64_t segmentDurationInMs, int64_t sleepInMs);
+		SubtitleSourceProcessorEverGrowingFile(Modules::KHost *host, bool ttml, const std::string &playlistFn, uint64_t segmentDurationInMs, int64_t sleepInMs);
 		Result process(int64_t startTimeInMs, int &segNum) final;
 
 	private:
 		Modules::KHost *host;
+		const bool ttml;
 		const std::string playlistFn;
 		const uint64_t segmentDurationInMs;
 		const int64_t sleepInMs;

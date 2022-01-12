@@ -8,10 +8,11 @@
 #include <cmath> //abs, lround
 #include <fstream>
 
-std::string getContentTtml(const std::vector<char> &input, int64_t referenceTimeInMs, uint64_t segmentDurationInMs, int64_t startTimeInMs, int64_t ebuttdOffsetInMs, Modules::KHost *host);
+std::string getContentTtml(Modules::KHost *host, const std::vector<char> &input, int64_t referenceTimeInMs, uint64_t segmentDurationInMs, int64_t startTimeInMs, int64_t ebuttdOffsetInMs);
+std::string getContentWebvtt(const std::vector<char> &input);
 
-SubtitleSourceProcessorEverGrowingFile::SubtitleSourceProcessorEverGrowingFile(Modules::KHost *host, const std::string &playlistFn, uint64_t segmentDurationInMs, int64_t sleepInMs)
-	: host(host), playlistFn(playlistFn), segmentDurationInMs(segmentDurationInMs), sleepInMs(sleepInMs) {
+SubtitleSourceProcessorEverGrowingFile::SubtitleSourceProcessorEverGrowingFile(Modules::KHost *host, bool ttml, const std::string &playlistFn, uint64_t segmentDurationInMs, int64_t sleepInMs)
+	: host(host), ttml(ttml), playlistFn(playlistFn), segmentDurationInMs(segmentDurationInMs), sleepInMs(sleepInMs) {
 	assert(!playlistFn.empty());
 
 	std::ifstream file(playlistFn);
@@ -90,5 +91,8 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorEverGrowingFile::process
 	pbuf->sgetn(input.data(), size);
 	ifs.close();
 
-	return { getContentTtml(input, referenceTimeInMs, segmentDurationInMs, startTimeInMs, 0, host), timestampIn180k };
+	if (ttml)
+		return { getContentTtml(host, input, referenceTimeInMs, segmentDurationInMs, startTimeInMs, 0), timestampIn180k };
+	else
+		return { getContentWebvtt(input), timestampIn180k };
 }
