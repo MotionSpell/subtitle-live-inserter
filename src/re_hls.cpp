@@ -165,7 +165,7 @@ class ReHLS : public Module {
 		void postManifest(OutputDefault *output, const std::string &contents) {
 			auto out = output->allocData<DataRaw>(contents.size());
 			auto metadata = make_shared<MetadataFile>(PLAYLIST);
-			metadata->filename = safe_cast<const MetadataFile>(output->getMetadata())->filename;;
+			metadata->filename = safe_cast<const MetadataFile>(output->getMetadata())->filename;
 			metadata->filesize = contents.size();
 			out->setMetadata(metadata);
 			memcpy(out->buffer->data().ptr, contents.data(), contents.size());

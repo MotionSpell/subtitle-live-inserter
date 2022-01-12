@@ -96,7 +96,6 @@ class ReDash : public Module {
 			sanity("minimumUpdatePeriod");
 			sanity("timeShiftBufferDepth");
 
-			cfg->utcStartTime->startTime = parseDate(mpd["availabilityStartTime"]) * IClock::Rate;
 			cfg->timeshiftBufferDepthInSec = parseIso8601Period(mpd["timeShiftBufferDepth"]);
 
 			output = addOutput();
@@ -260,13 +259,14 @@ class ReDash : public Module {
 				if (e.name == "Period") {
 					auto b = baseUrlSub.empty() ? std::string() : format("<BaseURL>%s</BaseURL>", baseUrlSub);
 					auto const timescale = 10000000;
+					auto const startNumber = (parseDate(mpd["availabilityStartTime"]) * 1000) / segmentDurationInMs;
 					auto as = format(R"|(
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
         <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2" />
         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
-        %s<SegmentTemplate timescale="%s" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" />
+        %s<SegmentTemplate timescale="%s" duration="%s" startNumber="%s" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" />
         <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1" />
-    </AdaptationSet>)|", b, timescale, rescale(segmentDurationInMs, 1000, timescale));
+    </AdaptationSet>)|", b, timescale, rescale(segmentDurationInMs, 1000, timescale), startNumber);
 					e.add(parseXml({ as.c_str(), as.size() }));
 				} else
 					addSubtitleAdaptationSet(e);
@@ -275,7 +275,7 @@ class ReDash : public Module {
 		void postManifest(const std::string &contents) {
 			auto out = output->allocData<DataRaw>(contents.size());
 			auto metadata = make_shared<MetadataFile>(PLAYLIST);
-			metadata->filename = safe_cast<const MetadataFile>(output->getMetadata())->filename;;
+			metadata->filename = safe_cast<const MetadataFile>(output->getMetadata())->filename;
 			metadata->filesize = contents.size();
 			out->setMetadata(metadata);
 			memcpy(out->buffer->data().ptr, contents.data(), contents.size());

@@ -1,4 +1,5 @@
 #include "lib_pipeline/pipeline.hpp"
+#include <lib_media/common/utc_start_time.hpp>
 #include "lib_utils/log.hpp"
 #include "lib_utils/os.hpp"
 #include "lib_utils/system_clock.hpp"
@@ -23,7 +24,6 @@ using namespace Pipelines;
 
 extern const char *g_appName;
 const uint64_t g_segmentDurationInMs = 2000;
-static UtcStartTime utcStartTime;
 std::unique_ptr<In::IFilePuller> createHttpSource();
 
 namespace {
@@ -35,6 +35,14 @@ void ensureDir(std::string path) {
 bool startsWith(std::string s, std::string prefix) {
 	return s.substr(0, prefix.size()) == prefix;
 }
+
+struct UtcStartTime : IUtcStartTimeQuery {
+	uint64_t query() const override {
+		return startTime;
+	}
+	uint64_t startTime;
+};
+UtcStartTime utcStartTime;
 
 struct Logger : LogSink {
 		void send(Level level, const char *msg) override {
@@ -82,7 +90,6 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	ReDashConfig rdCfg;
 	rdCfg.segmentDurationInMs = cfg.segmentDurationInMs;
 	rdCfg.url = cfg.url;
-	rdCfg.utcStartTime = &utcStartTime; // set by this module: keep it first in module declarations
 	rdCfg.delayInSec = cfg.delayInSec;
 	rdCfg.manifestFn = cfg.manifestFn;
 	rdCfg.baseUrlSub = cfg.baseUrlSub;
@@ -137,7 +144,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 			mp4config.segmentDurationInMs = g_segmentDurationInMs;
 			mp4config.segmentPolicy = FragmentedSegment;
 			mp4config.fragmentPolicy = OneFragmentPerSegment;
-			mp4config.compatFlags = Browsers | ExactInputDur | SegNumStartsAtZero;
+			mp4config.compatFlags = Browsers | ExactInputDur;
 			mp4config.utcStartTime = &utcStartTime;
 
 			Mp4MuxFileHandlerDynConfig cfg;
@@ -163,15 +170,15 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	}
 	pipeline->connect(source, sink, true);
 
-	if (cfg.outputFormat != "dash") {
-		utcStartTime.startTime = fractionToClock(getUTC());
-	} else {
+	if (cfg.outputFormat == "dash") {
 		// Diff retrieved AST from MPD with the local clock
 		auto const granularityInMs = g_segmentDurationInMs;
 		auto const t = int64_t(getUTC() * granularityInMs);
 		auto const remainderInMs = granularityInMs - (t % granularityInMs);
 		std::this_thread::sleep_for(std::chrono::milliseconds(remainderInMs));
 		utcStartTime.startTime = rescale(t + remainderInMs, granularityInMs, IClock::Rate);
+	} else {
+		utcStartTime.startTime = fractionToClock(getUTC());
 	}
 	utcStartTime.startTime += cfg.subtitleForwardTimeInSec * IClock::Rate;
 	cfg.updateDelayInSec = rdCfg.updateDelayInSec;
