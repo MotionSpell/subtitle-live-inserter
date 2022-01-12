@@ -90,5 +90,5 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorEverGrowingFile::process
 	pbuf->sgetn(input.data(), size);
 	ifs.close();
 
-	return { getContentTtml(input, referenceTimeInMs, segmentDurationInMs, startTimeInMs, ebuttdOffsetInMs, host), timestampIn180k };
+	return { getContentTtml(input, referenceTimeInMs, segmentDurationInMs, startTimeInMs, 0, host), timestampIn180k };
 }
