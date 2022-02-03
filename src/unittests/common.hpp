@@ -40,6 +40,9 @@ ReDashConfig createRDCfg() {
 	cfg.baseUrlSub = ".";
 	cfg.manifestFn = "redash.mpd";
 	cfg.postUrl = "/root/output/";
+	UtcStartTime utcStartTime;
+	utcStartTime.startTime = 1789;
+	cfg.utcStartTime = &utcStartTime;
 	cfg.delayInSec = 0;
 	cfg.timeshiftBufferDepthInSec = 17;
 	return cfg;

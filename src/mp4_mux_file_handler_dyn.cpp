@@ -17,7 +17,7 @@ struct Mp4MuxFileHandlerDyn : ModuleS {
 		Mp4MuxFileHandlerDyn(KHost *host, Mp4MuxFileHandlerDynConfig *cfg)
 			: m_host(host), output(addOutput()),
 			  segDurInMs(cfg->mp4MuxCfg->segmentDurationInMs), timeshiftBufferDepth(timescaleToClock(cfg->timeshiftBufferDepthInSec, 1)) {
-			delegate = safe_cast<ModuleS>(loadModule("GPACMuxMP4", m_host, (void *)cfg->mp4MuxCfg));
+			delegate = safe_cast<ModuleS>(loadModule("GPACMuxMP4", m_host, (void*)cfg->mp4MuxCfg));
 			ConnectOutput(delegate->getOutput(0), [&](Data data) {
 				auto out = std::make_shared<DataBaseRef>(data);
 				out->copyAttributes(*data);

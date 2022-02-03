@@ -97,6 +97,8 @@ class ReDash : public Module {
 			sanity("timeShiftBufferDepth");
 
 			cfg->timeshiftBufferDepthInSec = parseIso8601Period(mpd["timeShiftBufferDepth"]);
+			if (cfg->utcStartTime)
+				cfg->utcStartTime->startTime = parseDate(mpd["availabilityStartTime"]) * IClock::Rate;
 
 			output = addOutput();
 			output->setMetadata(meta);
@@ -259,7 +261,7 @@ class ReDash : public Module {
 				if (e.name == "Period") {
 					auto b = baseUrlSub.empty() ? std::string() : format("<BaseURL>%s</BaseURL>", baseUrlSub);
 					auto const timescale = 10000000;
-					auto const startNumber = (parseDate(mpd["availabilityStartTime"]) * 1000) / segmentDurationInMs;
+					auto const startNumber = 0;
 					auto as = format(R"|(
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
         <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2" />
