@@ -172,11 +172,12 @@ http://test.com/a/hls/live/2018025/wdrlz_muensterland/master_578.m3u8
 http://test.com/a/hls/live/2018025-b/wdrlz_muensterland/master_578.m3u8
 
 ## Updated with Motion Spell / GPAC Licensing %s version %s
-#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitles",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="./index_sub.m3u8"
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitles",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="http//test2.com/b/index_sub.m3u8"
 )|", g_appName, g_version);
 
 	auto cfg = createRDCfg();
 	cfg.baseUrlAV = "http://test.com/a/";
+	cfg.baseUrlSub = "http//test2.com/b/";
     check("reHLS", m3u8, expected, cfg);
 }
 

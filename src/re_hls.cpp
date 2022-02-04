@@ -155,9 +155,13 @@ class ReHLS : public Module {
 			m3u8MasterNew += author;
 
 			//add a final entry to the master playlist
-			auto const subVariant = format("#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subtitles\",NAME=\"subtitles\",LANGUAGE=\"de\",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI=\"%s/%s\"\n",
-			        baseUrlSub, variantPlaylistFn);
-			m3u8MasterNew += subVariant;
+			{
+				//remove trailing slash
+				std::string baseUrl = baseUrlSub.empty() ? "" : baseUrlSub.back() != '/' ? baseUrlSub : baseUrlSub.substr(0, baseUrlSub.size() - 1);
+				auto const subVariant = format("#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subtitles\",NAME=\"subtitles\",LANGUAGE=\"de\","
+				        "AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI=\"%s/%s\"\n", baseUrl, variantPlaylistFn);
+				m3u8MasterNew += subVariant;
+			}
 
 			postManifest(outputMaster, m3u8MasterNew);
 		}

@@ -72,8 +72,9 @@ std::string formatDate(int64_t timestamp) {
 class ReDash : public Module {
 	public:
 		ReDash(KHost* host, ReDashConfig *cfg)
-			: m_host(host), url(cfg->url), baseUrlAV(cfg->baseUrlAV), baseUrlSub(cfg->baseUrlSub), segmentDurationInMs(cfg->segmentDurationInMs),
-			  httpSrc(cfg->filePullerFactory->create()), nextAwakeTime(g_SystemClock->now()), delayInSec(cfg->delayInSec) {
+			: m_host(host), url(cfg->url), baseUrlAV(cfg->baseUrlAV), baseUrlSub(cfg->baseUrlSub),
+			  segmentDurationInMs(cfg->segmentDurationInMs), httpSrc(cfg->filePullerFactory->create()),
+			  nextAwakeTime(g_SystemClock->now()), delayInSec(cfg->delayInSec) {
 			std::string urlFn = cfg->manifestFn.empty() ? url : cfg->manifestFn;
 			auto i = urlFn.rfind('/');
 			if(i != urlFn.npos)
