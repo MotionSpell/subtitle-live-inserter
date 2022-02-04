@@ -23,7 +23,7 @@ using namespace Modules;
 using namespace Pipelines;
 
 extern const char *g_appName;
-const uint64_t g_segmentDurationInMs = 8000; //Romain 2000;
+const uint64_t g_segmentDurationInMs = 2000;
 std::unique_ptr<In::IFilePuller> createHttpSource();
 
 namespace {

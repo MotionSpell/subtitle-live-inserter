@@ -17,6 +17,7 @@
 
 using namespace Modules;
 
+int hlsPlaylistOffsetInSec = 0;
 const char *variantPlaylistFn = "index_sub.m3u8";
 extern const char *g_appName;
 extern const char *g_version;
@@ -112,19 +113,22 @@ class HlsWebvttRephaser : public ModuleS {
 					programDateTimeIn180k = hlsSegTimes[0];
 				}
 
-				auto const playlistDur = hlsSegTimes.back() - hlsSegTimes.front() + 8 * IClock::Rate; //Romain: + segmentDurationInMs/*FIXME: should be the same duration as the other media*/;
-				//Romain: we could simply use the last PTS of the last segment?
+				// Our subtitle variant playlist duration shall be aligned with the other media
+				auto const playlistDur = hlsSegTimes.back() - hlsSegTimes.front() + timescaleToClock(segmentDurationInMs, 1000);
+
+				// Hack: don't report it from the constructor to avoid random failures at startup
+				hlsPlaylistOffsetInSec = clockToTimescale(playlistDur, 1);
 
 				// fill the timeshiftBuffer
 				assert(segNum == 0);
 				timeshiftBufferDepthInSeg = (int)(playlistDur / timescaleToClock(segmentDurationInMs, 1000));
-				while (segNum < timeshiftBufferDepthInSeg + 1) { //Romain: was -1
+				while (segNum < timeshiftBufferDepthInSeg - 1) {
 					auto const segName = format("subs_%s.vtt", segNum);
-					segEntries.push_back(segName); // we push the entry in the playlist but not the file
+					segEntries.push_back(segName); // we push the entry in the playlist but we do not send the subtitle file
 					segNum++;
 				}
 
-				auto firstPtsIn90k = firstPtsOfLastSegIn90k - clockToTimescale(playlistDur, 90000) + rescale(segmentDurationInMs, 1000, 90000)/*Romain*/;
+				auto firstPtsIn90k = firstPtsOfLastSegIn90k - clockToTimescale(playlistDur, 90000) + rescale(segmentDurationInMs, 1000, 90000);
 				while (firstPtsIn90k < 0) firstPtsIn90k += ((int64_t)1 << 33);
 
 				return { firstPtsIn90k, programDateTimeIn180k };
@@ -204,9 +208,6 @@ class HlsWebvttRephaser : public ModuleS {
 		OutputDefault *outputSegment, *outputVariantPlaylist;
 		const std::string url;
 		const int segmentDurationInMs;
-		//Romain: a client MUST use the relative position of each segment on the Playlist timeline
-		// Romain: at the moment the A/V sn are in advance and subs are late. Related?
-		// TODO: should be the same as for audio and video
 		int timeshiftBufferDepthInSeg = 0;
 		int segNum = timeshiftBufferDepthInSeg;
 		std::list<std::string> segEntries;

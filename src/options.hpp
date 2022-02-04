@@ -5,7 +5,7 @@
 
 struct Config {
 	std::string url;
-	int segmentDurationInMs = 8000; // Romain 2000;
+	int segmentDurationInMs = 2000;
 	int delayInSec = 0;
 	int subtitleForwardTimeInSec = 0;
 	std::string subListFn;
