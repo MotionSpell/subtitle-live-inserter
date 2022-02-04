@@ -10,6 +10,7 @@
 #include "lib_utils/tools.hpp" //enforce
 #include "plugins/HlsDemuxer/hls_demux.hpp"
 #include "plugins/TsDemuxer/ts_demuxer.hpp"
+#include <cassert>
 #include <ctime> //gmtime
 #include <list>
 #include <sstream>
@@ -17,7 +18,6 @@
 using namespace Modules;
 
 const char *variantPlaylistFn = "index_sub.m3u8";
-const int magicOffsetInSec = 24; // FIXME
 extern const char *g_appName;
 extern const char *g_version;
 
@@ -72,54 +72,66 @@ class HlsWebvttRephaser : public ModuleS {
 		};
 
 		SourceInfo getSourceInfo() {
-			int64_t firstPtsIn90k = INT64_MAX, programDateTimeIn180k = 0;
-
 			try {
-				// get the last segment
-				Data lastHLSSegment;
+				// retrieve HLS segments timestamps
+				std::vector<int64_t> hlsSegTimes;
+				Data lastHlsSegment;
 				HlsDemuxConfig hlsCfg;
 				hlsCfg.url = url;
 				auto hls = loadModule("HlsDemuxer", m_host, &hlsCfg);
-				ConnectOutput(hls->getOutput(0), [&](Data data) {
-					lastHLSSegment = data;
+				ConnectOutput(hls->getOutput(0/*arbitrary*/), [&](Data data) {
+					hlsSegTimes.push_back(data->get<PresentationTime>().time);
+					lastHlsSegment = data;
 				});
 				hls->process();
 
-				if (!lastHLSSegment)
+				if (hlsSegTimes.empty())
 					return { -1, 0 }; // retry later
 
 				// compute first PTS of last segment
+				int64_t firstPtsOfLastSegIn90k = INT64_MAX;
 				TsDemuxerConfig tsCfg;
 				tsCfg.pids = { TsDemuxerConfig::ANY_VIDEO() };
 				tsCfg.timestampStartsAtZero = false;
 				auto ts = loadModule("TsDemuxer", m_host, &tsCfg);
 				ConnectOutput(ts->getOutput(0), [&](Data data) {
-					firstPtsIn90k = clockToTimescale(data->get<PresentationTime>().time, 90000);
+					firstPtsOfLastSegIn90k = clockToTimescale(data->get<PresentationTime>().time, 90000);
 				});
-				ts->getInput(0)->push(lastHLSSegment);
+				ts->getInput(0)->push(lastHlsSegment);
 
-				if (firstPtsIn90k == INT64_MAX) {
+				if (firstPtsOfLastSegIn90k == INT64_MAX) {
 					m_host->log(Error, "Phase couldn't be computed. Set to zero until next iteration. Contact your vendor.");
-					firstPtsIn90k = -1;
-				}
-				/* If any Media Playlist in a Master Playlist contains an EXT-X-PROGRAM-DATE-TIME tag, then all
-				   Media Playlists in that Master Playlist MUST contain EXT-X-PROGRAM-DATE-TIME tags with consistent mappings
-				   of date and time to media timestamps. */
-				auto max_ts_in_hour = 27; // 33 bits at 90khz: if greater, consider this is an absolute clock time
-				if (lastHLSSegment->get<PresentationTime>().time > max_ts_in_hour * 3600 * IClock::Rate) {
-					programDateTimeIn180k = lastHLSSegment->get<PresentationTime>().time;
-					programDateTimeIn180k -= magicOffsetInSec * IClock::Rate;
+					firstPtsOfLastSegIn90k = 0;
 				}
 
-				firstPtsIn90k -= magicOffsetInSec * 90000;
+				/* "If any Media Playlist in a Master Playlist contains an EXT-X-PROGRAM-DATE-TIME tag, then all
+				    Media Playlists in that Master Playlist MUST contain EXT-X-PROGRAM-DATE-TIME tags with consistent mappings
+				    of date and time to media timestamps." */
+				int64_t programDateTimeIn180k = 0;
+				if (hlsSegTimes[0] > timescaleToClock((int64_t)1 << 33, 90000)) {
+					programDateTimeIn180k = hlsSegTimes[0];
+				}
+
+				auto const playlistDur = hlsSegTimes.back() - hlsSegTimes.front() + 8 * IClock::Rate; //Romain: + segmentDurationInMs/*FIXME: should be the same duration as the other media*/;
+				//Romain: we could simply use the last PTS of the last segment?
+
+				// fill the timeshiftBuffer
+				assert(segNum == 0);
+				timeshiftBufferDepthInSeg = (int)(playlistDur / timescaleToClock(segmentDurationInMs, 1000));
+				while (segNum < timeshiftBufferDepthInSeg + 1) { //Romain: was -1
+					auto const segName = format("subs_%s.vtt", segNum);
+					segEntries.push_back(segName); // we push the entry in the playlist but not the file
+					segNum++;
+				}
+
+				auto firstPtsIn90k = firstPtsOfLastSegIn90k - clockToTimescale(playlistDur, 90000) + rescale(segmentDurationInMs, 1000, 90000)/*Romain*/;
 				while (firstPtsIn90k < 0) firstPtsIn90k += ((int64_t)1 << 33);
+
+				return { firstPtsIn90k, programDateTimeIn180k };
 			} catch (std::exception const& e) {
 				m_host->log(Error, (std::string("error caught while computing phase between media and subtitles: ") + e.what()).c_str());
 				return { -1, 0 }; // retry later
 			}
-
-			//instanciate HLS and grab first PTS
-			return { firstPtsIn90k, programDateTimeIn180k };
 		}
 
 		void updatePhaseInWebvttSample(Data data) {
@@ -139,7 +151,6 @@ class HlsWebvttRephaser : public ModuleS {
 				} else {
 					addLine();
 				}
-
 			}
 
 			auto const segName = format("subs_%s.vtt", segNum);
@@ -170,7 +181,7 @@ class HlsWebvttRephaser : public ModuleS {
 
 			int entryNum = segNum - timeshiftBufferDepthInSeg;
 			for (auto &fn : segEntries) {
-				if (sourceInfo.programDateTimeIn180k != -1)
+				if (sourceInfo.programDateTimeIn180k > 0)
 					variantPl << "#EXT-X-PROGRAM-DATE-TIME:" << formatDate(sourceInfo.programDateTimeIn180k / IClock::Rate + entryNum * segmentDurationInMs / 1000) << "\n";
 				variantPl << "#EXTINF:" << segmentDurationInMs/1000.0 << ",\n";
 				variantPl << fn << "\n";
@@ -182,7 +193,7 @@ class HlsWebvttRephaser : public ModuleS {
 			auto const variantPlStr = variantPl.str();
 			auto out = outputVariantPlaylist->allocData<DataRaw>(variantPlStr.size());
 			auto metadata = make_shared<MetadataFile>(PLAYLIST);
-			metadata->filename = safe_cast<const MetadataFile>(outputVariantPlaylist->getMetadata())->filename;;
+			metadata->filename = safe_cast<const MetadataFile>(outputVariantPlaylist->getMetadata())->filename;
 			metadata->filesize = variantPlStr.size();
 			out->setMetadata(metadata);
 			memcpy(out->buffer->data().ptr, variantPlStr.data(), variantPlStr.size());
@@ -193,7 +204,10 @@ class HlsWebvttRephaser : public ModuleS {
 		OutputDefault *outputSegment, *outputVariantPlaylist;
 		const std::string url;
 		const int segmentDurationInMs;
-		const int timeshiftBufferDepthInSeg = 0; // TODO: should be the same as for audio and video
+		//Romain: a client MUST use the relative position of each segment on the Playlist timeline
+		// Romain: at the moment the A/V sn are in advance and subs are late. Related?
+		// TODO: should be the same as for audio and video
+		int timeshiftBufferDepthInSeg = 0;
 		int segNum = timeshiftBufferDepthInSeg;
 		std::list<std::string> segEntries;
 		SourceInfo sourceInfo;

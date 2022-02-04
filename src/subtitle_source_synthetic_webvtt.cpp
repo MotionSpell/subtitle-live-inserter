@@ -3,7 +3,7 @@
 #include "lib_utils/time.hpp" //timeInMsToStr
 #include "lib_utils/clock.hpp"
 
-const int magicOffsetInSec = 24;
+const int magicOffsetInSec = 176; // Romain: FIXME: we need this because the subtitle seem to be generated late (according to hls.js)
 
 SubtitleSourceProcessorSyntheticWebvtt::SubtitleSourceProcessorSyntheticWebvtt(uint64_t segmentDurationInMs) : segmentDurationInMs(segmentDurationInMs) {
 }
@@ -15,7 +15,7 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorSyntheticWebvtt::generat
 	timeInMsToStr(/*startTimeInMs + */segNum * segmentDurationInMs + magicOffsetInSec * 1000, timecodeShow, ".");
 	timecodeShow[timecodeSize - 1] = 0;
 	char timecodeHide[timecodeSize] = {};
-	timeInMsToStr(/*startTimeInMs + */(segNum + 1) * segmentDurationInMs + magicOffsetInSec * 1000, timecodeHide, ".");
+	timeInMsToStr(/*startTimeInMs + */(segNum + 1 /*+ 100000Romain*/) * segmentDurationInMs + magicOffsetInSec * 1000, timecodeHide, ".");
 	timecodeHide[timecodeSize - 1] = 0;
 	char timecodeUtc[timecodeSize] = {};
 	timeInMsToStr((uint64_t)(getUTC() * 1000), timecodeUtc, ".");

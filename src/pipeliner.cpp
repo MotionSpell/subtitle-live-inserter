@@ -23,7 +23,7 @@ using namespace Modules;
 using namespace Pipelines;
 
 extern const char *g_appName;
-const uint64_t g_segmentDurationInMs = 2000;
+const uint64_t g_segmentDurationInMs = 8000; //Romain 2000;
 std::unique_ptr<In::IFilePuller> createHttpSource();
 
 namespace {
@@ -36,8 +36,8 @@ bool startsWith(std::string s, std::string prefix) {
 	return s.substr(0, prefix.size()) == prefix;
 }
 
-static UtcStartTime utcStartTime;
-static UtcStartTime deltaStartTime;
+static UtcStartTime utcStartTime; // used by HLS
+static UtcStartTime deltaStartTime; // delta between UTC and AST ; used by DASH
 
 struct Logger : LogSink {
 		void send(Level level, const char *msg) override {
