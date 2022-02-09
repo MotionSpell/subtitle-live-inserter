@@ -8,8 +8,9 @@
 #include <cmath> //abs, lround
 #include <fstream>
 
-std::string getContentTtml(Modules::KHost *host, const std::vector<char> &input, int64_t referenceTimeInMs, uint64_t segmentDurationInMs, int64_t startTimeInMs, int64_t ebuttdOffsetInMs);
-std::string getContentWebvtt(const std::vector<char> &input);
+int64_t getTtmlMediaOffset(const std::vector<char> &input, int64_t referenceTimeInMs, uint64_t segmentDurationInMs);
+std::string getContentTtml(Modules::KHost *host, const std::vector<char> &input, int segNum, uint64_t segmentDurationInMs, int64_t startTimeInMs);
+std::string getContentWebvtt(const std::vector<char> &input, int segNum, int64_t segmentDurationInMs);
 
 SubtitleSourceProcessorEverGrowingFile::SubtitleSourceProcessorEverGrowingFile(Modules::KHost *host, bool ttml, const std::string &playlistFn, uint64_t segmentDurationInMs, int64_t sleepInMs)
 	: host(host), ttml(ttml), playlistFn(playlistFn), segmentDurationInMs(segmentDurationInMs), sleepInMs(sleepInMs) {
@@ -75,11 +76,10 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorEverGrowingFile::process
 		host->log(Warning, format("Shifting segment number from %s to %s.", segNum, (int)computedNumSegment).c_str());
 		segNum = (int)computedNumSegment;
 	}
-	const int64_t referenceTimeInMs = segNum * segmentDurationInMs;
 
 	lastFilePos = lastFilePos + line.size() + 1;
 	host->log(Warning, format("Manifest file position=%s, timestamp=%sms  ;  media filename=%s, media start time=%sms\n",
-	        (int)lastFilePos, clockToTimescale(timestampIn180k, 1000), subtitleFn, referenceTimeInMs).c_str());
+	        (int)lastFilePos, clockToTimescale(timestampIn180k, 1000), subtitleFn, segNum * segmentDurationInMs).c_str());
 
 	//get size
 	auto pbuf = ifs.rdbuf();
@@ -91,8 +91,17 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorEverGrowingFile::process
 	pbuf->sgetn(input.data(), size);
 	ifs.close();
 
+#if 1 //wrong location for this operation, see above for the right location
+	//compensated for the delay between the subtitle production and its processing
+	//for HLS this is computed in the rephaser
+	if (ttml && segNum == 0) {
+		ttmlMediaOffsetInMs = getTtmlMediaOffset(input, startTimeInMs + segNum * segmentDurationInMs, segmentDurationInMs);
+		host->log(Debug, format("TTML media offset computation: %s (should happen only once per session, at start)", ttmlMediaOffsetInMs).c_str());
+	}
+#endif
+
 	if (ttml)
-		return { getContentTtml(host, input, referenceTimeInMs, segmentDurationInMs, startTimeInMs, 0), timestampIn180k };
+		return { getContentTtml(host, input, segNum, segmentDurationInMs, /*startTimeInMs + */ttmlMediaOffsetInMs), timestampIn180k };
 	else
-		return { getContentWebvtt(input), timestampIn180k };
+		return { getContentWebvtt(input, segNum, segmentDurationInMs), timestampIn180k };
 }

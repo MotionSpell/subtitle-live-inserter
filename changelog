@@ -1,4 +1,4 @@
-Version 23 (XX/01/2022):
+Version 23 (XX/02/2022):
 - TODO: Add subtitle payload in debug log.
 - TODO (HLS?): If there is an error while downloading refresh the whole playlists
 - HLS (WebVTT) output (HLS/TS input supported only).
