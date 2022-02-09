@@ -40,7 +40,7 @@ int64_t getTtmlMediaOffset(const std::vector<char> &input, int64_t referenceTime
 	return probeTtmlTimings(xml, referenceTimeInMs, segmentDurationInMs);
 }
 
-static void incrementTtmlTimings(Modules::KHost *host, Tag &xml, int segNum, int64_t segmentDurationInMs, int64_t startTimeInMs) {
+static void incrementTtmlTimings(Modules::KHost *host, Tag &xml, int64_t startTimeInMs) {
 	for (auto& elt : xml.children) {
 		for (auto& attr : elt.attr) {
 			if (attr.name == "begin" || attr.name == "end") {
@@ -49,16 +49,6 @@ static void incrementTtmlTimings(Modules::KHost *host, Tag &xml, int segNum, int
 				auto const fmt1 = "%d:%02d:%02d.%03d";
 				sscanf(attr.value.c_str(), fmt1, &hour, &min, &sec, &msec);
 				int64_t timestampInMs = msec + 1000 * (sec + 60 * (min + 60 * (int64_t)hour));
-
-#if 0
-				//some inputs contain a media timestamp offset (e.g. local time of the day...)
-				//begin/end times should start at referenceTimeInMs and last segmentDurationInMs
-				const int64_t referenceTimeInMs = startTimeInMs + segNum * segmentDurationInMs;
-				if (attr.name == "begin" && timestampInMs < referenceTimeInMs)
-					timestampInMs += referenceTimeInMs - timestampInMs;
-				else if (attr.name == "end" && timestampInMs > referenceTimeInMs + (int)segmentDurationInMs)
-					timestampInMs += referenceTimeInMs + (int)segmentDurationInMs - timestampInMs;
-#endif
 
 				//increment by UTC start time
 				timestampInMs += startTimeInMs;
@@ -79,17 +69,17 @@ static void incrementTtmlTimings(Modules::KHost *host, Tag &xml, int segNum, int
 			}
 		}
 
-		incrementTtmlTimings(host, elt, segNum, segmentDurationInMs, startTimeInMs);
+		incrementTtmlTimings(host, elt, startTimeInMs);
 	}
 }
 
-std::string getContentTtml(Modules::KHost *host, const std::vector<char> &input, int segNum, uint64_t segmentDurationInMs, int64_t startTimeInMs) {
+std::string getContentTtml(Modules::KHost *host, const std::vector<char> &input, int64_t startTimeInMs) {
 	//deserialize
 	auto ttml = parseXml({ input.data(), input.size() });
 	assert(ttml.name == "tt" || ttml.name == "tt:tt");
 
 	//find timings and increment them
-	incrementTtmlTimings(host, ttml, segNum, segmentDurationInMs, startTimeInMs);
+	incrementTtmlTimings(host, ttml, startTimeInMs);
 
 	//reserialize and return
 	return std::string("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n") + serializeXml(ttml);

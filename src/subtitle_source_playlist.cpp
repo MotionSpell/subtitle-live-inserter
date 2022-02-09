@@ -9,7 +9,7 @@
 #include <fstream>
 
 int64_t getTtmlMediaOffset(const std::vector<char> &input, int64_t referenceTimeInMs, uint64_t segmentDurationInMs);
-std::string getContentTtml(Modules::KHost *host, const std::vector<char> &input, int segNum, uint64_t segmentDurationInMs, int64_t startTimeInMs);
+std::string getContentTtml(Modules::KHost *host, const std::vector<char> &input, int64_t startTimeInMs);
 std::string getContentWebvtt(const std::vector<char> &input, int segNum, int64_t segmentDurationInMs);
 
 SubtitleSourceProcessorEverGrowingFile::SubtitleSourceProcessorEverGrowingFile(Modules::KHost *host, bool ttml, const std::string &playlistFn, uint64_t segmentDurationInMs, int64_t sleepInMs)
@@ -101,7 +101,7 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorEverGrowingFile::process
 #endif
 
 	if (ttml)
-		return { getContentTtml(host, input, segNum, segmentDurationInMs, /*startTimeInMs + */ttmlMediaOffsetInMs), timestampIn180k };
+		return { getContentTtml(host, input, ttmlMediaOffsetInMs), timestampIn180k };
 	else
 		return { getContentWebvtt(input, segNum, segmentDurationInMs), timestampIn180k };
 }
