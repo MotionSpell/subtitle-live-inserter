@@ -141,8 +141,8 @@ class HlsWebvttRephaser : public ModuleS {
 		void updatePhaseInWebvttSample(Data data) {
 			auto const phase = sourceInfo.firstPtsIn90k == -1 ? 0 : sourceInfo.firstPtsIn90k;
 
-			std::string line, output;
-			std::stringstream ss((const char*)data->data().ptr);
+			std::string line, output, input((const char*)data->data().ptr, data->data().len);
+			std::stringstream ss(input);
 			while(std::getline(ss, line)) {
 				auto addLine = [&]() {
 					output += line;
@@ -152,6 +152,8 @@ class HlsWebvttRephaser : public ModuleS {
 				if (startsWith(line, "WEBVTT")) {
 					addLine();
 					output += format("X-TIMESTAMP-MAP=LOCAL:00:00:00.000,MPEGTS:%s\n", phase);
+				} else if (startsWith(line, "X-TIMESTAMP-MAP")) {
+					// ignore
 				} else {
 					addLine();
 				}
