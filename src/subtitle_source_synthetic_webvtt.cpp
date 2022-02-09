@@ -12,10 +12,10 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorSyntheticWebvtt::generat
 	//generate timecode strings
 	const size_t timecodeSize = 24;
 	char timecodeShow[timecodeSize] = {};
-	timeInMsToStr(/*startTimeInMs + */segNum * segmentDurationInMs + hlsPlaylistOffsetInSec * 1000, timecodeShow, ".");
+	timeInMsToStr(segNum * segmentDurationInMs + hlsPlaylistOffsetInSec * 1000, timecodeShow, ".");
 	timecodeShow[timecodeSize - 1] = 0;
 	char timecodeHide[timecodeSize] = {};
-	timeInMsToStr(/*startTimeInMs + */(segNum + 1) * segmentDurationInMs + hlsPlaylistOffsetInSec * 1000, timecodeHide, ".");
+	timeInMsToStr((segNum + 1) * segmentDurationInMs + hlsPlaylistOffsetInSec * 1000, timecodeHide, ".");
 	timecodeHide[timecodeSize - 1] = 0;
 	char timecodeUtc[timecodeSize] = {};
 	timeInMsToStr((uint64_t)(getUTC() * 1000), timecodeUtc, ".");
