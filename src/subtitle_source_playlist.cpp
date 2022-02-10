@@ -68,6 +68,23 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorEverGrowingFile::process
 		return {};
 	}
 
+	//get size
+	auto pbuf = ifs.rdbuf();
+	std::size_t size = pbuf->pubseekoff(0, ifs.end, ifs.in);
+	pbuf->pubseekpos(0, ifs.in);
+
+	//get data as a buffer
+	std::vector<char> input(size);
+	pbuf->sgetn(input.data(), size);
+	ifs.close();
+
+	//compensated for the delay between the subtitle production and its processing
+	//for HLS this is computed in the rephaser
+	if (ttml && segNum == 0) {
+		ttmlMediaOffsetInMs = getTtmlMediaOffset(input, startTimeInMs + segNum * segmentDurationInMs, segmentDurationInMs);
+		host->log(Info, format("TTML media offset computation: %s (should happen only once per session, at start)", ttmlMediaOffsetInMs).c_str());
+	}
+
 	//reference time: detect shifts in manifest timestamps
 	auto const tolerance = 0.20;
 	auto computedNumSegment = clockToTimescale(timestampIn180k, 1000) / (double)segmentDurationInMs;
@@ -80,25 +97,6 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorEverGrowingFile::process
 	lastFilePos = lastFilePos + line.size() + 1;
 	host->log(Warning, format("Manifest file position=%s, timestamp=%sms  ;  media filename=%s, media start time=%sms\n",
 	        (int)lastFilePos, clockToTimescale(timestampIn180k, 1000), subtitleFn, segNum * segmentDurationInMs).c_str());
-
-	//get size
-	auto pbuf = ifs.rdbuf();
-	std::size_t size = pbuf->pubseekoff(0, ifs.end, ifs.in);
-	pbuf->pubseekpos(0, ifs.in);
-
-	//get data as a buffer
-	std::vector<char> input(size);
-	pbuf->sgetn(input.data(), size);
-	ifs.close();
-
-#if 1 //wrong location for this operation, see above for the right location
-	//compensated for the delay between the subtitle production and its processing
-	//for HLS this is computed in the rephaser
-	if (ttml && segNum == 0) {
-		ttmlMediaOffsetInMs = getTtmlMediaOffset(input, startTimeInMs + segNum * segmentDurationInMs, segmentDurationInMs);
-		host->log(Debug, format("TTML media offset computation: %s (should happen only once per session, at start)", ttmlMediaOffsetInMs).c_str());
-	}
-#endif
 
 	if (ttml)
 		return { getContentTtml(host, input, ttmlMediaOffsetInMs), timestampIn180k };
