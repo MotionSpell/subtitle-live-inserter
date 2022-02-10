@@ -11,7 +11,7 @@ Tag parseXml(span<const char> text);
 static int64_t probeTtmlTimings(Tag &xml, int64_t referenceTimeInMs, uint64_t segmentDurationInMs) {
 	for (auto& elt : xml.children) {
 		for (auto& attr : elt.attr) {
-			if (attr.name == "begin" || attr.name == "end") {
+			if (attr.name == "begin") {
 				//serialize
 				int hour=0, min=0, sec=0, msec=0;
 				auto const fmt = "%d:%02d:%02d.%03d";
@@ -19,17 +19,15 @@ static int64_t probeTtmlTimings(Tag &xml, int64_t referenceTimeInMs, uint64_t se
 				int64_t timestampInMs = msec + 1000 * (sec + 60 * (min + 60 * (int64_t)hour));
 
 				//some inputs contain a media timestamp offset (e.g. local time of the day...)
-				//begin/end times should start at referenceTimeInMs and last segmentDurationInMs
-				if (attr.name == "begin" && timestampInMs < referenceTimeInMs)
+				//begin/end times should start at referenceTimeInMs
+				if (attr.name == "begin")
 					return referenceTimeInMs - timestampInMs;
-				else if (attr.name == "end" && timestampInMs > referenceTimeInMs + (int)segmentDurationInMs)
-					return referenceTimeInMs + (int)segmentDurationInMs - timestampInMs;
 			}
 		}
 
-		auto ret = probeTtmlTimings(elt, referenceTimeInMs, segmentDurationInMs);
-		if (ret)
-			return ret;
+		auto offsetInMs = probeTtmlTimings(elt, referenceTimeInMs, segmentDurationInMs);
+		if (offsetInMs)
+			return offsetInMs;
 	}
 
 	return 0;
