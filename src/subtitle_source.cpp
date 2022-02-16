@@ -62,7 +62,7 @@ class SubtitleSource : public Module {
 	private:
 		void ensureStartTime() {
 			if (!startTimeInMs) {
-				startTimeInMs = clockToTimescale(utcStartTime->query(), 1000);
+				startTimeInMs = clockToTimescale((int64_t)utcStartTime->query(), 1000);
 				initClockTimeInMs = (int64_t)(g_SystemClock->now() * 1000);
 			}
 		}
