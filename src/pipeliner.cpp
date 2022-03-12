@@ -1,5 +1,6 @@
 #include "lib_pipeline/pipeline.hpp"
 #include <lib_media/common/utc_start_time.hpp>
+#include "lib_utils/format.hpp"
 #include "lib_utils/log.hpp"
 #include "lib_utils/os.hpp"
 #include "lib_utils/system_clock.hpp"
@@ -182,6 +183,9 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	availabilityStartTime.startTime += cfg.subtitleForwardTimeInSec * IClock::Rate;
 	deltaStartTime.startTime += cfg.subtitleForwardTimeInSec * IClock::Rate;
 	cfg.updateDelayInSec = rdCfg.updateDelayInSec;
+
+	logger.send(Info, format("AST=%s ; UTC=%s ; deltaStartTime=%s",
+	        availabilityStartTime.startTime/IClock::Rate, utcStartTime.startTime/IClock::Rate, deltaStartTime.startTime/IClock::Rate).c_str());
 
 	return pipeline;
 }

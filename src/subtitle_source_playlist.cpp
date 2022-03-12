@@ -82,7 +82,7 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorEverGrowingFile::process
 	//for HLS this is computed in the rephaser
 	if (ttml && segNum == 0) {
 		ttmlMediaOffsetInMs = getTtmlMediaOffset(input, startTimeInMs + segNum * segmentDurationInMs, segmentDurationInMs);
-		host->log(Info, format("TTML media offset computation: %s (should happen only once per session, at start)", ttmlMediaOffsetInMs).c_str());
+		host->log(Info, format("TTML media offset computation: %sms (should happen only once per session, at start)", ttmlMediaOffsetInMs).c_str());
 	}
 
 	//reference time: detect shifts in manifest timestamps
