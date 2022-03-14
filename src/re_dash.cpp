@@ -75,16 +75,16 @@ class ReDash : public Module {
 			: m_host(host), url(cfg->url), baseUrlAV(cfg->baseUrlAV), baseUrlSub(cfg->baseUrlSub),
 			  segmentDurationInMs(cfg->segmentDurationInMs), httpSrc(cfg->filePullerFactory->create()),
 			  nextAwakeTime(g_SystemClock->now()), delayInSec(cfg->delayInSec) {
+			auto mpdAsText = download(httpSrc.get(), url.c_str());
+			if (mpdAsText.empty())
+				throw std::runtime_error("can't get mpd");
+
 			std::string urlFn = cfg->manifestFn.empty() ? url : cfg->manifestFn;
 			auto i = urlFn.rfind('/');
 			if(i != urlFn.npos)
 				urlFn = urlFn.substr(i+1, urlFn.npos);
 			auto meta = std::make_shared<MetadataFile>(PLAYLIST);
 			meta->filename = urlFn;
-
-			auto mpdAsText = download(httpSrc.get(), url.c_str());
-			if (mpdAsText.empty())
-				throw std::runtime_error("can't get mpd");
 
 			auto mpd = refreshDashSession(mpdAsText);
 

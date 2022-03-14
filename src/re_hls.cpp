@@ -48,6 +48,10 @@ class ReHLS : public Module {
 			  baseUrlAV(cfg->baseUrlAV.empty() ? urlPath(url) : cfg->baseUrlAV), baseUrlSub(cfg->baseUrlSub),
 			  hasBaseUrlAV(!cfg->baseUrlAV.empty()), segmentDurationInMs(cfg->segmentDurationInMs),
 			  httpSrc(cfg->filePullerFactory->create()), nextAwakeTime(g_SystemClock->now()) {
+			auto const m3u8MasterAsText = download(httpSrc.get(), url.c_str());
+			if (m3u8MasterAsText.empty())
+				throw std::runtime_error("can't get master m3u8");
+
 			std::string urlFn = cfg->manifestFn.empty() ? url : cfg->manifestFn;
 			auto i = urlFn.rfind('/');
 			if(i != urlFn.npos)
