@@ -184,6 +184,14 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	deltaStartTime.startTime += cfg.subtitleForwardTimeInSec * IClock::Rate;
 	cfg.updateDelayInSec = rdCfg.updateDelayInSec;
 
+	int64_t startTimeInMs = clockToTimescale((int64_t)deltaStartTime.startTime, 1000);
+	if (startTimeInMs < 0) {
+		assert(cfg.outputFormat == "dash");
+		logger.send(Warning, format("Negative start time: sleeping for %sms", -startTimeInMs).c_str());
+		std::this_thread::sleep_for(std::chrono::milliseconds(-startTimeInMs));
+		deltaStartTime.startTime = 0;
+	}
+
 	logger.send(Info, format("AST=%s ; UTC=%s ; deltaStartTime=%s",
 	        availabilityStartTime.startTime/IClock::Rate, utcStartTime.startTime/IClock::Rate, deltaStartTime.startTime/IClock::Rate).c_str());
 
