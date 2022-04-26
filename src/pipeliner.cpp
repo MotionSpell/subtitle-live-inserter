@@ -37,8 +37,7 @@ bool startsWith(std::string s, std::string prefix) {
 	return s.substr(0, prefix.size()) == prefix;
 }
 
-static UtcStartTime utcStartTime; // used by HLS
-static UtcStartTime deltaStartTime; // delta between UTC and AST ; used by DASH
+static UtcStartTime utcStartTime;
 
 struct Logger : LogSink {
 		void send(Level level, const char *msg) override {
@@ -122,7 +121,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	subconfig.segmentDurationInMs = g_segmentDurationInMs;
 	subconfig.rectify = cfg.rectify;
 	subconfig.format = cfg.outputFormat == "dash" ? "ttml" : "webvtt";
-	subconfig.utcStartTime = &deltaStartTime;
+	subconfig.utcStartTime = &utcStartTime;
 	auto subSource = pipeline->add("SubtitleSource", &subconfig);
 	auto source = GetOutputPin(subSource, 0);
 
@@ -143,7 +142,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 			mp4config.segmentPolicy = FragmentedSegment;
 			mp4config.fragmentPolicy = OneFragmentPerSegment;
 			mp4config.compatFlags = Browsers | ExactInputDur;
-			mp4config.utcStartTime = &deltaStartTime;
+			mp4config.utcStartTime = &utcStartTime;
 
 			Mp4MuxFileHandlerDynConfig cfg;
 			cfg.mp4MuxCfg = &mp4config;
@@ -178,22 +177,12 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	} else {
 		utcStartTime.startTime = fractionToClock(getUTC());
 	}
-	deltaStartTime.startTime = utcStartTime.startTime - availabilityStartTime.startTime;
 	utcStartTime.startTime += cfg.subtitleForwardTimeInSec * IClock::Rate;
 	availabilityStartTime.startTime += cfg.subtitleForwardTimeInSec * IClock::Rate;
-	deltaStartTime.startTime += cfg.subtitleForwardTimeInSec * IClock::Rate;
 	cfg.updateDelayInSec = rdCfg.updateDelayInSec;
 
-	int64_t startTimeInMs = clockToTimescale((int64_t)deltaStartTime.startTime, 1000);
-	if (startTimeInMs < 0) {
-		assert(cfg.outputFormat == "dash");
-		logger.send(Warning, format("Negative start time: sleeping for %sms", -startTimeInMs).c_str());
-		std::this_thread::sleep_for(std::chrono::milliseconds(-startTimeInMs));
-		deltaStartTime.startTime = 0;
-	}
-
-	logger.send(Info, format("AST=%s ; UTC=%s ; deltaStartTime=%s",
-	        availabilityStartTime.startTime/IClock::Rate, utcStartTime.startTime/IClock::Rate, deltaStartTime.startTime/IClock::Rate).c_str());
+	logger.send(Info, format("AST=%s ; UTC=%s", availabilityStartTime.startTime/IClock::Rate,
+	        utcStartTime.startTime/IClock::Rate).c_str());
 
 	return pipeline;
 }

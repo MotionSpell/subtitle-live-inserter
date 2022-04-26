@@ -262,14 +262,15 @@ class ReDash : public Module {
 				if (e.name == "Period") {
 					auto b = baseUrlSub.empty() ? std::string() : format("<BaseURL>%s</BaseURL>", baseUrlSub);
 					auto const timescale = 10000000;
-					auto const startNumber = 0;
+					auto const ast = parseDate(mpd["availabilityStartTime"]) - delayInSec;
+					auto const startNumber = (ast * 1000) / segmentDurationInMs;
 					auto as = format(R"|(
     <AdaptationSet id="1789" lang="de" segmentAlignment="true">
         <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2" />
         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
-        %s<SegmentTemplate timescale="%s" duration="%s" startNumber="%s" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" />
+        %s<SegmentTemplate timescale="%s" duration="%s" startNumber="%s" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"  presentationTimeOffset="%s"/>
         <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1" />
-    </AdaptationSet>)|", b, timescale, rescale(segmentDurationInMs, 1000, timescale), startNumber);
+    </AdaptationSet>)|", b, timescale, rescale(segmentDurationInMs, 1000, timescale), startNumber, ast * timescale);
 					e.add(parseXml({ as.c_str(), as.size() }));
 				} else
 					addSubtitleAdaptationSet(e);
