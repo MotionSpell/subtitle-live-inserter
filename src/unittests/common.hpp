@@ -68,8 +68,7 @@ void check(const std::string &moduleName, const std::string &manifest, const std
 
 	auto meta = std::dynamic_pointer_cast<const MetadataFile>(data->getMetadata());
 	ASSERT(meta);
-
-	ASSERT_EQUALS(cfg.manifestFn, meta->filename.substr(meta->filename.size() - cfg.manifestFn.size(), meta->filename.size()));
+	ASSERT_EQUALS(cfg.manifestFn, meta->filename);
 
 	ASSERT_EQUALS(expected, std::string((const char*)data->data().ptr, data->data().len).c_str());
 }
