@@ -39,7 +39,6 @@ ReDashConfig createRDCfg() {
 	cfg.segmentDurationInMs = 2000;
 	cfg.baseUrlSub = ".";
 	cfg.manifestFn = "redash.mpd";
-	cfg.postUrl = "/root/output/";
 	UtcStartTime utcStartTime;
 	utcStartTime.startTime = 1789;
 	cfg.utcStartTime = &utcStartTime;

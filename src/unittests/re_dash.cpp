@@ -457,31 +457,6 @@ unittest("reDash: add version when ProgramInfo title is absent") {
   check("reDASH", mpd, expected);
 }
 
-unittest("reDash: remote postUrl") {
-  auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
-
-	                                                                auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
-<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
-  <ProgramInformation>
-    <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
-  </ProgramInformation>
-  <Period>
-    <AdaptationSet id="1789" lang="de" segmentAlignment="true">
-      <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
-      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>https://remote/url/</BaseURL>
-      <SegmentTemplate timescale="10000000" duration="20000000" startNumber="800829829" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" presentationTimeOffset="16016596580000000"/>
-      <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
-    </AdaptationSet>
-  </Period>
-</MPD>
-)|", g_version);
-
-    auto cfg = createRDCfg();
-    cfg.baseUrlSub = "https://remote/url/";
-    check("reDASH", mpd, expected, cfg);
-}
-
 unittest("reDash: empty baseUrl") {
     auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 

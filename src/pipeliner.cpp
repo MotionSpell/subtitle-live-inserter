@@ -91,7 +91,6 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	rdCfg.manifestFn = cfg.manifestFn;
 	rdCfg.baseUrlSub = cfg.baseUrlSub;
 	rdCfg.baseUrlAV = cfg.baseUrlAV;
-	rdCfg.postUrl = cfg.postUrl;
 	FilePullerFactory filePullerFactory;
 	rdCfg.filePullerFactory = &filePullerFactory;
 	if (cfg.outputFormat == "dash") {

@@ -26,7 +26,6 @@ struct ReDashConfig {
 	std::string manifestFn;
 	std::string baseUrlSub;
 	std::string baseUrlAV;
-	std::string postUrl;
 	Modules::In::IFilePullerFactory *filePullerFactory = nullptr;
 
 	// set by constructor - blocking call
