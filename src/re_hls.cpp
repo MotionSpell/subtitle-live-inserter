@@ -93,7 +93,7 @@ class ReHLS : public Module {
 					return line.empty();
 				};
 				auto comment = [&]() {
-					return line.size() > 2 && line[0] == '#' && line[1] == '#';
+					return line.size() >= 2 && line[0] == '#' && line[1] == '#';
 				};
 				auto addLine = [&](int offset) {
 					m3u8MasterNew += line.substr(offset);
