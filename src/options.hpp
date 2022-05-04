@@ -11,6 +11,7 @@ struct Config {
 	std::string subListFn;
 	std::string baseUrlSub = ".";
 	std::string baseUrlAV; /*empty: copy from source*/
+	std::string displayedName = "subtitle"; /*used by players*/
 	int timeshiftBufferDepthInSec = 0; /*0 = infinite, -1 = same as source*/
 	std::string postUrl = ".";
 	std::string manifestFn;

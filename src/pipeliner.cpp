@@ -89,6 +89,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	rdCfg.utcStartTime = &availabilityStartTime; // set by this module: keep it first in module declarations
 	rdCfg.delayInSec = cfg.delayInSec;
 	rdCfg.manifestFn = cfg.manifestFn;
+	rdCfg.displayedName = cfg.displayedName;
 	rdCfg.baseUrlSub = cfg.baseUrlSub;
 	rdCfg.baseUrlAV = cfg.baseUrlAV;
 	FilePullerFactory filePullerFactory;
