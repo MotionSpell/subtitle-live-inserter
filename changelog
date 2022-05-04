@@ -1,6 +1,16 @@
-Version 23 (XX/02/2022):
-- TODO: Add subtitle payload in debug log.
-- TODO (HLS?): If there is an error while downloading refresh the whole playlists
+Version 25 (XX/05/2022):
+- HLS: fix date parsing when including timezone
+- Fix layout for multiline EBU-TT Live inputs
+- Be resilient to a/v encoder reboot
+
+Version 24 (11/03/2022):
+- Ingester: support WebSocket reconnections
+- Ingester: allow customizing sequence ID in websocket endpoint
+- Deployment: fix subtitle cache pruning
+- Fix issues at startup with some streams when computations led to negatives timestamps.
+
+Version 23 (10/02/2022):
+- Add subtitle payload in debug log.
 - HLS (WebVTT) output (HLS/TS input supported only).
 - Reduce contention on evergrowing-playlist input.
 - Subtitle source: open media files in playlist directory .
