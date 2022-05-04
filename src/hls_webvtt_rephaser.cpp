@@ -124,7 +124,7 @@ class HlsWebvttRephaser : public ModuleS {
 				timeshiftBufferDepthInSeg = (int)(playlistDur / timescaleToClock(segmentDurationInMs, 1000));
 				while (segNum < timeshiftBufferDepthInSeg - 1) {
 					auto const segName = format("subs_%s.vtt", segNum);
-					segEntries.push_back(segName); // we push the entry in the playlist but we do not send the subtitle file
+					segEntries.push_back({segName, false}); // we push the entry in the playlist but we do not send the subtitle file
 					segNum++;
 				}
 
@@ -160,20 +160,32 @@ class HlsWebvttRephaser : public ModuleS {
 			}
 
 			auto const segName = format("subs_%s.vtt", segNum);
-			segEntries.push_back(segName);
+			segEntries.push_back({segName, true});
 			if (timeshiftBufferDepthInSeg > 0) {
 				int toRemove = segEntries.size() - timeshiftBufferDepthInSeg;
-				while (toRemove-- > 0)
+				while (toRemove-- > 0) {
+					auto &seg = segEntries.front();
+					if (!seg.fake) {
+						// send 'DELETE' command
+						auto out = outputSegment->allocData<DataRaw>(0);
+						auto meta = make_shared<MetadataFile>(SUBTITLE_PKT);
+						meta->filesize = INT64_MAX; // "DELETE"
+						meta->filename = seg.filename;
+						out->setMetadata(meta);
+						outputSegment->post(out);
+					}
+
 					segEntries.pop_front();
+				}
 			}
 
-			auto out = outputSegment->allocData<DataRaw>(output.size());
+			auto out = outputVariantPlaylist->allocData<DataRaw>(output.size());
 			auto metadata = make_shared<MetadataFile>(PLAYLIST);
 			metadata->filename = segName;
 			metadata->filesize = output.size();
 			out->setMetadata(metadata);
 			memcpy(out->buffer->data().ptr, output.data(), output.size());
-			outputSegment->post(out);
+			outputVariantPlaylist->post(out);
 		}
 
 		void genVariantPlaylist() {
@@ -186,11 +198,11 @@ class HlsWebvttRephaser : public ModuleS {
 			variantPl << "\n";
 
 			int entryNum = segNum - timeshiftBufferDepthInSeg;
-			for (auto &fn : segEntries) {
+			for (auto &segEntry : segEntries) {
 				if (sourceInfo.programDateTimeIn180k > 0)
 					variantPl << "#EXT-X-PROGRAM-DATE-TIME:" << formatDate(sourceInfo.programDateTimeIn180k / IClock::Rate + entryNum * segmentDurationInMs / 1000) << "\n";
 				variantPl << "#EXTINF:" << segmentDurationInMs/1000.0 << ",\n";
-				variantPl << fn << "\n";
+				variantPl << segEntry.filename << "\n";
 				entryNum++;
 			}
 
@@ -212,7 +224,11 @@ class HlsWebvttRephaser : public ModuleS {
 		const int segmentDurationInMs;
 		int timeshiftBufferDepthInSeg = 0;
 		int segNum = timeshiftBufferDepthInSeg;
-		std::list<std::string> segEntries;
+		struct SegEntry {
+			std::string filename;
+			bool fake; // file doesn't exist so don't forward to downward modules
+		};
+		std::list<SegEntry> segEntries;
 		SourceInfo sourceInfo;
 };
 
