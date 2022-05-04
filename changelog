@@ -2,6 +2,8 @@ Version 25 (XX/05/2022):
 - HLS: fix date parsing when including timezone
 - Fix layout for multiline EBU-TT Live inputs
 - Be resilient to a/v encoder reboot
+- DASH/HLS: delete data it goes out of the timeshiftbuffer, unless told otherwise
+- Change default subtitle naming in player, and make it configurable
 
 Version 24 (11/03/2022):
 - Ingester: support WebSocket reconnections

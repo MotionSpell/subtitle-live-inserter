@@ -44,7 +44,7 @@ std::string urlPath(std::string path) {
 class ReHLS : public Module {
 	public:
 		ReHLS(KHost* host, ReDashConfig *cfg)
-			: m_host(host), url(cfg->url),
+			: m_host(host), displayedName(cfg->displayedName), url(cfg->url),
 			  baseUrlAV(cfg->baseUrlAV.empty() ? urlPath(url) : cfg->baseUrlAV), baseUrlSub(cfg->baseUrlSub),
 			  hasBaseUrlAV(!cfg->baseUrlAV.empty()), segmentDurationInMs(cfg->segmentDurationInMs),
 			  httpSrc(cfg->filePullerFactory->create()), nextAwakeTime(g_SystemClock->now()) {
@@ -162,8 +162,8 @@ class ReHLS : public Module {
 			{
 				//remove trailing slash
 				std::string baseUrl = baseUrlSub.empty() ? "" : baseUrlSub.back() != '/' ? baseUrlSub : baseUrlSub.substr(0, baseUrlSub.size() - 1);
-				auto const subVariant = format("#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subtitles\",NAME=\"subtitles\",LANGUAGE=\"de\","
-				        "AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI=\"%s/%s\"\n", baseUrl, variantPlaylistFn);
+				auto const subVariant = format("#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subtitles\",NAME=\"%s\",LANGUAGE=\"de\","
+				        "AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI=\"%s/%s\"\n", displayedName, baseUrl, variantPlaylistFn);
 				m3u8MasterNew += subVariant;
 			}
 
@@ -182,7 +182,7 @@ class ReHLS : public Module {
 
 		KHost *m_host;
 		OutputDefault *outputMaster;
-		const std::string url, baseUrlAV, baseUrlSub;
+		const std::string displayedName, url, baseUrlAV, baseUrlSub;
 		const bool hasBaseUrlAV;
 		const int segmentDurationInMs;
 		std::unique_ptr<IFilePuller> httpSrc;

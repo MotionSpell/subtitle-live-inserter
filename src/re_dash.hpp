@@ -18,6 +18,7 @@ struct UtcStartTime : IUtcStartTimeQuery {
 };
 
 struct ReDashConfig {
+	std::string displayedName = "subtitle"; // seen by players
 	std::string url;
 	UtcStartTime *utcStartTime = nullptr;
 	int delayInSec = 0;

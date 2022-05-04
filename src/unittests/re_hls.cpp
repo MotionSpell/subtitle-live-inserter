@@ -28,7 +28,7 @@ http://url/for/index_v.m3u8
 #EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio-aacl-main-96",NAME="VF",LANGUAGE="fre",AUTOSELECT=YES,DEFAULT=YES,CHANNELS="2",URI="http://url/for/index_a.m3u8"
 
 ## Updated with Motion Spell / GPAC Licensing %s version %s
-#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitles",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="./index_sub.m3u8"
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitle",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="./index_sub.m3u8"
 )|", g_appName, g_version);
 
     check("reHLS", m3u8, expected);
@@ -76,7 +76,7 @@ https://wdrfsww247.akamaized.net/hls/live/2009628/wdr_msl4_fs247ww/master_578.m3
 https://wdrfsww247.akamaized.net/hls/live/2009628-b/wdr_msl4_fs247ww/master_578.m3u8
 
 ## Updated with Motion Spell / GPAC Licensing %s version %s
-#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitles",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="./index_sub.m3u8"
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitle",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="./index_sub.m3u8"
 )|", g_appName, g_version);
 
     check("reHLS", m3u8, expected);
@@ -124,7 +124,7 @@ http://url/hls/live/2018025/wdrlz_muensterland/master_578.m3u8
 http://url/hls/live/2018025-b/wdrlz_muensterland/master_578.m3u8
 
 ## Updated with Motion Spell / GPAC Licensing %s version %s
-#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitles",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="./index_sub.m3u8"
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitle",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="./index_sub.m3u8"
 )|", g_appName, g_version);
 
     check("reHLS", m3u8, expected);
@@ -172,7 +172,7 @@ http://test.com/a/hls/live/2018025/wdrlz_muensterland/master_578.m3u8
 http://test.com/a/hls/live/2018025-b/wdrlz_muensterland/master_578.m3u8
 
 ## Updated with Motion Spell / GPAC Licensing %s version %s
-#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitles",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="http//test2.com/b/index_sub.m3u8"
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitle",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="http//test2.com/b/index_sub.m3u8"
 )|", g_appName, g_version);
 
 	auto cfg = createRDCfg();
@@ -200,7 +200,7 @@ https://wdrfsww247.akamaized.net/hls/live/2009628/wdr_msl4_fs247ww/master_1028.m
 https://wdrfsww247.akamaized.net/hls/live/2009628-b/wdr_msl4_fs247ww/master_1028.m3u8
 
 ## Updated with Motion Spell / GPAC Licensing %s version %s
-#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitles",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="./index_sub.m3u8"
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitle",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="./index_sub.m3u8"
 )|", g_appName, g_version);
 
     check("reHLS", m3u8, expected);
@@ -222,7 +222,7 @@ master_3328.m3u8
 http://A.com/a1/a2/master_3328.m3u8
 
 ## Updated with Motion Spell / GPAC Licensing %s version %s
-#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitles",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="http://B.com/b1/b2/index_sub.m3u8"
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitle",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="http://B.com/b1/b2/index_sub.m3u8"
 )|", g_appName, g_version);
 
     auto cfg = createRDCfg();
@@ -230,6 +230,32 @@ http://A.com/a1/a2/master_3328.m3u8
     cfg.baseUrlAV = "http://A.com/a1/a2/";
     cfg.baseUrlSub = "http://B.com/b1/b2/";
     check("reHLS", m3u8, expected, cfg);
+}
+
+unittest("reHLS: subtitle naming") {
+	auto m3u8 = R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXT-X-STREAM-INF:BANDWIDTH=4224000,AVERAGE-BANDWIDTH=3660800,CODECS="avc1.640020,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=50.000
+master_3328.m3u8
+)|";
+
+	auto expected = format(R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXT-X-STREAM-INF:BANDWIDTH=4224000,AVERAGE-BANDWIDTH=3660800,CODECS="avc1.640020,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=50.000,SUBTITLES="subtitles"
+http://A.com/a1/a2/master_3328.m3u8
+
+## Updated with Motion Spell / GPAC Licensing %s version %s
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="toto",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="http://B.com/b1/b2/index_sub.m3u8"
+)|", g_appName, g_version);
+
+	auto cfg = createRDCfg();
+	cfg.displayedName = "toto";
+	cfg.url = "http://S.com/s1/s2/live.m3u8";
+	cfg.baseUrlAV = "http://A.com/a1/a2/";
+	cfg.baseUrlSub = "http://B.com/b1/b2/";
+	check("reHLS", m3u8, expected, cfg);
 }
 
 }

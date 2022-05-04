@@ -72,7 +72,7 @@ std::string formatDate(int64_t timestamp) {
 class ReDash : public Module {
 	public:
 		ReDash(KHost* host, ReDashConfig *cfg)
-			: m_host(host), url(cfg->url), baseUrlAV(cfg->baseUrlAV), baseUrlSub(cfg->baseUrlSub),
+			: m_host(host), asName(cfg->displayedName), url(cfg->url), baseUrlAV(cfg->baseUrlAV), baseUrlSub(cfg->baseUrlSub),
 			  segmentDurationInMs(cfg->segmentDurationInMs), httpSrc(cfg->filePullerFactory->create()),
 			  nextAwakeTime(g_SystemClock->now()), delayInSec(cfg->delayInSec) {
 			auto mpdAsText = download(httpSrc.get(), url.c_str());
@@ -265,12 +265,12 @@ class ReDash : public Module {
 					auto const ast = parseDate(mpd["availabilityStartTime"]) - delayInSec;
 					auto const startNumber = (ast * 1000) / segmentDurationInMs;
 					auto as = format(R"|(
-    <AdaptationSet id="subtitle" lang="de" segmentAlignment="true">
+    <AdaptationSet id="%s" lang="de" segmentAlignment="true">
         <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2" />
         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
         %s<SegmentTemplate timescale="%s" duration="%s" startNumber="%s" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"  presentationTimeOffset="%s"/>
         <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1" />
-    </AdaptationSet>)|", b, timescale, rescale(segmentDurationInMs, 1000, timescale), startNumber, ast * timescale);
+    </AdaptationSet>)|", asName, b, timescale, rescale(segmentDurationInMs, 1000, timescale), startNumber, ast * timescale);
 					e.add(parseXml({ as.c_str(), as.size() }));
 				} else
 					addSubtitleAdaptationSet(e);
@@ -289,7 +289,7 @@ class ReDash : public Module {
 		KHost* const m_host;
 		OutputDefault* output;
 
-		const std::string url, baseUrlAV, baseUrlSub;
+		const std::string asName, url, baseUrlAV, baseUrlSub;
 		const int segmentDurationInMs;
 		std::vector<uint8_t> lastMpdAsText;
 		std::unique_ptr<IFilePuller> httpSrc;
