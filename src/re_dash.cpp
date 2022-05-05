@@ -98,14 +98,13 @@ class ReDash : public Module {
 			sanity("timeShiftBufferDepth");
 
 			cfg->timeshiftBufferDepthInSec = parseIso8601Period(mpd["timeShiftBufferDepth"]);
+			cfg->updateDelayInSec = std::bind(&ReDash::updateDelayInSec, this, std::placeholders::_1);
 			if (cfg->utcStartTime)
 				cfg->utcStartTime->startTime = parseDate(mpd["availabilityStartTime"]) * IClock::Rate;
 
 			output = addOutput();
 			output->setMetadata(meta);
 			m_host->activate(true);
-
-			cfg->updateDelayInSec = std::bind(&ReDash::updateDelayInSec, this, std::placeholders::_1);
 		}
 
 		void process() override {

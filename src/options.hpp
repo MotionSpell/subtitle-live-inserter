@@ -12,7 +12,7 @@ struct Config {
 	std::string baseUrlSub = ".";
 	std::string baseUrlAV; /*empty: copy from source*/
 	std::string displayedName = "subtitle"; /*used by players*/
-	int timeshiftBufferDepthInSec = 0; /*0 = infinite, -1 = same as source*/
+	int timeshiftBufferDepthInSec = -1; /*0 = infinite, -1 = same as source*/
 	std::string postUrl = ".";
 	std::string manifestFn;
 	std::string outputFormat = "dash";

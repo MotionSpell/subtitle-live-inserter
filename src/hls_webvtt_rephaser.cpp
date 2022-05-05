@@ -48,12 +48,10 @@ std::string formatDate(int64_t timestamp) {
 class HlsWebvttRephaser : public ModuleS {
 	public:
 		HlsWebvttRephaser(KHost* host, HlsWebvttRephaserConfig *cfg)
-			: m_host(host), url(cfg->url), segmentDurationInMs(cfg->segmentDurationInMs) {
-			auto meta = std::make_shared<MetadataFile>(PLAYLIST);
-			meta->filename = variantPlaylistFn;
-			outputVariantPlaylist = addOutput();
-			outputVariantPlaylist->setMetadata(meta);
+			: m_host(host), url(cfg->url), segmentDurationInMs(cfg->segmentDurationInMs), deleteSegments(cfg->timeshiftBufferDepthInSec == 0) {
+			assert(cfg->timeshiftBufferDepthInSec == 0 || cfg->timeshiftBufferDepthInSec == -1);
 
+			outputVariantPlaylist = addOutput();
 			outputSegment = addOutput();
 		}
 
@@ -124,7 +122,7 @@ class HlsWebvttRephaser : public ModuleS {
 				timeshiftBufferDepthInSeg = (int)(playlistDur / timescaleToClock(segmentDurationInMs, 1000));
 				while (segNum < timeshiftBufferDepthInSeg - 1) {
 					auto const segName = format("subs_%s.vtt", segNum);
-					segEntries.push_back({segName, false}); // we push the entry in the playlist but we do not send the subtitle file
+					segEntries.push_back({segName, false}); // we push the entry in the playlist but we do not send the corresponding subtitle file
 					segNum++;
 				}
 
@@ -160,12 +158,12 @@ class HlsWebvttRephaser : public ModuleS {
 			}
 
 			auto const segName = format("subs_%s.vtt", segNum);
-			segEntries.push_back({segName, true});
+			segEntries.push_back({segName, deleteSegments});
 			if (timeshiftBufferDepthInSeg > 0) {
 				int toRemove = segEntries.size() - timeshiftBufferDepthInSeg;
 				while (toRemove-- > 0) {
 					auto &seg = segEntries.front();
-					if (!seg.fake) {
+					if (seg.toDelete) {
 						// send 'DELETE' command
 						auto out = outputSegment->allocData<DataRaw>(0);
 						auto meta = make_shared<MetadataFile>(SUBTITLE_PKT);
@@ -179,13 +177,13 @@ class HlsWebvttRephaser : public ModuleS {
 				}
 			}
 
-			auto out = outputVariantPlaylist->allocData<DataRaw>(output.size());
-			auto metadata = make_shared<MetadataFile>(PLAYLIST);
+			auto out = outputSegment->allocData<DataRaw>(output.size());
+			auto metadata = make_shared<MetadataFile>(SUBTITLE_PKT);
 			metadata->filename = segName;
 			metadata->filesize = output.size();
 			out->setMetadata(metadata);
 			memcpy(out->buffer->data().ptr, output.data(), output.size());
-			outputVariantPlaylist->post(out);
+			outputSegment->post(out);
 		}
 
 		void genVariantPlaylist() {
@@ -211,7 +209,7 @@ class HlsWebvttRephaser : public ModuleS {
 			auto const variantPlStr = variantPl.str();
 			auto out = outputVariantPlaylist->allocData<DataRaw>(variantPlStr.size());
 			auto metadata = make_shared<MetadataFile>(PLAYLIST);
-			metadata->filename = safe_cast<const MetadataFile>(outputVariantPlaylist->getMetadata())->filename;
+			metadata->filename = variantPlaylistFn;
 			metadata->filesize = variantPlStr.size();
 			out->setMetadata(metadata);
 			memcpy(out->buffer->data().ptr, variantPlStr.data(), variantPlStr.size());
@@ -222,11 +220,12 @@ class HlsWebvttRephaser : public ModuleS {
 		OutputDefault *outputSegment, *outputVariantPlaylist;
 		const std::string url;
 		const int segmentDurationInMs;
+		const bool deleteSegments;
 		int timeshiftBufferDepthInSeg = 0;
 		int segNum = timeshiftBufferDepthInSeg;
 		struct SegEntry {
 			std::string filename;
-			bool fake; // file doesn't exist so don't forward to downward modules
+			bool toDelete = true;
 		};
 		std::list<SegEntry> segEntries;
 		SourceInfo sourceInfo;

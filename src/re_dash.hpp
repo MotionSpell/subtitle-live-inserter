@@ -20,10 +20,10 @@ struct UtcStartTime : IUtcStartTimeQuery {
 struct ReDashConfig {
 	std::string displayedName = "subtitle"; // seen by players
 	std::string url;
-	UtcStartTime *utcStartTime = nullptr;
+	UtcStartTime *utcStartTime = nullptr; // set by constructor
 	int delayInSec = 0;
 	int segmentDurationInMs = 0;
-	int64_t timeshiftBufferDepthInSec = 24 * 60 * 60;
+	int64_t timeshiftBufferDepthInSec = 24 * 60 * 60; // set by constructor
 	std::string manifestFn;
 	std::string baseUrlSub;
 	std::string baseUrlAV;

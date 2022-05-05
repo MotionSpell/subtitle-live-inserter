@@ -159,6 +159,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 		HlsWebvttRephaserConfig hwrCfg;
 		hwrCfg.url = cfg.url;
 		hwrCfg.segmentDurationInMs = g_segmentDurationInMs;
+		hwrCfg.timeshiftBufferDepthInSec = cfg.timeshiftBufferDepthInSec;
 		hwrCfg.utcStartTime = &utcStartTime;
 		auto rephaser = pipeline->add("HlsWebvttRephaser", &hwrCfg);
 		pipeline->connect(source, rephaser);
