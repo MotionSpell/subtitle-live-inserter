@@ -25,9 +25,9 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	opt.add("u", "output-format", &cfg.outputFormat, "Output format: \"dash\" (default) or \"hls\".");
 	opt.add("o", "output-manifest-filename", &cfg.manifestFn, "Manifest filename. If not specified the input filename is copied.");
 	opt.add("a", "base-url-av", &cfg.baseUrlAV, "Explicit URL where the source A/V content can be played back by end-users. Useful when the source URL used by the tool is different from the one end-users access.");
-	opt.add("n", "sub-displayed-name", &cfg.displayedName, "Explicit URL where the subtitle content can be played back by end-users. Useful when the content is accessible from a different URL than where we post.");
+	opt.add("n", "sub-displayed-name", &cfg.displayedName, "Default=\"subtitle\". Explicit URL where the subtitle content can be played back by end-users. Useful when the content is accessible from a different URL than where we post.");
 	opt.add("o", "output-manifest-filename", &cfg.manifestFn, "Manifest filename. If not specified the input filename is copied.");
-	opt.add("t", "timeshift-buffer", &cfg.timeshiftBufferDepthInSec, "Default=0 (infinite). Same as source=-1. Value in seconds otherwise.");
+	opt.add("t", "timeshift-buffer", &cfg.timeshiftBufferDepthInSec, "Default=-1 (same as source). Infinite=0. Value in seconds otherwise (DASH only).");
 	opt.add("p", "post", &cfg.postUrl, "Path or URL where the content is posted. If not set the content is generated locally.");
 	opt.addFlag("r", "rectify", &cfg.rectify, "Add empty samples when input content is not available on time. Default off.");
 	opt.addFlag("h", "help", &cfg.help, "Print usage and exit.");
