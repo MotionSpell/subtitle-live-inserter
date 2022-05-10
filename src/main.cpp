@@ -25,6 +25,7 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	opt.add("u", "output-format", &cfg.outputFormat, "Output format: \"dash\" (default) or \"hls\".");
 	opt.add("o", "output-manifest-filename", &cfg.manifestFn, "Manifest filename. If not specified the input filename is copied.");
 	opt.add("a", "base-url-av", &cfg.baseUrlAV, "Explicit URL where the source A/V content can be played back by end-users. Useful when the source URL used by the tool is different from the one end-users access.");
+	opt.add("b", "base-url-sub", &cfg.baseUrlSub, "Explicit URL where the subtitle content can be played back by end-users. Useful when the content is accessible from a different URL than where we post.");
 	opt.add("n", "sub-displayed-name", &cfg.displayedName, "Default=\"subtitle\". Explicit URL where the subtitle content can be played back by end-users. Useful when the content is accessible from a different URL than where we post.");
 	opt.add("o", "output-manifest-filename", &cfg.manifestFn, "Manifest filename. If not specified the input filename is copied.");
 	opt.add("t", "timeshift-buffer", &cfg.timeshiftBufferDepthInSec, "Default=-1 (same as source). Infinite=0. Value in seconds otherwise (DASH only).");
