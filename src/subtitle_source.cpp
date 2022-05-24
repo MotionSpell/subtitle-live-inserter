@@ -76,7 +76,7 @@ class SubtitleSource : public Module {
 			flags.keyframe = true;
 			pkt->set(flags);
 			pkt->set(DecodingTime{timestampIn180k});
-			pkt->setMediaTime(timestampIn180k);
+			pkt->set(PresentationTime{timestampIn180k});
 
 			output->post(pkt);
 		}
