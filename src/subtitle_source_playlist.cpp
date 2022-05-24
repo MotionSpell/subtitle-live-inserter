@@ -79,7 +79,6 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorEverGrowingFile::process
 	ifs.close();
 
 	//compensated for the delay between the subtitle production and its processing
-	//for HLS this is computed in the rephaser
 	if (ttml && segNum == 0) {
 		ttmlMediaOffsetInMs = getTtmlMediaOffset(input, startTimeInMs + segNum * segmentDurationInMs, segmentDurationInMs);
 		host->log(Info, format("TTML media offset computation: %sms (should happen only once per session, at start)", ttmlMediaOffsetInMs).c_str());

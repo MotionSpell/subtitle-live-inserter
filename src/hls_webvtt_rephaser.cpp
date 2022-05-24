@@ -17,7 +17,7 @@
 
 using namespace Modules;
 
-int hlsPlaylistOffsetInSec = 0;
+int hlsPlaylistOffsetInSec = 0; //TODO: remove
 const char *variantPlaylistFn = "index_sub.m3u8";
 extern const char *g_appName;
 extern const char *g_version;
