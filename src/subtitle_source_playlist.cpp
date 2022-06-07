@@ -78,9 +78,15 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorEverGrowingFile::process
 	pbuf->sgetn(input.data(), size);
 	ifs.close();
 
-	//compensated for the delay between the subtitle production and its processing
-	if (ttml && segNum == 0) {
-		ttmlMediaOffsetInMs = getTtmlMediaOffset(input, startTimeInMs + segNum * segmentDurationInMs, segmentDurationInMs);
+	//compensate the delay between the subtitle production and its processing
+	if (ttml) {
+		auto segTtmlMediaOffsetInMs = getTtmlMediaOffset(input, startTimeInMs + segNum * segmentDurationInMs, segmentDurationInMs);
+
+		//FIXME: several iterations are needed as the time of the first subtitle is not necessarily on the earliest seg boundary
+		//       this will be fixed when we know which absolute time is associated with which playlist entry
+		if (segTtmlMediaOffsetInMs < ttmlMediaOffsetInMs)
+			ttmlMediaOffsetInMs = segTtmlMediaOffsetInMs;
+
 		host->log(Info, format("TTML media offset computation: %sms (should happen only once per session, at start)", ttmlMediaOffsetInMs).c_str());
 	}
 

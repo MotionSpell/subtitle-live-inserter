@@ -8,6 +8,7 @@
 Tag parseXml(span<const char> text);
 
 //FIXME: this is inaccurate because it makes the assumption that the first found attribute "begin"/"end" would match with a segment boundary
+//       this will be fixed when we know which absolute time is associated with which playlist entry
 static int64_t probeTtmlTimings(Tag &xml, int64_t referenceTimeInMs, uint64_t segmentDurationInMs) {
 	for (auto& elt : xml.children) {
 		for (auto& attr : elt.attr) {
