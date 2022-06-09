@@ -81,5 +81,5 @@ std::string getContentTtml(Modules::KHost *host, const std::vector<char> &input,
 	incrementTtmlTimings(host, ttml, startTimeInMs);
 
 	//reserialize and return
-	return std::string("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n") + serializeXml(ttml);
+	return std::string("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n") + serializeXml(ttml, true, false);
 }

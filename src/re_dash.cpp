@@ -145,7 +145,7 @@ class ReDash : public Module {
 			addSubtitleAdaptationSet(mpd);
 
 			// publish modified mpd
-			auto const modifiedMpdAsText = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + serializeXml(mpd);
+			auto const modifiedMpdAsText = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + serializeXml(mpd, true, false);
 			postManifest(modifiedMpdAsText);
 
 			// save unmodified mpd
