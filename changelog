@@ -1,4 +1,12 @@
-Version 25 (XX/05/2022):
+Version 27 (xx/06/2022):
+- EBU-TT Live: avoid multi lines overwriting each other or going out of the styling box
+- HLS: fix multiline overlap in hls.js
+- Add tests using HTTPS
+- Align the first received subtitle with the first output chunk (fixes most blinkings in TTML/DASH)
+- Improve formatting by following TTML BasicDE recommendations
+- Support multi-line inputs
+
+Version 26 (10/05/2022):
 - HLS: fix date parsing when including timezone
 - Fix layout for multiline EBU-TT Live inputs
 - Be resilient to a/v encoder reboot
