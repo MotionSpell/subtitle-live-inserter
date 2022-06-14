@@ -31,7 +31,7 @@ static int64_t probeTtmlTimings(Tag &xml, int64_t referenceTimeInMs, uint64_t se
 			return offsetInMs;
 	}
 
-	return 0;
+	return -1;
 }
 
 int64_t getTtmlMediaOffset(const std::vector<char> &input, int64_t referenceTimeInMs, uint64_t segmentDurationInMs) {

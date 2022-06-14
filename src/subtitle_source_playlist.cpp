@@ -84,10 +84,10 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorEverGrowingFile::process
 
 		//FIXME: several iterations are needed as the time of the first subtitle is not necessarily on the earliest seg boundary
 		//       this will be fixed when we know which absolute time is associated with which playlist entry
-		if (segTtmlMediaOffsetInMs < ttmlMediaOffsetInMs)
+		if (segTtmlMediaOffsetInMs != -1 && segTtmlMediaOffsetInMs < ttmlMediaOffsetInMs) {
 			ttmlMediaOffsetInMs = segTtmlMediaOffsetInMs;
-
-		host->log(Info, format("TTML media offset computation: %sms (should happen only once per session, at start)", ttmlMediaOffsetInMs).c_str());
+			host->log(Info, format("TTML media offset computation: %sms (should happen only once per session, at start)", ttmlMediaOffsetInMs).c_str());
+		}
 	}
 
 	//reference time: detect shifts in manifest timestamps
