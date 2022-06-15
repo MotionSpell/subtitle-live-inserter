@@ -27,11 +27,11 @@ static int64_t probeTtmlTimings(Tag &xml, int64_t referenceTimeInMs, uint64_t se
 		}
 
 		auto offsetInMs = probeTtmlTimings(elt, referenceTimeInMs, segmentDurationInMs);
-		if (offsetInMs)
+		if (offsetInMs != INT64_MIN)
 			return offsetInMs;
 	}
 
-	return -1;
+	return INT64_MIN;
 }
 
 int64_t getTtmlMediaOffset(const std::vector<char> &input, int64_t referenceTimeInMs, uint64_t segmentDurationInMs) {
@@ -43,6 +43,8 @@ static void incrementTtmlTimings(Modules::KHost *host, Tag &xml, int64_t startTi
 	for (auto& elt : xml.children) {
 		for (auto& attr : elt.attr) {
 			if (attr.name == "begin" || attr.name == "end") {
+				assert(startTimeInMs != INT64_MAX);
+
 				//serialize
 				int hour=0, min=0, sec=0, msec=0;
 				auto const fmt1 = "%d:%02d:%02d.%03d";

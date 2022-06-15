@@ -26,7 +26,7 @@ struct SubtitleSourceProcessorEverGrowingFile : ISubtitleSourceProcessor {
 		const std::string playlistFn;
 		const uint64_t segmentDurationInMs;
 		const int64_t sleepInMs;
-		int64_t ttmlMediaOffsetInMs = INT64_MAX;
+		int64_t ttmlMediaOffsetInMs = INT64_MIN;
 		int lastFilePos = 0;
 		std::string playlistDir;
 };
