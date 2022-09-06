@@ -100,7 +100,7 @@ class ReDash : public Module {
 			cfg->timeshiftBufferDepthInSec = parseIso8601Period(mpd["timeShiftBufferDepth"]);
 			cfg->updateDelayInSec = std::bind(&ReDash::updateDelayInSec, this, std::placeholders::_1);
 			if (cfg->utcStartTime)
-				cfg->utcStartTime->startTime = parseDate(mpd["availabilityStartTime"]) * IClock::Rate;
+				cfg->utcStartTime->startTime = (uint64_t)parseDate(mpd["availabilityStartTime"]) * IClock::Rate;
 
 			output = addOutput();
 			output->setMetadata(meta);
@@ -131,7 +131,7 @@ class ReDash : public Module {
 			// add AST offset to mitigate truncated file issues with Apache on Windows
 			{
 				std::unique_lock<std::mutex> lock(updateMutex);
-				mpd["availabilityStartTime"] = formatDate(parseDate(mpd["availabilityStartTime"]) + delayInSec);
+				mpd["availabilityStartTime"] = formatDate((int64_t)parseDate(mpd["availabilityStartTime"]) + delayInSec);
 			}
 
 			// add version of this tool
@@ -261,7 +261,7 @@ class ReDash : public Module {
 				if (e.name == "Period") {
 					auto b = baseUrlSub.empty() ? std::string() : format("<BaseURL>%s</BaseURL>", baseUrlSub);
 					auto const timescale = 10000000;
-					auto const ast = parseDate(mpd["availabilityStartTime"]) - delayInSec;
+					auto const ast = (int64_t)parseDate(mpd["availabilityStartTime"]) - delayInSec;
 					auto const startNumber = (ast * 1000) / segmentDurationInMs;
 					auto as = format(R"|(
     <AdaptationSet id="%s" lang="de" segmentAlignment="true">
