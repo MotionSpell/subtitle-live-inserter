@@ -3,10 +3,12 @@
 
 const char *g_appName = "subtitle-live-inserter";
 
-namespace {
+namespace
+{
 
-unittest("reDash: manifest from Keepixo/Anevia/Ateme") {
-	auto mpd = R"|(
+  unittest("reDash: manifest from Keepixo/Anevia/Ateme")
+  {
+    auto mpd = R"|(
 <?xml version="1.0" encoding="UTF-8" ?>
 <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:mspr="urn:microsoft:playready" xmlns:cenc="urn:mpeg:cenc:2013" profiles="urn:dvb:dash:profile:dvb-dash:2014,urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011" type="dynamic" availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" publishTime="2020-10-02T17:27:38Z" timeShiftBufferDepth="PT24H0.00S" minBufferTime="PT10.00S">
   <Period id="0" start="PT0S">
@@ -36,7 +38,7 @@ unittest("reDash: manifest from Keepixo/Anevia/Ateme") {
   </Period>
 </MPD>)|";
 
-	auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:mspr="urn:microsoft:playready" xmlns:cenc="urn:mpeg:cenc:2013" profiles="urn:dvb:dash:profile:dvb-dash:2014,urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011" type="dynamic" availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" publishTime="2020-10-02T17:27:38Z" timeShiftBufferDepth="PT24H0.00S" minBufferTime="PT10.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -79,13 +81,15 @@ unittest("reDash: manifest from Keepixo/Anevia/Ateme") {
     </AdaptationSet>
   </Period>
 </MPD>
-)|", g_version);
+)|",
+                           g_version);
 
-  check("reDASH", mpd, expected);
-}
+    check("reDASH", mpd, expected);
+  }
 
-unittest("reDash: manifest from Elemental for ARD") {
-  auto mpd = R"|(
+  unittest("reDash: manifest from Elemental for ARD")
+  {
+    auto mpd = R"|(
 <?xml version="1.0" encoding="UTF-8"?>
 <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-11T15:39:24Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-02-05T08:27:46Z" minBufferTime="PT22S" suggestedPresentationDelay="PT2S" timeShiftBufferDepth="PT1M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
    <Period start="PT0S" id="1">
@@ -110,7 +114,7 @@ unittest("reDash: manifest from Elemental for ARD") {
   </Period>
 )|";
 
-	auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-11T15:39:24Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-02-05T08:27:46Z" minBufferTime="PT22S" suggestedPresentationDelay="PT2S" timeShiftBufferDepth="PT1M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -147,13 +151,15 @@ unittest("reDash: manifest from Elemental for ARD") {
     </AdaptationSet>
   </Period>
 </MPD>
-)|", g_version);
+)|",
+                           g_version);
 
-  check("reDASH", mpd, expected);
-}
+    check("reDASH", mpd, expected);
+  }
 
-unittest("reDash: manifest from Elemental for RBB (MDR)") {
-  auto mpd = R"|(
+  unittest("reDash: manifest from Elemental for RBB (MDR)")
+  {
+    auto mpd = R"|(
 <?xml version="1.0" encoding="UTF-8" ?>
 <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:mspr="urn:microsoft:playready" xmlns:cenc="urn:mpeg:cenc:2013" profiles="urn:dvb:dash:profile:dvb-dash:2014,urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011" type="dynamic" availabilityStartTime="1970-01-01T00:00:00Z" minimumUpdatePeriod="PT6.000S" publishTime="2021-02-03T10:31:43Z" timeShiftBufferDepth="PT8H0.000S" minBufferTime="PT6.000S">
   <Period id="0" start="PT0S">
@@ -176,7 +182,7 @@ unittest("reDash: manifest from Elemental for RBB (MDR)") {
 </MPD>
     )|";
 
-	        auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:mspr="urn:microsoft:playready" xmlns:cenc="urn:mpeg:cenc:2013" profiles="urn:dvb:dash:profile:dvb-dash:2014,urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011" type="dynamic" availabilityStartTime="1970-01-01T00:00:00Z" minimumUpdatePeriod="PT6.000S" publishTime="2021-02-03T10:31:43Z" timeShiftBufferDepth="PT8H0.000S" minBufferTime="PT6.000S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -211,13 +217,15 @@ unittest("reDash: manifest from Elemental for RBB (MDR)") {
     </AdaptationSet>
   </Period>
 </MPD>
-)|", g_version);
+)|",
+                           g_version);
 
-  check("reDASH", mpd, expected);
-}
+    check("reDASH", mpd, expected);
+  }
 
-unittest("reDash: manifest from Keepixo for RBB") {
-  auto mpd = R"|(
+  unittest("reDash: manifest from Keepixo for RBB")
+  {
+    auto mpd = R"|(
 <?xml version="1.0" encoding="UTF-8"?>
 <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-03T10:34:30Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-01-27T17:13:30Z" minBufferTime="PT6S" suggestedPresentationDelay="PT20S" timeShiftBufferDepth="PT2H0M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
   <Period start="PT0S" id="1">
@@ -243,7 +251,7 @@ unittest("reDash: manifest from Keepixo for RBB") {
 </MPD>
 )|";
 
-  auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-03T10:34:30Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-01-27T17:13:30Z" minBufferTime="PT6S" suggestedPresentationDelay="PT20S" timeShiftBufferDepth="PT2H0M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -280,13 +288,15 @@ unittest("reDash: manifest from Keepixo for RBB") {
     </AdaptationSet>
   </Period>
 </MPD>
-)|", g_version);
+)|",
+                           g_version);
 
-  check("reDASH", mpd, expected);
-}
+    check("reDASH", mpd, expected);
+  }
 
-unittest("reDash: manifest from Elemental for RBB (WDR)") {
-  auto mpd = R"|(
+  unittest("reDash: manifest from Elemental for RBB (WDR)")
+  {
+    auto mpd = R"|(
 <?xml version="1.0" encoding="UTF-8"?>
 <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-03T11:14:54Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-01-26T10:25:50Z" minBufferTime="PT22S" suggestedPresentationDelay="PT2S" timeShiftBufferDepth="PT2H0M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
   <Period start="PT0S" id="1">
@@ -312,7 +322,7 @@ unittest("reDash: manifest from Elemental for RBB (WDR)") {
 </MPD>
 )|";
 
-	auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-03T11:14:54Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-01-26T10:25:50Z" minBufferTime="PT22S" suggestedPresentationDelay="PT2S" timeShiftBufferDepth="PT2H0M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -349,13 +359,15 @@ unittest("reDash: manifest from Elemental for RBB (WDR)") {
     </AdaptationSet>
   </Period>
 </MPD>
-)|", g_version);
+)|",
+                           g_version);
 
-  check("reDASH", mpd, expected);
-}
+    check("reDASH", mpd, expected);
+  }
 
-unittest("reDash: manifest from Elemental for RBB (WDR) with A/V BaseUrl") {
-  auto mpd = R"|(
+  unittest("reDash: manifest from Elemental for RBB (WDR) with A/V BaseUrl")
+  {
+    auto mpd = R"|(
 <?xml version="1.0" encoding="UTF-8"?>
 <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-03T11:14:54Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-01-26T10:25:50Z" minBufferTime="PT22S" suggestedPresentationDelay="PT2S" timeShiftBufferDepth="PT2H0M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
   <Period start="PT0S" id="1">
@@ -381,7 +393,7 @@ unittest("reDash: manifest from Elemental for RBB (WDR) with A/V BaseUrl") {
 </MPD>
 )|";
 
-	auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-03T11:14:54Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-01-26T10:25:50Z" minBufferTime="PT22S" suggestedPresentationDelay="PT2S" timeShiftBufferDepth="PT2H0M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -418,49 +430,55 @@ unittest("reDash: manifest from Elemental for RBB (WDR) with A/V BaseUrl") {
     </AdaptationSet>
   </Period>
 </MPD>
-)|", g_version);
+)|",
+                           g_version);
 
-  auto cfg = createRDCfg();
-  cfg.baseUrlAV = "http://test.com/a/";
-  check("reDASH", mpd, expected, cfg);
-}
+    auto cfg = createRDCfg();
+    cfg.baseUrlAV = "http://test.com/a/";
+    check("reDASH", mpd, expected, cfg);
+  }
 
-unittest("reDash: add version when ProgramInfo title is present") {
-  auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">    
+  unittest("reDash: add version when ProgramInfo title is present")
+  {
+    auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">    
   <ProgramInformation>
     <Title>TEST</Title>
   </ProgramInformation>
 </MPD>)|";
 
-	                auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>TEST - Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
   </ProgramInformation>
 </MPD>
-)|", g_version);
+)|",
+                           g_version);
 
-  check("reDASH", mpd, expected);
-}
+    check("reDASH", mpd, expected);
+  }
 
-unittest("reDash: add version when ProgramInfo title is absent") {
-  auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"/>)|";
+  unittest("reDash: add version when ProgramInfo title is absent")
+  {
+    auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"/>)|";
 
-	                        auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
   </ProgramInformation>
 </MPD>
-)|", g_version);
+)|",
+                           g_version);
 
-  check("reDASH", mpd, expected);
-}
+    check("reDASH", mpd, expected);
+  }
 
-unittest("reDash: empty baseUrl") {
-  auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
+  unittest("reDash: empty baseUrl")
+  {
+    auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
-	                                auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -474,17 +492,19 @@ unittest("reDash: empty baseUrl") {
     </AdaptationSet>
   </Period>
 </MPD>
-)|", g_version);
+)|",
+                           g_version);
 
-  auto cfg = createRDCfg();
-  cfg.baseUrlSub = "";
-  check("reDASH", mpd, expected, cfg);
-}
+    auto cfg = createRDCfg();
+    cfg.baseUrlSub = "";
+    check("reDASH", mpd, expected, cfg);
+  }
 
-unittest("reDash: general delay") {
-  auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
+  unittest("reDash: general delay")
+  {
+    auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
-	                                        auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:40Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -498,18 +518,20 @@ unittest("reDash: general delay") {
     </AdaptationSet>
   </Period>
 </MPD>
-)|", g_version);
+)|",
+                           g_version);
 
-  auto cfg = createRDCfg();
-  cfg.baseUrlSub = "";
-  cfg.delayInSec = 2;
-  check("reDASH", mpd, expected, cfg);
-}
+    auto cfg = createRDCfg();
+    cfg.baseUrlSub = "";
+    cfg.delayInSec = 2;
+    check("reDASH", mpd, expected, cfg);
+  }
 
-unittest("reDash: subtitle naming") {
-  auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
+  unittest("reDash: subtitle naming")
+  {
+    auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
-	                                                auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:40Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -523,20 +545,22 @@ unittest("reDash: subtitle naming") {
     </AdaptationSet>
   </Period>
 </MPD>
-)|", g_version);
+)|",
+                           g_version);
 
-  auto cfg = createRDCfg();
-  cfg.baseUrlSub = "";
-  cfg.delayInSec = 2;
-  cfg.displayedName = "toto";
-  check("reDASH", mpd, expected, cfg);
-}
+    auto cfg = createRDCfg();
+    cfg.baseUrlSub = "";
+    cfg.delayInSec = 2;
+    cfg.displayedName = "toto";
+    check("reDASH", mpd, expected, cfg);
+  }
 
-unittest("reDash: sanity checks") {
-  auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S"><Period/></MPD>)|";
-	                                                        auto cfg = createRDCfg();
-	                                                        cfg.baseUrlSub = "";
-	                                                        ASSERT_THROWN(check("reDASH", mpd, "", cfg));
-}
+  unittest("reDash: sanity checks")
+  {
+    auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S"><Period/></MPD>)|";
+    auto cfg = createRDCfg();
+    cfg.baseUrlSub = "";
+    ASSERT_THROWN(check("reDASH", mpd, "", cfg));
+  }
 
 }
