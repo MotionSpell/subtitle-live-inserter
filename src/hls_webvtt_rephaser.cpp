@@ -48,7 +48,8 @@ std::string formatDate(int64_t timestamp) {
 class HlsWebvttRephaser : public ModuleS {
 	public:
 		HlsWebvttRephaser(KHost* host, HlsWebvttRephaserConfig *cfg)
-			: m_host(host), url(cfg->url), segmentDurationInMs(cfg->segmentDurationInMs), deleteSegments(cfg->timeshiftBufferDepthInSec == 0) {
+			: m_host(host), url(cfg->url), segmentDurationInMs(cfg->segmentDurationInMs),
+			  subtitleForwardTimeInSec(cfg->subtitleForwardTimeInSec), deleteSegments(cfg->timeshiftBufferDepthInSec == 0) {
 			assert(cfg->timeshiftBufferDepthInSec == 0 || cfg->timeshiftBufferDepthInSec == -1);
 
 			outputVariantPlaylist = addOutput();
@@ -117,7 +118,7 @@ class HlsWebvttRephaser : public ModuleS {
 				// Hack: don't report it from the constructor to avoid random failures at startup
 				hlsPlaylistOffsetInSec = clockToTimescale(playlistDur, 1);
 
-				// fill the timeshiftBuffer
+				// Fill the timeshiftBuffer
 				assert(segNum == 0);
 				timeshiftBufferDepthInSeg = (int)(playlistDur / timescaleToClock(segmentDurationInMs, 1000));
 				while (segNum < timeshiftBufferDepthInSeg - 1) {
@@ -128,6 +129,9 @@ class HlsWebvttRephaser : public ModuleS {
 
 				auto firstPtsIn90k = firstPtsOfLastSegIn90k - clockToTimescale(playlistDur, 90000) + rescale(segmentDurationInMs, 1000, 90000);
 				while (firstPtsIn90k < 0) firstPtsIn90k += ((int64_t)1 << 33);
+
+				// Offset X-TIMESTAMP-MAP
+				firstPtsIn90k += subtitleForwardTimeInSec * 90000;
 
 				return { firstPtsIn90k, programDateTimeIn180k };
 			} catch (std::exception const& e) {
@@ -220,6 +224,7 @@ class HlsWebvttRephaser : public ModuleS {
 		OutputDefault *outputSegment, *outputVariantPlaylist;
 		const std::string url;
 		const int segmentDurationInMs;
+		const int subtitleForwardTimeInSec;
 		const bool deleteSegments;
 		int timeshiftBufferDepthInSeg = 0;
 		int segNum = timeshiftBufferDepthInSeg;

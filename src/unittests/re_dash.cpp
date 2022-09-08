@@ -176,7 +176,7 @@ unittest("reDash: manifest from Elemental for RBB (MDR)") {
 </MPD>
     )|";
 
-  auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	        auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:mspr="urn:microsoft:playready" xmlns:cenc="urn:mpeg:cenc:2013" profiles="urn:dvb:dash:profile:dvb-dash:2014,urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011" type="dynamic" availabilityStartTime="1970-01-01T00:00:00Z" minimumUpdatePeriod="PT6.000S" publishTime="2021-02-03T10:31:43Z" timeShiftBufferDepth="PT8H0.000S" minBufferTime="PT6.000S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -432,7 +432,7 @@ unittest("reDash: add version when ProgramInfo title is present") {
   </ProgramInformation>
 </MPD>)|";
 
-	auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	                auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>TEST - Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -446,7 +446,7 @@ unittest("reDash: add version when ProgramInfo title is present") {
 unittest("reDash: add version when ProgramInfo title is absent") {
   auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"/>)|";
 
-	auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	                        auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -460,7 +460,7 @@ unittest("reDash: add version when ProgramInfo title is absent") {
 unittest("reDash: empty baseUrl") {
   auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
-	auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	                                auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -484,7 +484,7 @@ unittest("reDash: empty baseUrl") {
 unittest("reDash: general delay") {
   auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
-	auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	                                        auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:40Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -509,7 +509,7 @@ unittest("reDash: general delay") {
 unittest("reDash: subtitle naming") {
   auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
-	auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	                                                auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:40Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -534,9 +534,9 @@ unittest("reDash: subtitle naming") {
 
 unittest("reDash: sanity checks") {
   auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S"><Period/></MPD>)|";
-  auto cfg = createRDCfg();
-  cfg.baseUrlSub = "";
-  ASSERT_THROWN(check("reDASH", mpd, "", cfg));
+	                                                        auto cfg = createRDCfg();
+	                                                        cfg.baseUrlSub = "";
+	                                                        ASSERT_THROWN(check("reDASH", mpd, "", cfg));
 }
 
 }

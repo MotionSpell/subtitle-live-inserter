@@ -106,5 +106,5 @@ ISubtitleSourceProcessor::Result SubtitleSourceProcessorEverGrowingFile::process
 	if (ttml)
 		return { getContentTtml(host, input, ttmlMediaOffsetInMs), timestampIn180k };
 	else
-		return { getContentWebvtt(input, segNum, segmentDurationInMs), timestampIn180k };
+		return { getContentWebvtt(input, segNum, segmentDurationInMs), timestampIn180k };//Wrong: Romain: => MISSES START TIME: means the subtitle offset is ignored
 }
