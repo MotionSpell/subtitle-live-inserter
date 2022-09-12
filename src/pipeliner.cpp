@@ -128,6 +128,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	// Regulate
 	auto regulate = [&](OutputPin source) -> OutputPin {
 		RegulatorMonoConfig rmCfg;
+		rmCfg.resyncAllowed = false;
 		auto regulator = pipeline->add("RegulatorMono", &rmCfg);
 		pipeline->connect(source, regulator);
 		return GetOutputPin(regulator);
