@@ -130,7 +130,7 @@ class HlsWebvttRephaser : public ModuleS {
 				auto firstPtsIn90k = firstPtsOfLastSegIn90k - clockToTimescale(playlistDur, 90000) + rescale(segmentDurationInMs, 1000, 90000);
 
 				// Offset X-TIMESTAMP-MAP
-				firstPtsIn90k -= subtitleForwardTimeInSec * 90000;
+				firstPtsIn90k += subtitleForwardTimeInSec * 90000;
 
 				// Ensure positiveness
 				while (firstPtsIn90k < 0) firstPtsIn90k += ((int64_t)1 << 33);
