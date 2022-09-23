@@ -20,7 +20,7 @@ namespace
       <Representation id="video_02" mimeType="video/mp4" codecs="avc3.64001f" bandwidth="1000000" width="640" height="360" scanType="progressive" frameRate="50/1" sar="1:1" startWithSAP="1" />
     </AdaptationSet>
     <!--Audio-->
-    <AdaptationSet id="1" lang="de" segmentAlignment="true">
+    <AdaptationSet id="1" lang="de" contentType="text" segmentAlignment="true">
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
       <SegmentTemplate timescale="10000000" duration="40000000" startNumber="1" initialization="f25cc24bca2d606b3bc0b585b3c53985_1_$RepresentationID$-init.mp4" media="f25cc24bca2d606b3bc0b585b3c53985_1_$RepresentationID$-$Number$.mp4" />
       <Representation id="audio_03" mimeType="audio/mp4" codecs="mp4a.40.2" bandwidth="128000" audioSamplingRate="48000" startWithSAP="1">
@@ -28,7 +28,7 @@ namespace
       </Representation>
     </AdaptationSet>
     <!--Audio-->
-    <AdaptationSet id="2" lang="de" segmentAlignment="true">
+    <AdaptationSet id="2" lang="de" contentType="text" segmentAlignment="true">
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="alternate" />
       <SegmentTemplate timescale="10000000" duration="40000000" startNumber="1" initialization="f25cc24bca2d606b3bc0b585b3c53985_2_$RepresentationID$-init.mp4" media="f25cc24bca2d606b3bc0b585b3c53985_2_$RepresentationID$-$Number$.mp4" />
       <Representation id="audio_04" mimeType="audio/mp4" codecs="mp4a.40.2" bandwidth="96000" audioSamplingRate="24000" startWithSAP="1">
@@ -56,7 +56,7 @@ namespace
         <BaseURL>http://url/for/</BaseURL>
       </Representation>
     </AdaptationSet>
-    <AdaptationSet id="1" lang="de" segmentAlignment="true">
+    <AdaptationSet id="1" lang="de" contentType="text" segmentAlignment="true">
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
       <SegmentTemplate timescale="10000000" duration="40000000" startNumber="1" initialization="f25cc24bca2d606b3bc0b585b3c53985_1_$RepresentationID$-init.mp4" media="f25cc24bca2d606b3bc0b585b3c53985_1_$RepresentationID$-$Number$.mp4"/>
       <Representation id="audio_03" mimeType="audio/mp4" codecs="mp4a.40.2" bandwidth="128000" audioSamplingRate="48000" startWithSAP="1">
@@ -64,7 +64,7 @@ namespace
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
       </Representation>
     </AdaptationSet>
-    <AdaptationSet id="2" lang="de" segmentAlignment="true">
+    <AdaptationSet id="2" lang="de" contentType="text" segmentAlignment="true">
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="alternate"/>
       <SegmentTemplate timescale="10000000" duration="40000000" startNumber="1" initialization="f25cc24bca2d606b3bc0b585b3c53985_2_$RepresentationID$-init.mp4" media="f25cc24bca2d606b3bc0b585b3c53985_2_$RepresentationID$-$Number$.mp4"/>
       <Representation id="audio_04" mimeType="audio/mp4" codecs="mp4a.40.2" bandwidth="96000" audioSamplingRate="24000" startWithSAP="1">
@@ -72,7 +72,7 @@ namespace
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
       </Representation>
     </AdaptationSet>
-    <AdaptationSet id="subtitle" lang="de" segmentAlignment="true">
+    <AdaptationSet id="subtitle" lang="de" contentType="text" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
       <BaseURL>.</BaseURL>
@@ -142,7 +142,7 @@ namespace
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
       </Representation>
     </AdaptationSet>
-    <AdaptationSet id="subtitle" lang="de" segmentAlignment="true">
+    <AdaptationSet id="subtitle" lang="de" contentType="text" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
       <BaseURL>.</BaseURL>
@@ -171,7 +171,7 @@ namespace
       <Representation id="video_02" mimeType="video/mp4" codecs="avc3.4d4020" bandwidth="3500000" width="1280" height="720" scanType="progressive" frameRate="50/1" sar="1:1" startWithSAP="1" />
     </AdaptationSet>
     <!--Audio-->
-    <AdaptationSet id="1" lang="de" segmentAlignment="true">
+    <AdaptationSet id="1" lang="de" contentType="text" segmentAlignment="true">
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
       <SegmentTemplate timescale="48000" duration="288000" startNumber="0" initialization="499cc3ced932a4d6108535e62f880109_1_$RepresentationID$_init.mp4" media="499cc3ced932a4d6108535e62f880109_1_$RepresentationID$-$Number$.mp4" />
       <Representation id="audio_03" mimeType="audio/mp4" codecs="mp4a.40.2" bandwidth="128000" audioSamplingRate="48000" startWithSAP="1">
@@ -200,7 +200,7 @@ namespace
         <BaseURL>http://url/for/</BaseURL>
       </Representation>
     </AdaptationSet>
-    <AdaptationSet id="1" lang="de" segmentAlignment="true">
+    <AdaptationSet id="1" lang="de" contentType="text" segmentAlignment="true">
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
       <SegmentTemplate timescale="48000" duration="288000" startNumber="0" initialization="499cc3ced932a4d6108535e62f880109_1_$RepresentationID$_init.mp4" media="499cc3ced932a4d6108535e62f880109_1_$RepresentationID$-$Number$.mp4"/>
       <Representation id="audio_03" mimeType="audio/mp4" codecs="mp4a.40.2" bandwidth="128000" audioSamplingRate="48000" startWithSAP="1">
@@ -208,7 +208,7 @@ namespace
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
       </Representation>
     </AdaptationSet>
-    <AdaptationSet id="subtitle" lang="de" segmentAlignment="true">
+    <AdaptationSet id="subtitle" lang="de" contentType="text" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
       <BaseURL>.</BaseURL>
@@ -241,7 +241,7 @@ namespace
         <SegmentTemplate duration="540000" startNumber="1611767597" media="dash640x360p50-$Number$.mp4" initialization="dash640x360p50-init.mp4"/>
       </Representation>
     </AdaptationSet>
-    <AdaptationSet mimeType="audio/mp4" lang="de" segmentAlignment="0">
+    <AdaptationSet mimeType="audio/mp4" lang="de" contentType="text" segmentAlignment="0">
       <SegmentTemplate timescale="48000" media="dashAudio-$Number$.mp4" initialization="dashAudio-init.mp4" duration="288000" startNumber="1611767597"/>
       <Representation id="4" bandwidth="96000" audioSamplingRate="48000" codecs="mp4a.40.2">
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
@@ -272,14 +272,14 @@ namespace
         <SegmentTemplate duration="540000" startNumber="1611767597" media="dash640x360p50-$Number$.mp4" initialization="dash640x360p50-init.mp4"/>
       </Representation>
     </AdaptationSet>
-    <AdaptationSet mimeType="audio/mp4" lang="de" segmentAlignment="0">
+    <AdaptationSet mimeType="audio/mp4" lang="de" contentType="text" segmentAlignment="0">
       <SegmentTemplate timescale="48000" media="dashAudio-$Number$.mp4" initialization="dashAudio-init.mp4" duration="288000" startNumber="1611767597"/>
       <Representation id="4" bandwidth="96000" audioSamplingRate="48000" codecs="mp4a.40.2">
         <BaseURL>http://url/for/</BaseURL>
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
       </Representation>
     </AdaptationSet>
-    <AdaptationSet id="subtitle" lang="de" segmentAlignment="true">
+    <AdaptationSet id="subtitle" lang="de" contentType="text" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
       <BaseURL>.</BaseURL>
@@ -350,7 +350,7 @@ namespace
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
       </Representation>
     </AdaptationSet>
-    <AdaptationSet id="subtitle" lang="de" segmentAlignment="true">
+    <AdaptationSet id="subtitle" lang="de" contentType="text" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
       <BaseURL>.</BaseURL>
@@ -421,7 +421,7 @@ namespace
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
       </Representation>
     </AdaptationSet>
-    <AdaptationSet id="subtitle" lang="de" segmentAlignment="true">
+    <AdaptationSet id="subtitle" lang="de" contentType="text" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
       <BaseURL>.</BaseURL>
@@ -484,7 +484,7 @@ namespace
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
   </ProgramInformation>
   <Period>
-    <AdaptationSet id="subtitle" lang="de" segmentAlignment="true">
+    <AdaptationSet id="subtitle" lang="de" contentType="text" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="800829829" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" presentationTimeOffset="16016596580000000"/>
@@ -510,7 +510,7 @@ namespace
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
   </ProgramInformation>
   <Period>
-    <AdaptationSet id="subtitle" lang="de" segmentAlignment="true">
+    <AdaptationSet id="subtitle" lang="de" contentType="text" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="800829829" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" presentationTimeOffset="16016596580000000"/>
@@ -537,7 +537,7 @@ namespace
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
   </ProgramInformation>
   <Period>
-    <AdaptationSet id="toto" lang="de" segmentAlignment="true">
+    <AdaptationSet id="toto" lang="de" contentType="text" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="800829829" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" presentationTimeOffset="16016596580000000"/>

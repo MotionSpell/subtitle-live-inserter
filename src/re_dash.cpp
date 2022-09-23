@@ -264,7 +264,7 @@ class ReDash : public Module {
 					auto const ast = (int64_t)parseDate(mpd["availabilityStartTime"]) - delayInSec;
 					auto const startNumber = (ast * 1000) / segmentDurationInMs;
 					auto as = format(R"|(
-    <AdaptationSet id="%s" lang="de" segmentAlignment="true">
+    <AdaptationSet id="%s" lang="de" contentType="text" contentType="text" segmentAlignment="true">
         <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2" />
         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
         %s<SegmentTemplate timescale="%s" duration="%s" startNumber="%s" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"  presentationTimeOffset="%s"/>
