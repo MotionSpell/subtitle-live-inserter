@@ -30,6 +30,7 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	opt.add("t", "timeshift-buffer", &cfg.timeshiftBufferDepthInSec, "Default=-1 (same as source). Infinite=0. Value in seconds otherwise (DASH only).");
 	opt.add("p", "post", &cfg.postUrl, "Path or URL where the content is posted. If not set the content is generated locally.");
 	opt.addFlag("r", "rectify", &cfg.rectify, "Add empty samples when input content is not available on time. Default off.");
+	opt.addFlag("le", "legacy", &cfg.legacy, "Activate the legacy timing mode (for compatibility tests).");
 	opt.addFlag("h", "help", &cfg.help, "Print usage and exit.");
 	opt.addFlag("i", "shell", &cfg.shell, "Enable the interactive shell.");
 

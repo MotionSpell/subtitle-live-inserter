@@ -73,7 +73,7 @@ class ReDash : public Module {
 	public:
 		ReDash(KHost* host, ReDashConfig *cfg)
 			: m_host(host), asName(cfg->displayedName), url(cfg->url), baseUrlAV(cfg->baseUrlAV), baseUrlSub(cfg->baseUrlSub),
-			  segmentDurationInMs(cfg->segmentDurationInMs), httpSrc(cfg->filePullerFactory->create()),
+			  noPTO(cfg->noPTO), segmentDurationInMs(cfg->segmentDurationInMs), httpSrc(cfg->filePullerFactory->create()),
 			  nextAwakeTime(g_SystemClock->now()), delayInSec(cfg->delayInSec) {
 			auto mpdAsText = download(httpSrc.get(), url.c_str());
 			if (mpdAsText.empty())
@@ -267,9 +267,11 @@ class ReDash : public Module {
     <AdaptationSet id="%s" lang="de" contentType="text" contentType="text" segmentAlignment="true">
         <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2" />
         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
-        %s<SegmentTemplate timescale="%s" duration="%s" startNumber="%s" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" presentationTimeOffset="%s"/>
+        %s<SegmentTemplate timescale="%s" duration="%s" startNumber="%s" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s"%s/>
         <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1" />
-    </AdaptationSet>)|", asName, b, timescale, rescale(segmentDurationInMs, 1000, timescale), startNumber, ast * timescale);
+    </AdaptationSet>)|", asName, b, timescale, rescale(segmentDurationInMs, 1000, timescale),
+	noPTO ? 0 : startNumber,
+	noPTO ? "" : format(" presentationTimeOffset=\"%s\"", ast * timescale).c_str());
 					e.add(parseXml({ as.c_str(), as.size() }));
 				} else
 					addSubtitleAdaptationSet(e);
@@ -289,6 +291,7 @@ class ReDash : public Module {
 		OutputDefault* output;
 
 		const std::string asName, url, baseUrlAV, baseUrlSub;
+		const bool noPTO;
 		const int segmentDurationInMs;
 		std::vector<uint8_t> lastMpdAsText;
 		std::unique_ptr<IFilePuller> httpSrc;

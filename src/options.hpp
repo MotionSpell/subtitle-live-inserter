@@ -17,6 +17,7 @@ struct Config {
 	std::string manifestFn;
 	std::string outputFormat = "dash";
 	bool rectify = false;
+	bool legacy = false;
 
 	std::function<void(int/*delayInSec*/)> updateDelayInSec;
 

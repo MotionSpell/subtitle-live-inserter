@@ -28,6 +28,7 @@ struct ReDashConfig {
 	std::string baseUrlSub;
 	std::string baseUrlAV;
 	Modules::In::IFilePullerFactory *filePullerFactory = nullptr;
+	bool noPTO = false; // needed for HbbTV testing
 
 	// set by constructor - blocking call
 	std::function<void(int/*delayInSec*/)> updateDelayInSec = nullptr;

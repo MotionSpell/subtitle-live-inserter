@@ -38,6 +38,7 @@ bool startsWith(std::string s, std::string prefix) {
 }
 
 static UtcStartTime utcStartTime;
+static UtcStartTime availabilityStartTime; // used for HbbTV testing
 
 struct Logger : LogSink {
 		void send(Level level, const char *msg) override {
@@ -85,13 +86,13 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	ReDashConfig rdCfg;
 	rdCfg.segmentDurationInMs = cfg.segmentDurationInMs;
 	rdCfg.url = cfg.url;
-	UtcStartTime availabilityStartTime;
 	rdCfg.utcStartTime = &availabilityStartTime; // set by this module: keep it first in module declarations
 	rdCfg.delayInSec = cfg.delayInSec;
 	rdCfg.manifestFn = cfg.manifestFn;
 	rdCfg.displayedName = cfg.displayedName;
 	rdCfg.baseUrlSub = cfg.baseUrlSub;
 	rdCfg.baseUrlAV = cfg.baseUrlAV;
+	rdCfg.noPTO = cfg.legacy; // HbbTV testing
 	FilePullerFactory filePullerFactory;
 	rdCfg.filePullerFactory = &filePullerFactory;
 	if (cfg.outputFormat == "dash") {
@@ -121,7 +122,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	subconfig.segmentDurationInMs = g_segmentDurationInMs;
 	subconfig.rectify = cfg.rectify;
 	subconfig.format = cfg.outputFormat == "dash" ? "ttml" : "webvtt";
-	subconfig.utcStartTime = &utcStartTime;
+	subconfig.utcStartTime = (cfg.legacy && cfg.outputFormat == "dash") ? &availabilityStartTime : &utcStartTime;
 	auto subSource = pipeline->add("SubtitleSource", &subconfig);
 	auto source = GetOutputPin(subSource, 0);
 
@@ -143,7 +144,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 			mp4config.segmentPolicy = FragmentedSegment;
 			mp4config.fragmentPolicy = OneFragmentPerSegment;
 			mp4config.compatFlags = Browsers | ExactInputDur;
-			mp4config.utcStartTime = &utcStartTime;
+			mp4config.utcStartTime = (cfg.legacy && cfg.outputFormat == "dash") ? &availabilityStartTime : &utcStartTime;
 
 			Mp4MuxFileHandlerDynConfig cfg;
 			cfg.mp4MuxCfg = &mp4config;
@@ -176,6 +177,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 		auto const remainderInMs = granularityInMs - (t % granularityInMs);
 		std::this_thread::sleep_for(std::chrono::milliseconds(remainderInMs));
 		utcStartTime.startTime = rescale(t + remainderInMs, granularityInMs, IClock::Rate);
+		if (cfg.legacy) availabilityStartTime.startTime = utcStartTime.startTime - (cfg.legacy ? availabilityStartTime.startTime : 0); // HbbTV testing
 	} else {
 		utcStartTime.startTime = fractionToClock(getUTC());
 	}
