@@ -64,7 +64,8 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	    "\tbaseUrlAV               =\"" << cfg.baseUrlAV << "\"\n"
 	    "\tbaseUrlSub              =\"" << cfg.baseUrlSub << "\"\n"
 	    "\ttimeshiftBufferDepth    =\"" << cfg.timeshiftBufferDepthInSec << "\"\n"
-	    "\tpost                    =\"" << cfg.postUrl << "\"\n";
+	    "\tpost                    =\"" << cfg.postUrl << "\"\n"
+	    "\tlegacy                  =\"" << cfg.legacy << "\"\n";
 
 	return cfg;
 }
