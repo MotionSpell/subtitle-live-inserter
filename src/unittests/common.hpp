@@ -16,21 +16,23 @@ extern const char *g_version;
 namespace {
 
 struct MemoryFileSystem : In::IFilePuller {
-	MemoryFileSystem(const char *src) : src(src) {}
+	MemoryFileSystem(std::vector<const char*> srcs) : srcs(srcs) {}
 	void wget(const char* /*szUrl*/, std::function<void(SpanC)> callback) override {
-		ASSERT(src != nullptr);
-		callback({(const uint8_t*)src, strlen(src)});
+		ASSERT(!srcs.empty());
+		callback({(const uint8_t*)srcs[index], strlen(srcs[index])});
+		index = (index + 1) % srcs.size(); /*loop on single source (manifest-only)*/
 	}
 	void askToExit() override {}
-	const char *src = nullptr;
+	std::vector<const char*> srcs;
+	size_t index = 0;
 };
 
 struct FilePullerFactory : In::IFilePullerFactory {
-	FilePullerFactory(const char *src) : src(src) {}
+	FilePullerFactory(std::vector<const char*> srcs) : srcs(srcs) {}
 	std::unique_ptr<In::IFilePuller> create() override {
-		return std::make_unique<MemoryFileSystem>(src);
+		return std::make_unique<MemoryFileSystem>(srcs);
 	}
-	const char *src = nullptr;
+	std::vector<const char*> srcs;
 };
 
 ReDashConfig createRDCfg() {
@@ -48,7 +50,7 @@ ReDashConfig createRDCfg() {
 }
 
 void check(const std::string &moduleName, const std::string &manifest, const std::string &expected, ReDashConfig cfg = createRDCfg()) {
-	FilePullerFactory filePullerFactory(manifest.c_str());
+	FilePullerFactory filePullerFactory({ manifest.c_str() });
 	cfg.filePullerFactory = &filePullerFactory;
 	auto redash = loadModule(moduleName.c_str(), &NullHost, &cfg);
 	auto recorder = createModule<Utils::Recorder>(&NullHost);

@@ -7,5 +7,6 @@ struct HlsWebvttRephaserConfig {
 	std::string url;
 	int segmentDurationInMs = 0;
 	int64_t timeshiftBufferDepthInSec = -1;
+	int delayInSec = 0;
 	int subtitleForwardTimeInSec = 0;
 };

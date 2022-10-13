@@ -18,7 +18,7 @@
 using namespace Modules;
 
 int hlsPlaylistOffsetInSec = 0; //TODO: remove
-const char *variantPlaylistFn = "index_sub.m3u8";
+const char *variantPlaylistSubFn = "index_sub.m3u8";
 extern const char *g_appName;
 extern const char *g_version;
 
@@ -48,7 +48,7 @@ std::string formatDate(int64_t timestamp) {
 class HlsWebvttRephaser : public ModuleS {
 	public:
 		HlsWebvttRephaser(KHost* host, HlsWebvttRephaserConfig *cfg)
-			: m_host(host), url(cfg->url), segmentDurationInMs(cfg->segmentDurationInMs),
+			: m_host(host), url(cfg->url), segmentDurationInMs(cfg->segmentDurationInMs), delayInSec(cfg->delayInSec),
 			  subtitleForwardTimeInSec(cfg->subtitleForwardTimeInSec), deleteSegments(cfg->timeshiftBufferDepthInSec == 0) {
 			assert(cfg->timeshiftBufferDepthInSec == 0 || cfg->timeshiftBufferDepthInSec == -1);
 
@@ -193,12 +193,14 @@ class HlsWebvttRephaser : public ModuleS {
 		}
 
 		void genVariantPlaylist() {
-			std::stringstream variantPl(variantPlaylistFn);
+			std::stringstream variantPl(variantPlaylistSubFn);
 			variantPl << "#EXTM3U\n";
 			variantPl << "#EXT-X-VERSION:3\n";
 			variantPl << std::string("## Updated with Motion Spell / GPAC Licensing ") + g_appName + " version " + g_version + "\n";
 			variantPl << "#EXT-X-TARGETDURATION: " << segmentDurationInMs/1000.0 << "\n";
 			variantPl << "#EXT-X-MEDIA-SEQUENCE:" << (timeshiftBufferDepthInSeg ? segNum - timeshiftBufferDepthInSeg : 0) << "\n";
+			if (delayInSec)
+				variantPl << "#EXT-X-START:TIME-OFFSET=" << -delayInSec << "\n";
 			variantPl << "\n";
 
 			int entryNum = segNum - timeshiftBufferDepthInSeg;
@@ -215,7 +217,7 @@ class HlsWebvttRephaser : public ModuleS {
 			auto const variantPlStr = variantPl.str();
 			auto out = outputVariantPlaylist->allocData<DataRaw>(variantPlStr.size());
 			auto metadata = make_shared<MetadataFile>(PLAYLIST);
-			metadata->filename = variantPlaylistFn;
+			metadata->filename = variantPlaylistSubFn;
 			metadata->filesize = variantPlStr.size();
 			out->setMetadata(metadata);
 			memcpy(out->buffer->data().ptr, variantPlStr.data(), variantPlStr.size());
@@ -226,6 +228,7 @@ class HlsWebvttRephaser : public ModuleS {
 		OutputDefault *outputSegment, *outputVariantPlaylist;
 		const std::string url;
 		const int segmentDurationInMs;
+		const int delayInSec;
 		const int subtitleForwardTimeInSec;
 		const bool deleteSegments;
 		int timeshiftBufferDepthInSeg = 0;

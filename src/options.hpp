@@ -6,7 +6,7 @@
 struct Config {
 	std::string url;
 	int segmentDurationInMs = 2000;
-	int delayInSec = 0;
+	int delayInSec = 0; // assert(delayInSec > 0);
 	int subtitleForwardTimeInSec = 0;
 	std::string subListFn;
 	std::string baseUrlSub = ".";
