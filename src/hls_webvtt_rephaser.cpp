@@ -49,7 +49,7 @@ class HlsWebvttRephaser : public ModuleS {
 	public:
 		HlsWebvttRephaser(KHost* host, HlsWebvttRephaserConfig *cfg)
 			: m_host(host), url(cfg->url), segmentDurationInMs(cfg->segmentDurationInMs), delayInSec(cfg->delayInSec),
-			  subtitleForwardTimeInSec(cfg->subtitleForwardTimeInSec), deleteSegments(cfg->timeshiftBufferDepthInSec == 0) {
+			  subtitleForwardTimeInSec(cfg->subtitleForwardTimeInSec), deleteSegments(cfg->timeshiftBufferDepthInSec == -1) {
 			assert(cfg->timeshiftBufferDepthInSec == 0 || cfg->timeshiftBufferDepthInSec == -1);
 
 			outputVariantPlaylist = addOutput();

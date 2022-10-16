@@ -145,12 +145,12 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 			mp4config.compatFlags = Browsers | ExactInputDur;
 			mp4config.utcStartTime = &utcStartTime;
 
-			Mp4MuxFileHandlerDynConfig cfg;
-			cfg.mp4MuxCfg = &mp4config;
-			cfg.timeshiftBufferDepthInSec = cfg.timeshiftBufferDepthInSec == -1/*auto*/ ?
+			Mp4MuxFileHandlerDynConfig mp4Cfg;
+			mp4Cfg.mp4MuxCfg = &mp4config;
+			mp4Cfg.timeshiftBufferDepthInSec = cfg.timeshiftBufferDepthInSec == -1/*auto*/ ?
 			rdCfg.timeshiftBufferDepthInSec : cfg.timeshiftBufferDepthInSec;
 
-			auto muxer = pipeline->add("Mp4MuxFileHandlerDyn", &cfg);
+			auto muxer = pipeline->add("Mp4MuxFileHandlerDyn", &mp4Cfg);
 			pipeline->connect(compressed, muxer);
 			return muxer;
 		};
