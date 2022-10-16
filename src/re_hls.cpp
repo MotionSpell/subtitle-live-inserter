@@ -97,7 +97,6 @@ class ReHLS : public Module {
 					else if (startsWith(line, "#EXTINF:")) return true;
 					else return false;
 				};
-
 				if (isFirstSegment()) {
 					firstSegmentFound = true;
 					m3u8VariantNew += "#EXT-X-START:TIME-OFFSET=";
@@ -105,7 +104,30 @@ class ReHLS : public Module {
 					m3u8VariantNew += "\n";
 				}
 
-				m3u8VariantNew += line;
+				auto isSegment = [&]() {
+					if (startsWith(line, "#")) return false;
+					else return true;
+				};
+				if (delayInSec && isSegment()) {
+					auto ensureAbsoluteUrl = [&]() -> size_t {
+						size_t skip = 0;
+						if (startsWith(line, "http")) { // absolute
+							//nothing to do
+						} else if (startsWith(line, "/")) { // root
+							m3u8VariantNew += urlPath(baseUrlAV);
+							skip = 1; // skip trailing '/'
+						} else { // relative
+							m3u8VariantNew += baseUrlAV;
+						}
+						return skip;
+					};
+
+					auto const skip = ensureAbsoluteUrl();
+					m3u8VariantNew += line.substr(skip);
+				} else {
+					m3u8VariantNew += line;
+				}
+
 				m3u8VariantNew.push_back('\n');
 			}
 
@@ -147,13 +169,23 @@ class ReHLS : public Module {
 				auto ensureAbsoluteUrl = [&]() -> size_t {
 					size_t skip = 0;
 					if (startsWith(line, "http")) { // absolute
-						//nothing to do
+						if (delayInSec) {
+							m3u8MasterNew += baseUrlSub;
+							skip = urlPath(&line[i]).size();
+						}
+						//else: nothing to do
 					} else if (startsWith(&line[i], "/")) { // root
-						m3u8MasterNew += hasBaseUrlAV ? urlPath(baseUrlAV) : serverName(baseUrlAV);
+						if (delayInSec)
+							m3u8MasterNew += baseUrlSub;
+						else if (hasBaseUrlAV)
+							m3u8MasterNew += urlPath(baseUrlAV);
+						else
+							m3u8MasterNew += serverName(baseUrlAV);
+
 						skip = 1; // skip trailing '/'
 					} else { // relative
 						skip = urlPath(&line[i]).size();
-						m3u8MasterNew += baseUrlAV;
+						m3u8MasterNew += delayInSec ? baseUrlSub : baseUrlAV;
 					}
 					return skip;
 				};
@@ -188,9 +220,9 @@ class ReHLS : public Module {
 					auto skip = ensureAbsoluteUrl();
 					addLine(skip);
 
-					//variant playlist: keep retro-compatibility by modifying the bare minimum
+					//variant playlist: keep retro-compatibility by not processing when delayInSec == 0
 					if (delayInSec != 0) {
-						auto const url = m3u8MasterNew.substr(pos);
+						auto const url = m3u8MasterNew.substr(pos+1);
 						updateVariantPlaylist(url);
 					}
 				}

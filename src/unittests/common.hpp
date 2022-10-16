@@ -39,7 +39,7 @@ ReDashConfig createRDCfg() {
 	ReDashConfig cfg;
 	cfg.url = "http://url/for/the.mpd";
 	cfg.segmentDurationInMs = 2000;
-	cfg.baseUrlSub = ".";
+	cfg.baseUrlSub = "./";
 	cfg.manifestFn = "redash.mpd";
 	UtcStartTime utcStartTime;
 	utcStartTime.startTime = 1789;

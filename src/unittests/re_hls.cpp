@@ -258,14 +258,14 @@ http://A.com/a1/a2/master_3328.m3u8
 	check("reHLS", m3u8, expected, cfg);
 }
 
-unittest("reHLS: global delay") {
+unittest("reHLS: global delay (BaseURLs set)") {
 	auto cfg = createRDCfg();
 	cfg.delayInSec = 2;
 	cfg.displayedName = "toto";
 	cfg.url = "http://S.com/s1/s2/live.m3u8";
+	cfg.manifestFn = "titi";
 	cfg.baseUrlAV = "http://A.com/a1/a2/";
 	cfg.baseUrlSub = "http://B.com/b1/b2/";
-	cfg.manifestFn = "titi";
 
 	auto master = /*master*/
 		R"|(#EXTM3U
@@ -273,18 +273,46 @@ unittest("reHLS: global delay") {
 #EXT-X-INDEPENDENT-SEGMENTS
 #EXT-X-STREAM-INF:BANDWIDTH=4224000,AVERAGE-BANDWIDTH=3660800,CODECS="avc1.640020,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=50.000
 master_3328.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=4224000,AVERAGE-BANDWIDTH=3660800,CODECS="avc1.640020,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=50.000
+http://xxx.com/m3u8/master_3329.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=4224000,AVERAGE-BANDWIDTH=3660800,CODECS="avc1.640020,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=50.000
+/master_3330.m3u8
 )|";
 	auto inputs = std::vector<const char*> ({
 		master, master,
-		/*variant*/
+		/*variant master_3328.m3u8*/
 		R"|(#EXTM3U
 #EXT-X-VERSION:3
 #EXT-X-PLAYLIST-TYPE:VOD
 #EXT-X-TARGETDURATION:14
 #EXTINF:11.360,
-/sec(3ae40f708f79ca9471f52b86da76a3a8)/frag(1)/video/107/282/158282701_mp4_h264_aac_hq.ts
+sec3328(3ae40f708f79ca9471f52b86da76a3a8)/frag(1)/video/107/282/158282701_mp4_h264_aac_hq.ts
 #EXTINF:11.320,
-/sec(3ae40f708f79ca9471f52b86da76a3a8)/frag(2)/video/107/282/158282701_mp4_h264_aac_hq.ts
+/sec3328(3ae40f708f79ca9471f52b86da76a3a8)/frag(2)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+http://xxx.com/segments/sec3328(3ae40f708f79ca9471f52b86da76a3a8)/frag(3)/video/107/282/158282701_mp4_h264_aac_hq.ts
+)|",	/*variant master_3329.m3u8*/
+		R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-TARGETDURATION:14
+#EXTINF:11.360,
+sec3329(3ae40f708f79ca9471f52b86da76a3a8)/frag(1)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+/sec3329(3ae40f708f79ca9471f52b86da76a3a8)/frag(2)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+http://xxx.com/segments/sec3329(3ae40f708f79ca9471f52b86da76a3a8)/frag(3)/video/107/282/158282701_mp4_h264_aac_hq.ts
+)|",	/*variant master_3330.m3u8*/
+		R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-TARGETDURATION:14
+#EXTINF:11.360,
+sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(1)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+/sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(2)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+http://xxx.com/segments/sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(3)/video/107/282/158282701_mp4_h264_aac_hq.ts
 )|" });
 
 	auto expected = std::vector<std::string> ({
@@ -294,9 +322,39 @@ master_3328.m3u8
 #EXT-X-TARGETDURATION:14
 #EXT-X-START:TIME-OFFSET=%s
 #EXTINF:11.360,
-/sec(3ae40f708f79ca9471f52b86da76a3a8)/frag(1)/video/107/282/158282701_mp4_h264_aac_hq.ts
+http://A.com/a1/a2/sec3328(3ae40f708f79ca9471f52b86da76a3a8)/frag(1)/video/107/282/158282701_mp4_h264_aac_hq.ts
 #EXTINF:11.320,
-/sec(3ae40f708f79ca9471f52b86da76a3a8)/frag(2)/video/107/282/158282701_mp4_h264_aac_hq.ts
+http://A.com/a1/a2/sec3328(3ae40f708f79ca9471f52b86da76a3a8)/frag(2)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+http://xxx.com/segments/sec3328(3ae40f708f79ca9471f52b86da76a3a8)/frag(3)/video/107/282/158282701_mp4_h264_aac_hq.ts
+
+## Updated with Motion Spell / GPAC Licensing %s version %s
+)|", -cfg.delayInSec, g_appName, g_version),
+		format(R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-TARGETDURATION:14
+#EXT-X-START:TIME-OFFSET=%s
+#EXTINF:11.360,
+http://A.com/a1/a2/sec3329(3ae40f708f79ca9471f52b86da76a3a8)/frag(1)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+http://A.com/a1/a2/sec3329(3ae40f708f79ca9471f52b86da76a3a8)/frag(2)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+http://xxx.com/segments/sec3329(3ae40f708f79ca9471f52b86da76a3a8)/frag(3)/video/107/282/158282701_mp4_h264_aac_hq.ts
+
+## Updated with Motion Spell / GPAC Licensing %s version %s
+)|", -cfg.delayInSec, g_appName, g_version),
+		format(R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-TARGETDURATION:14
+#EXT-X-START:TIME-OFFSET=%s
+#EXTINF:11.360,
+http://A.com/a1/a2/sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(1)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+http://A.com/a1/a2/sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(2)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+http://xxx.com/segments/sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(3)/video/107/282/158282701_mp4_h264_aac_hq.ts
 
 ## Updated with Motion Spell / GPAC Licensing %s version %s
 )|", -cfg.delayInSec, g_appName, g_version),
@@ -304,7 +362,11 @@ master_3328.m3u8
 #EXT-X-VERSION:3
 #EXT-X-INDEPENDENT-SEGMENTS
 #EXT-X-STREAM-INF:BANDWIDTH=4224000,AVERAGE-BANDWIDTH=3660800,CODECS="avc1.640020,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=50.000,SUBTITLES="subtitles"
-http://A.com/a1/a2/master_3328.m3u8
+http://B.com/b1/b2/master_3328.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=4224000,AVERAGE-BANDWIDTH=3660800,CODECS="avc1.640020,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=50.000,SUBTITLES="subtitles"
+http://B.com/b1/b2/master_3329.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=4224000,AVERAGE-BANDWIDTH=3660800,CODECS="avc1.640020,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=50.000,SUBTITLES="subtitles"
+http://B.com/b1/b2/master_3330.m3u8
 
 ## Updated with Motion Spell / GPAC Licensing %s version %s
 #EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="toto",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="http://B.com/b1/b2/index_sub.m3u8"
@@ -320,8 +382,149 @@ http://A.com/a1/a2/master_3328.m3u8
 
 	Data data;
 	bool ret;
-	std::vector<std::string> expectedFilenames = { "master_3328.m3u8", cfg.manifestFn };
-	for (int i=0; i<1/*master*/ + 1/*variant*/; ++i) {
+	std::vector<std::string> expectedFilenames = { "master_3328.m3u8", "master_3329.m3u8", "master_3330.m3u8", cfg.manifestFn };
+	for (size_t i=0; i<expectedFilenames.size(); ++i) {
+		ret = recorder->tryPop(data);
+		ASSERT_EQUALS(true, ret);
+
+		auto dataRaw = std::dynamic_pointer_cast<const DataRaw>(data);
+		ASSERT(dataRaw);
+
+		auto meta = std::dynamic_pointer_cast<const MetadataFile>(data->getMetadata());
+		ASSERT(meta);
+		ASSERT_EQUALS(expectedFilenames[i], meta->filename);
+
+		ASSERT_EQUALS(expected[i], std::string((const char*)data->data().ptr, data->data().len).c_str());
+	}
+
+	ret = recorder->tryPop(data);
+	ASSERT_EQUALS(false, ret);
+}
+
+unittest("reHLS: global delay (BaseURLs not set)") {
+	auto cfg = createRDCfg();
+	cfg.delayInSec = 2;
+	cfg.displayedName = "toto";
+	cfg.url = "http://S.com/s1/s2/live.m3u8";
+	cfg.manifestFn = "titi";
+
+	auto master = /*master*/
+		R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXT-X-STREAM-INF:BANDWIDTH=4224000,AVERAGE-BANDWIDTH=3660800,CODECS="avc1.640020,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=50.000
+master_3328.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=4224000,AVERAGE-BANDWIDTH=3660800,CODECS="avc1.640020,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=50.000
+http://xxx.com/m3u8/master_3329.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=4224000,AVERAGE-BANDWIDTH=3660800,CODECS="avc1.640020,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=50.000
+/master_3330.m3u8
+)|";
+	auto inputs = std::vector<const char*> ({
+		master, master,
+		/*variant master_3328.m3u8*/
+		R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-TARGETDURATION:14
+#EXTINF:11.360,
+sec3328(3ae40f708f79ca9471f52b86da76a3a8)/frag(1)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+/sec3328(3ae40f708f79ca9471f52b86da76a3a8)/frag(2)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+http://xxx.com/segments/sec3328(3ae40f708f79ca9471f52b86da76a3a8)/frag(3)/video/107/282/158282701_mp4_h264_aac_hq.ts
+)|",	/*variant master_3329.m3u8*/
+		R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-TARGETDURATION:14
+#EXTINF:11.360,
+sec3329(3ae40f708f79ca9471f52b86da76a3a8)/frag(1)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+/sec3329(3ae40f708f79ca9471f52b86da76a3a8)/frag(2)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+http://xxx.com/segments/sec3329(3ae40f708f79ca9471f52b86da76a3a8)/frag(3)/video/107/282/158282701_mp4_h264_aac_hq.ts
+)|",	/*variant master_3330.m3u8*/
+		R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-TARGETDURATION:14
+#EXTINF:11.360,
+sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(1)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+/sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(2)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+http://xxx.com/segments/sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(3)/video/107/282/158282701_mp4_h264_aac_hq.ts
+)|" });
+
+	auto expected = std::vector<std::string> ({
+		format(R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-TARGETDURATION:14
+#EXT-X-START:TIME-OFFSET=%s
+#EXTINF:11.360,
+http://S.com/s1/s2/sec3328(3ae40f708f79ca9471f52b86da76a3a8)/frag(1)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+http://S.com/s1/s2/sec3328(3ae40f708f79ca9471f52b86da76a3a8)/frag(2)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+http://xxx.com/segments/sec3328(3ae40f708f79ca9471f52b86da76a3a8)/frag(3)/video/107/282/158282701_mp4_h264_aac_hq.ts
+
+## Updated with Motion Spell / GPAC Licensing %s version %s
+)|", -cfg.delayInSec, g_appName, g_version),
+		format(R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-TARGETDURATION:14
+#EXT-X-START:TIME-OFFSET=%s
+#EXTINF:11.360,
+http://S.com/s1/s2/sec3329(3ae40f708f79ca9471f52b86da76a3a8)/frag(1)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+http://S.com/s1/s2/sec3329(3ae40f708f79ca9471f52b86da76a3a8)/frag(2)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+http://xxx.com/segments/sec3329(3ae40f708f79ca9471f52b86da76a3a8)/frag(3)/video/107/282/158282701_mp4_h264_aac_hq.ts
+
+## Updated with Motion Spell / GPAC Licensing %s version %s
+)|", -cfg.delayInSec, g_appName, g_version),
+		format(R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-TARGETDURATION:14
+#EXT-X-START:TIME-OFFSET=%s
+#EXTINF:11.360,
+http://S.com/s1/s2/sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(1)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+http://S.com/s1/s2/sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(2)/video/107/282/158282701_mp4_h264_aac_hq.ts
+#EXTINF:11.320,
+http://xxx.com/segments/sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(3)/video/107/282/158282701_mp4_h264_aac_hq.ts
+
+## Updated with Motion Spell / GPAC Licensing %s version %s
+)|", -cfg.delayInSec, g_appName, g_version),
+		format(R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXT-X-STREAM-INF:BANDWIDTH=4224000,AVERAGE-BANDWIDTH=3660800,CODECS="avc1.640020,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=50.000,SUBTITLES="subtitles"
+./master_3328.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=4224000,AVERAGE-BANDWIDTH=3660800,CODECS="avc1.640020,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=50.000,SUBTITLES="subtitles"
+./master_3329.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=4224000,AVERAGE-BANDWIDTH=3660800,CODECS="avc1.640020,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=50.000,SUBTITLES="subtitles"
+./master_3330.m3u8
+
+## Updated with Motion Spell / GPAC Licensing %s version %s
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="toto",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="./index_sub.m3u8"
+)|", g_appName, g_version),
+	});
+
+	FilePullerFactory filePullerFactory(inputs);
+	cfg.filePullerFactory = &filePullerFactory;
+	auto redash = loadModule("reHLS", &NullHost, &cfg);
+	auto recorder = createModule<Utils::Recorder>(&NullHost);
+	ConnectOutputToInput(redash->getOutput(0), recorder->getInput(0));
+	redash->process();
+
+	Data data;
+	bool ret;
+	std::vector<std::string> expectedFilenames = { "master_3328.m3u8", "master_3329.m3u8", "master_3330.m3u8", cfg.manifestFn };
+	for (size_t i=0; i<expectedFilenames.size(); ++i) {
 		ret = recorder->tryPop(data);
 		ASSERT_EQUALS(true, ret);
 
