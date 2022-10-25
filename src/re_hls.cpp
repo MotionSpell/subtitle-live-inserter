@@ -222,7 +222,7 @@ class ReHLS : public Module {
 
 					//variant playlist: keep retro-compatibility by not processing when delayInSec == 0
 					if (delayInSec != 0) {
-						auto const url = m3u8MasterNew.substr(pos+1);
+						auto const url = m3u8MasterNew.substr(pos);
 						updateVariantPlaylist(url);
 					}
 				}
