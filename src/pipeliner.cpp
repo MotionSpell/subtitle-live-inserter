@@ -75,6 +75,11 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	logger.m_logLevel = Info;
 	auto pipeline = std::make_unique<Pipeline>(&logger);
 
+	//never stop on exceptions: this is needed because ReDASH/ReHLS are sources and would be stopped by default
+	pipeline->registerErrorCallback([](const char *) {
+		return true;
+	});
+
 	// ReDash
 	IFilter *redasher = nullptr;
 	struct FilePullerFactory : In::IFilePullerFactory {
