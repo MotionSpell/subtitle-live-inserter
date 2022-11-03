@@ -109,7 +109,7 @@ class ReHLS : public Module {
 					else return true;
 				};
 				if (delayInSec && isSegment()) {
-					auto ensureAbsoluteUrl = [&]() -> size_t {
+					auto ensureAbsoluteOutputUrl = [&]() -> size_t {
 						size_t skip = 0;
 						if (startsWith(line, "http")) { // absolute
 							//nothing to do
@@ -122,7 +122,7 @@ class ReHLS : public Module {
 						return skip;
 					};
 
-					auto const skip = ensureAbsoluteUrl();
+					auto const skip = ensureAbsoluteOutputUrl();
 					m3u8VariantNew += line.substr(skip);
 				} else {
 					m3u8VariantNew += line;
@@ -166,7 +166,7 @@ class ReHLS : public Module {
 				}
 
 				size_t i = 0;
-				auto ensureAbsoluteUrl = [&]() -> size_t {
+				auto ensureAbsoluteOutputUrl = [&]() -> size_t {
 					size_t skip = 0;
 					if (startsWith(line, "http")) { // absolute
 						if (delayInSec) {
@@ -202,7 +202,7 @@ class ReHLS : public Module {
 						for ( ; i < pos + strlen(pattern); ++i)
 							m3u8MasterNew.push_back(line[i]);
 
-						auto skip = ensureAbsoluteUrl();
+						auto skip = ensureAbsoluteOutputUrl();
 						while (skip-- > 0)
 							i++;
 
@@ -216,14 +216,22 @@ class ReHLS : public Module {
 					if (line.find("RESOLUTION=") != std::string::npos)
 						m3u8MasterNew += ",SUBTITLES=\"subtitles\"";
 				} else {
-					auto const pos = m3u8MasterNew.size();
-					auto skip = ensureAbsoluteUrl();
+					auto const url = line;
+					auto skip = ensureAbsoluteOutputUrl();
 					addLine(skip);
 
 					//variant playlist: keep retro-compatibility by not processing when delayInSec == 0
 					if (delayInSec != 0) {
-						auto const url = m3u8MasterNew.substr(pos);
-						updateVariantPlaylist(url);
+						auto ensureAbsoluteInputUrl = [&](std::string inputUrl) {
+							if (startsWith(line, "http")) { // absolute
+								return inputUrl;
+							} else if (startsWith(line, "/")) { // root
+								return serverName(this->url) + inputUrl;
+							} else { // relative
+								return urlPath(this->url) + inputUrl;
+							}
+						};
+						updateVariantPlaylist(ensureAbsoluteInputUrl(url));
 					}
 				}
 
