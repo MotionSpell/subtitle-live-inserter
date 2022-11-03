@@ -55,7 +55,7 @@ class ReHLS : public Module {
 		ReHLS(KHost* host, ReDashConfig *cfg)
 			: m_host(host), displayedName(cfg->displayedName), url(cfg->url),
 			  baseUrlAV(cfg->baseUrlAV.empty() ? urlPath(url) : cfg->baseUrlAV), baseUrlSub(cfg->baseUrlSub),
-			  hasBaseUrlAV(!cfg->baseUrlAV.empty()), delayInSec(cfg->delayInSec), segmentDurationInMs(cfg->segmentDurationInMs),
+			  hasBaseUrlAV(!cfg->baseUrlAV.empty()), delayInSec(cfg->delayInSec),
 			  httpSrc(cfg->filePullerFactory->create()), nextAwakeTime(g_SystemClock->now()) {
 			auto const m3u8MasterAsText = download(httpSrc.get(), url.c_str());
 			if (m3u8MasterAsText.empty())
@@ -270,7 +270,6 @@ class ReHLS : public Module {
 		const std::string displayedName, url, baseUrlAV, baseUrlSub;
 		const bool hasBaseUrlAV;
 		const int delayInSec;
-		const int segmentDurationInMs;
 		std::string masterPlaylistFn;
 		std::unique_ptr<IFilePuller> httpSrc;
 		Fraction nextAwakeTime;
