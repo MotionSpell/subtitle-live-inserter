@@ -9,7 +9,7 @@ struct Config {
 	int delayInSec = 0; // assert(delayInSec > 0);
 	int subtitleForwardTimeInSec = 0;
 	std::string subListFn;
-	std::string baseUrlSub = ".";
+	std::string baseUrlSub = "./";
 	std::string baseUrlAV; /*empty: copy from source*/
 	std::string displayedName = "subtitle"; /*used by players*/
 	int timeshiftBufferDepthInSec = -1; /*0 = infinite, -1 = same as source*/
