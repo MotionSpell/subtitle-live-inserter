@@ -17,22 +17,27 @@ namespace {
 
 struct MemoryFileSystem : In::IFilePuller {
 	MemoryFileSystem(std::vector<const char*> srcs) : srcs(srcs) {}
-	void wget(const char* /*szUrl*/, std::function<void(SpanC)> callback) override {
+	void wget(const char* szUrl, std::function<void(SpanC)> callback) override {
+		requestedURLs.push_back(szUrl);
 		ASSERT(!srcs.empty());
 		callback({(const uint8_t*)srcs[index], strlen(srcs[index])});
 		index = (index + 1) % srcs.size(); /*loop on single source (manifest-only)*/
 	}
 	void askToExit() override {}
 	std::vector<const char*> srcs;
+	std::vector<std::string> requestedURLs;
 	size_t index = 0;
 };
 
 struct FilePullerFactory : In::IFilePullerFactory {
 	FilePullerFactory(std::vector<const char*> srcs) : srcs(srcs) {}
 	std::unique_ptr<In::IFilePuller> create() override {
-		return std::make_unique<MemoryFileSystem>(srcs);
+		auto ret = std::make_unique<MemoryFileSystem>(srcs);
+		instance = ret.get();
+		return ret;
 	}
 	std::vector<const char*> srcs;
+	In::IFilePuller *instance = nullptr;
 };
 
 ReDashConfig createRDCfg() {

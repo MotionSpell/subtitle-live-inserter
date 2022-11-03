@@ -540,6 +540,10 @@ http://xxx.com/segments/sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(3)/video/
 
 	ret = recorder->tryPop(data);
 	ASSERT_EQUALS(false, ret);
+
+	ASSERT(filePullerFactory.instance);
+	std::vector<std::string> expectedRequestedURLs = {{"http://S.com/s1/s2/live.m3u8", "http://S.com/s1/s2/live.m3u8", "http://S.com/s1/s2/master_3328.m3u8", "http://xxx.com/m3u8/master_3329.m3u8", "http://S.com//master_3330.m3u8"}};
+	ASSERT_EQUALS(expectedRequestedURLs, ((MemoryFileSystem*)(filePullerFactory.instance))->requestedURLs);
 }
 
 }
