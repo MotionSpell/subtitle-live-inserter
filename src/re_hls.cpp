@@ -190,6 +190,7 @@ class ReHLS : public Module {
 					return skip;
 				};
 
+				std::string optionalUrl;
 				if (line[0] == '#') {
 					//ditch existing subtitles
 					if (line.find("TYPE=SUBTITLES") != std::string::npos)
@@ -199,6 +200,14 @@ class ReHLS : public Module {
 					auto const pattern = "URI=\"";
 					auto const pos = line.find(pattern);
 					if (pos != std::string::npos) {
+						auto extractUrlFromURI = [&](std::string endOfLine) {
+							auto const pos = endOfLine.find("\"");
+							if (pos == std::string::npos)
+								throw error(format("Misformed URI in HLS master manifest:\n%s", std::string(m3u8MasterAsText.begin(), m3u8MasterAsText.end())));
+							optionalUrl = endOfLine.substr(0, pos);
+						};
+						extractUrlFromURI(line.substr(pos + strlen(pattern)));
+
 						for ( ; i < pos + strlen(pattern); ++i)
 							m3u8MasterNew.push_back(line[i]);
 
@@ -216,23 +225,23 @@ class ReHLS : public Module {
 					if (line.find("RESOLUTION=") != std::string::npos)
 						m3u8MasterNew += ",SUBTITLES=\"subtitles\"";
 				} else {
-					auto const url = line;
+					optionalUrl = line;
 					auto skip = ensureAbsoluteOutputUrl();
 					addLine(skip);
+				}
 
-					//variant playlist: keep retro-compatibility by not processing when delayInSec == 0
-					if (delayInSec != 0) {
-						auto ensureAbsoluteInputUrl = [&](std::string inputUrl) {
-							if (startsWith(line, "http")) { // absolute
-								return inputUrl;
-							} else if (startsWith(line, "/")) { // root
-								return serverName(this->url) + inputUrl;
-							} else { // relative
-								return urlPath(this->url) + inputUrl;
-							}
-						};
-						updateVariantPlaylist(ensureAbsoluteInputUrl(url));
-					}
+				//variant playlist: keep retro-compatibility by not processing when delayInSec == 0
+				if (delayInSec != 0 && !optionalUrl.empty()) {
+					auto ensureAbsoluteInputUrl = [&](std::string inputUrl) {
+						if (startsWith(line, "http")) { // absolute
+							return inputUrl;
+						} else if (startsWith(line, "/")) { // root
+							return serverName(this->url) + inputUrl;
+						} else { // relative
+							return urlPath(this->url) + inputUrl;
+						}
+					};
+					updateVariantPlaylist(ensureAbsoluteInputUrl(optionalUrl));
 				}
 
 				m3u8MasterNew.push_back('\n');
