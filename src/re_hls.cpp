@@ -40,6 +40,22 @@ std::string urlPath(std::string path) {
 	return path.substr(0, i+1);
 }
 
+// prefix1/master_3328.m3u8 -> prefix1/
+// http://xxx.com/prefix2/master_3329.m3u8 -> prefix2/
+// /prefix3/master_3330.m3u8 -> prefix3/
+std::string relativeFromUrl(std::string path) {
+	auto const prefixLen = startsWith(path, "https://") ? 8 : startsWith(path, "http://") ? 7 : 0 /*assume no prefix*/;
+	auto const i = path.substr(prefixLen).find('/');
+	if (i == path.npos)
+		return "";
+
+	auto relative = path.substr(prefixLen + i + 1);
+	if (relativeFromUrl(relative).empty())
+		return path.substr(0, prefixLen + i + 1); //not other '/'
+
+	return urlPath(relative);
+}
+
 std::string filenameFromUrl(std::string url) {
 	std::string fn = url;
 	auto i = fn.rfind('/');
@@ -82,7 +98,7 @@ class ReHLS : public Module {
 
 	private:
 		//add #EXT-X-START:TIME-OFFSET
-		void updateVariantPlaylist(const std::string &url) {
+		void updateVariantPlaylist(const std::string &url, const std::string &relativePath) {
 			auto const m3u8VariantAsText = download(httpSrc.get(), url.c_str());
 			if (m3u8VariantAsText.empty())
 				throw std::runtime_error(format("can't get variant m3u8 \"%s\"", m3u8VariantAsText).c_str());
@@ -114,10 +130,10 @@ class ReHLS : public Module {
 						if (startsWith(line, "http")) { // absolute
 							//nothing to do
 						} else if (startsWith(line, "/")) { // root
-							m3u8VariantNew += urlPath(baseUrlAV);
+							m3u8VariantNew += serverName(hasBaseUrlAV ? baseUrlAV : url);
 							skip = 1; // skip trailing '/'
 						} else { // relative
-							m3u8VariantNew += baseUrlAV;
+							m3u8VariantNew += hasBaseUrlAV ? (baseUrlAV + relativePath) : urlPath(url);
 						}
 						return skip;
 					};
@@ -136,7 +152,7 @@ class ReHLS : public Module {
 			auto const author = std::string("## Updated with Motion Spell / GPAC Licensing ") + g_appName + " version " + g_version + "\n";
 			m3u8VariantNew += author;
 
-			auto const fn = filenameFromUrl(url);
+			auto const fn = relativePath + filenameFromUrl(url);
 			postManifest(outputPlaylists, fn, m3u8VariantNew);
 		}
 
@@ -171,7 +187,7 @@ class ReHLS : public Module {
 					if (startsWith(line, "http")) { // absolute
 						if (delayInSec) {
 							m3u8MasterNew += baseUrlSub;
-							skip = urlPath(&line[i]).size();
+							skip = serverName(&line[i]).size();
 						}
 						//else: nothing to do
 					} else if (startsWith(&line[i], "/")) { // root
@@ -240,7 +256,7 @@ class ReHLS : public Module {
 							return urlPath(this->url) + inputUrl;
 						}
 					};
-					updateVariantPlaylist(ensureAbsoluteInputUrl(optionalUrl));
+					updateVariantPlaylist(ensureAbsoluteInputUrl(optionalUrl), relativeFromUrl(optionalUrl));
 				}
 
 				m3u8MasterNew.push_back('\n');
