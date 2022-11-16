@@ -184,7 +184,6 @@ class ReHLS : public Module {
 
 						skip = 1; // skip trailing '/'
 					} else { // relative
-						skip = urlPath(&line[i]).size();
 						m3u8MasterNew += delayInSec ? baseUrlSub : baseUrlAV;
 					}
 					return skip;
