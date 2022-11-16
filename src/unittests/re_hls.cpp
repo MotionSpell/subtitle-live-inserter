@@ -491,7 +491,7 @@ http://xxx.com/segments/sec3329(3ae40f708f79ca9471f52b86da76a3a8)/frag(3)/video/
 #EXT-X-TARGETDURATION:14
 #EXT-X-START:TIME-OFFSET=%s
 #EXTINF:11.360,
-http://S.com//prefix3/sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(1)/video/107/282/158282701_mp4_h264_aac_hq.ts
+http://S.com/prefix3/sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(1)/video/107/282/158282701_mp4_h264_aac_hq.ts
 #EXTINF:11.320,
 http://S.com/sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(2)/video/107/282/158282701_mp4_h264_aac_hq.ts
 #EXTINF:11.320,
@@ -542,7 +542,7 @@ http://xxx.com/segments/sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(3)/video/
 	ASSERT_EQUALS(false, ret);
 
 	ASSERT(filePullerFactory.instance);
-	std::vector<std::string> expectedRequestedURLs = {{"http://S.com/s1/s2/live.m3u8", "http://S.com/s1/s2/live.m3u8", "http://S.com/s1/s2/prefix1/master_3328.m3u8", "http://xxx.com/prefix2/master_3329.m3u8", "http://S.com//prefix3/master_3330.m3u8"}};
+	std::vector<std::string> expectedRequestedURLs = {{"http://S.com/s1/s2/live.m3u8", "http://S.com/s1/s2/live.m3u8", "http://S.com/s1/s2/prefix1/master_3328.m3u8", "http://xxx.com/prefix2/master_3329.m3u8", "http://S.com/prefix3/master_3330.m3u8"}};
 	ASSERT_EQUALS(expectedRequestedURLs, ((MemoryFileSystem*)(filePullerFactory.instance))->requestedURLs);
 }
 

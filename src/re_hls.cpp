@@ -251,7 +251,7 @@ class ReHLS : public Module {
 						if (startsWith(line, "http")) { // absolute
 							return inputUrl;
 						} else if (startsWith(line, "/")) { // root
-							return serverName(this->url) + inputUrl;
+							return serverName(this->url) + inputUrl.substr(1/*remove starting '/'*/);
 						} else { // relative
 							return urlPath(this->url) + inputUrl;
 						}
