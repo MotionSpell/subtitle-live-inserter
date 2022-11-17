@@ -12,7 +12,7 @@
 const char *g_appName = "subtitle-live-inserter";
 
 std::unique_ptr<Pipelines::Pipeline> buildPipeline(Config&);
-static Pipelines::Pipeline *g_Pipeline = nullptr;
+extern std::shared_ptr<Pipelines::Pipeline> g_Pipeline;
 
 namespace {
 Config parseCommandLine(int argc, char const* argv[]) {
@@ -111,9 +111,10 @@ void safeMain(int argc, const char* argv[]) {
 	if(cfg.help)
 		return;
 
-	bool exit = false;
+	bool exit = true;
 
 	if (cfg.shell) {
+		exit = false;
 		auto shell = std::shared_ptr<Shell>(new Shell, [&](Shell *s) {
 			if (g_Pipeline)
 				g_Pipeline->exitSync();
@@ -124,14 +125,13 @@ void safeMain(int argc, const char* argv[]) {
 		std::thread shellThread(&Shell::run, shell.get());
 	}
 
-	while (!exit) {
-		auto pipeline = buildPipeline(cfg);
-		g_Pipeline = pipeline.get();
+	do {
+		g_Pipeline = buildPipeline(cfg);
 
 		{
 			Tools::Profiler profilerProcessing(format("%s - processing time", g_appName));
-			pipeline->start();
-			pipeline->waitForEndOfStream();
+			g_Pipeline->start();
+			g_Pipeline->waitForEndOfStream();
 		}
-	}
+	} while (!exit);
 }

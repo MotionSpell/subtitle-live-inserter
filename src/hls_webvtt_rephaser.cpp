@@ -54,6 +54,7 @@ class HlsWebvttRephaser : public ModuleS {
 
 			outputVariantPlaylist = addOutput();
 			outputSegment = addOutput();
+			m_host->activate(true);
 		}
 
 		void processOne(Data data) override {
