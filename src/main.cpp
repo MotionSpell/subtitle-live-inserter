@@ -21,6 +21,7 @@ Config parseCommandLine(int argc, char const* argv[]) {
 	CmdLineOptions opt;
 	opt.add("g", "general-delay", &cfg.delayInSec, "General delay in seconds (signed).");
 	opt.add("s", "subtitle-delay", &cfg.subtitleForwardTimeInSec, "Subtitle delay in seconds (signed).");
+	opt.add("d", "segment-duration-in-ms", &cfg.segmentDurationInMs, "Segment duration in milliseconds");
 	opt.add("f", "file-playlist", &cfg.subListFn, "File path of the ever-growing playlist. If not set then synthetic content is generated.");
 	opt.add("u", "output-format", &cfg.outputFormat, "Output format: \"dash\" (default) or \"hls\".");
 	opt.add("o", "output-manifest-filename", &cfg.manifestFn, "Manifest filename. If not specified the input filename is copied.");

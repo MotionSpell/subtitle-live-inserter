@@ -24,7 +24,6 @@ using namespace Modules;
 using namespace Pipelines;
 
 extern const char *g_appName;
-const uint64_t g_segmentDurationInMs = 2000;
 std::unique_ptr<In::IFilePuller> createHttpSource();
 
 namespace {
@@ -123,7 +122,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 	// SubtitleSource
 	SubtitleSourceConfig subconfig;
 	subconfig.subtitleFn = cfg.subListFn;
-	subconfig.segmentDurationInMs = g_segmentDurationInMs;
+	subconfig.segmentDurationInMs = cfg.segmentDurationInMs;
 	subconfig.rectify = cfg.rectify;
 	subconfig.format = cfg.outputFormat == "dash" ? "ttml" : "webvtt";
 	subconfig.utcStartTime = &utcStartTime;
@@ -144,7 +143,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 		// Muxer
 		auto mux = [&](OutputPin compressed) -> OutputPin {
 			Mp4MuxConfig mp4config;
-			mp4config.segmentDurationInMs = g_segmentDurationInMs;
+			mp4config.segmentDurationInMs = cfg.segmentDurationInMs;
 			mp4config.segmentPolicy = FragmentedSegment;
 			mp4config.fragmentPolicy = OneFragmentPerSegment;
 			mp4config.compatFlags = Browsers | ExactInputDur;
@@ -164,7 +163,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 		assert(cfg.outputFormat == "hls");
 		HlsWebvttRephaserConfig hwrCfg;
 		hwrCfg.url = cfg.url;
-		hwrCfg.segmentDurationInMs = g_segmentDurationInMs;
+		hwrCfg.segmentDurationInMs = cfg.segmentDurationInMs;
 		hwrCfg.timeshiftBufferDepthInSec = cfg.timeshiftBufferDepthInSec;
 		hwrCfg.delayInSec = cfg.delayInSec;
 		hwrCfg.subtitleForwardTimeInSec = cfg.subtitleForwardTimeInSec;
@@ -177,7 +176,7 @@ std::unique_ptr<Pipeline> buildPipeline(Config &cfg) {
 
 	if (cfg.outputFormat == "dash") {
 		// Diff retrieved AST from MPD with the local clock
-		auto const granularityInMs = g_segmentDurationInMs;
+		auto const granularityInMs = cfg.segmentDurationInMs;
 		auto const t = int64_t(getUTC() * granularityInMs);
 		auto const remainderInMs = granularityInMs - (t % granularityInMs);
 		std::this_thread::sleep_for(std::chrono::milliseconds(remainderInMs));
