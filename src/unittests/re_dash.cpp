@@ -75,7 +75,7 @@ namespace
     <AdaptationSet id="subtitle" lang="de" contentType="text" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>.</BaseURL>
+      <BaseURL>./</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="800829829" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" presentationTimeOffset="16016596580000000"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>
@@ -145,7 +145,7 @@ namespace
     <AdaptationSet id="subtitle" lang="de" contentType="text" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>.</BaseURL>
+      <BaseURL>./</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="806256833" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" presentationTimeOffset="16125136660000000"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>
@@ -211,7 +211,7 @@ namespace
     <AdaptationSet id="subtitle" lang="de" contentType="text" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>.</BaseURL>
+      <BaseURL>./</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="0" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" presentationTimeOffset="0"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>
@@ -282,7 +282,7 @@ namespace
     <AdaptationSet id="subtitle" lang="de" contentType="text" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>.</BaseURL>
+      <BaseURL>./</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="805883805" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" presentationTimeOffset="16117676100000000"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>
@@ -353,7 +353,7 @@ namespace
     <AdaptationSet id="subtitle" lang="de" contentType="text" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>.</BaseURL>
+      <BaseURL>./</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="805828375" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" presentationTimeOffset="16116567500000000"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>
@@ -424,7 +424,7 @@ namespace
     <AdaptationSet id="subtitle" lang="de" contentType="text" segmentAlignment="true">
       <Accessibility schemeIdUri="urn:tva:metadata:cs:AudioPurposeCS:2007" value="2"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <BaseURL>.</BaseURL>
+      <BaseURL>./</BaseURL>
       <SegmentTemplate timescale="10000000" duration="20000000" startNumber="805828375" initialization="s_$RepresentationID$-init.mp4" media="s_$RepresentationID$-$Number$.m4s" presentationTimeOffset="16116567500000000"/>
       <Representation id="0" mimeType="application/mp4" codecs="stpp" bandwidth="9600" startWithSAP="1"/>
     </AdaptationSet>

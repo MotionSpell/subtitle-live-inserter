@@ -14,7 +14,7 @@ using namespace Modules::In;
 
 extern const char *g_appName;
 extern const char *g_version;
-extern const char *variantPlaylistFn;
+extern const char *variantPlaylistSubFn;
 
 namespace {
 
@@ -40,28 +40,45 @@ std::string urlPath(std::string path) {
 	return path.substr(0, i+1);
 }
 
-// Only handles the master playlist
+// prefix1/master_3328.m3u8 -> prefix1/
+// http://xxx.com/prefix2/master_3329.m3u8 -> prefix2/
+// /prefix3/master_3330.m3u8 -> prefix3/
+std::string relativeFromUrl(std::string path) {
+	auto const prefixLen = startsWith(path, "https://") ? 8 : startsWith(path, "http://") ? 7 : 0 /*assume no prefix*/;
+	auto const i = path.substr(prefixLen).find('/');
+	if (i == path.npos)
+		return "";
+
+	auto relative = path.substr(prefixLen + i + 1);
+	if (relativeFromUrl(relative).empty())
+		return path.substr(0, prefixLen + i + 1); //not other '/'
+
+	return urlPath(relative);
+}
+
+std::string filenameFromUrl(std::string url) {
+	std::string fn = url;
+	auto i = fn.rfind('/');
+	if(i != fn.npos)
+		fn = fn.substr(i+1, fn.npos);
+
+	return fn;
+}
+
+// Only handles the playlists: master (adding subs), and variants (A/V only)
 class ReHLS : public Module {
 	public:
 		ReHLS(KHost* host, ReDashConfig *cfg)
 			: m_host(host), displayedName(cfg->displayedName), url(cfg->url),
 			  baseUrlAV(cfg->baseUrlAV.empty() ? urlPath(url) : cfg->baseUrlAV), baseUrlSub(cfg->baseUrlSub),
-			  hasBaseUrlAV(!cfg->baseUrlAV.empty()), segmentDurationInMs(cfg->segmentDurationInMs),
+			  hasBaseUrlAV(!cfg->baseUrlAV.empty()), delayInSec(cfg->delayInSec),
 			  httpSrc(cfg->filePullerFactory->create()), nextAwakeTime(g_SystemClock->now()) {
 			auto const m3u8MasterAsText = download(httpSrc.get(), url.c_str());
 			if (m3u8MasterAsText.empty())
 				throw std::runtime_error("can't get master m3u8");
 
-			std::string urlFn = cfg->manifestFn.empty() ? url : cfg->manifestFn;
-			auto i = urlFn.rfind('/');
-			if(i != urlFn.npos)
-				urlFn = urlFn.substr(i+1, urlFn.npos);
-
-			auto meta = std::make_shared<MetadataFile>(PLAYLIST);
-			meta->filename = urlFn;
-			outputMaster = addOutput();
-			outputMaster->setMetadata(meta);
-
+			masterPlaylistFn = filenameFromUrl(cfg->manifestFn.empty() ? url : cfg->manifestFn);
+			outputPlaylists = addOutput();
 			m_host->activate(true);
 		}
 
@@ -80,6 +97,65 @@ class ReHLS : public Module {
 		}
 
 	private:
+		//add #EXT-X-START:TIME-OFFSET
+		void updateVariantPlaylist(const std::string &url, const std::string &relativePath) {
+			auto const m3u8VariantAsText = download(httpSrc.get(), url.c_str());
+			if (m3u8VariantAsText.empty())
+				throw std::runtime_error(format("can't get variant m3u8 \"%s\"", m3u8VariantAsText).c_str());
+
+			bool firstSegmentFound = false;
+			std::string line, m3u8VariantNew;
+			std::stringstream ss(std::string(m3u8VariantAsText.begin(), m3u8VariantAsText.end()));
+			while(std::getline(ss, line)) {
+				auto isFirstSegment = [&]() {
+					if (firstSegmentFound) return false;
+					if (startsWith(line, "#EXT-X-PROGRAM-DATE-TIME:")) return true;
+					else if (startsWith(line, "#EXTINF:")) return true;
+					else return false;
+				};
+				if (isFirstSegment()) {
+					firstSegmentFound = true;
+					m3u8VariantNew += "#EXT-X-START:TIME-OFFSET=";
+					m3u8VariantNew += std::to_string(-delayInSec);
+					m3u8VariantNew += "\n";
+				}
+
+				auto isSegment = [&]() {
+					if (startsWith(line, "#")) return false;
+					else return true;
+				};
+				if (delayInSec && isSegment()) {
+					auto ensureAbsoluteOutputUrl = [&]() -> size_t {
+						size_t skip = 0;
+						if (startsWith(line, "http")) { // absolute
+							//nothing to do
+						} else if (startsWith(line, "/")) { // root
+							m3u8VariantNew += serverName(hasBaseUrlAV ? baseUrlAV : url);
+							skip = 1; // skip trailing '/'
+						} else { // relative
+							m3u8VariantNew += hasBaseUrlAV ? (baseUrlAV + relativePath) : urlPath(url);
+						}
+						return skip;
+					};
+
+					auto const skip = ensureAbsoluteOutputUrl();
+					m3u8VariantNew += line.substr(skip);
+				} else {
+					m3u8VariantNew += line;
+				}
+
+				m3u8VariantNew.push_back('\n');
+			}
+
+			m3u8VariantNew.push_back('\n');
+
+			auto const author = std::string("## Updated with Motion Spell / GPAC Licensing ") + g_appName + " version " + g_version + "\n";
+			m3u8VariantNew += author;
+
+			auto const fn = relativePath + filenameFromUrl(url);
+			postManifest(outputPlaylists, fn, m3u8VariantNew);
+		}
+
 		void updateMasterPlaylist() {
 			auto const m3u8MasterAsText = download(httpSrc.get(), url.c_str());
 			if (m3u8MasterAsText.empty())
@@ -106,20 +182,30 @@ class ReHLS : public Module {
 				}
 
 				size_t i = 0;
-				auto ensureAbsoluteUrl = [&]() -> size_t {
+				auto ensureAbsoluteOutputUrl = [&]() -> size_t {
 					size_t skip = 0;
 					if (startsWith(line, "http")) { // absolute
-						//nothing to do
+						if (delayInSec) {
+							m3u8MasterNew += baseUrlSub;
+							skip = serverName(&line[i]).size();
+						}
+						//else: nothing to do
 					} else if (startsWith(&line[i], "/")) { // root
-						m3u8MasterNew += hasBaseUrlAV ? urlPath(baseUrlAV) : serverName(baseUrlAV);
+						if (delayInSec)
+							m3u8MasterNew += baseUrlSub;
+						else if (hasBaseUrlAV)
+							m3u8MasterNew += urlPath(baseUrlAV);
+						else
+							m3u8MasterNew += serverName(baseUrlAV);
+
 						skip = 1; // skip trailing '/'
 					} else { // relative
-						skip = urlPath(&line[i]).size();
-						m3u8MasterNew += baseUrlAV;
+						m3u8MasterNew += delayInSec ? baseUrlSub : baseUrlAV;
 					}
 					return skip;
 				};
 
+				std::string optionalUrl;
 				if (line[0] == '#') {
 					//ditch existing subtitles
 					if (line.find("TYPE=SUBTITLES") != std::string::npos)
@@ -129,10 +215,18 @@ class ReHLS : public Module {
 					auto const pattern = "URI=\"";
 					auto const pos = line.find(pattern);
 					if (pos != std::string::npos) {
+						auto extractUrlFromURI = [&](std::string endOfLine) {
+							auto const pos = endOfLine.find("\"");
+							if (pos == std::string::npos)
+								throw error(format("Misformed URI in HLS master manifest:\n%s", std::string(m3u8MasterAsText.begin(), m3u8MasterAsText.end())));
+							optionalUrl = endOfLine.substr(0, pos);
+						};
+						extractUrlFromURI(line.substr(pos + strlen(pattern)));
+
 						for ( ; i < pos + strlen(pattern); ++i)
 							m3u8MasterNew.push_back(line[i]);
 
-						auto skip = ensureAbsoluteUrl();
+						auto skip = ensureAbsoluteOutputUrl();
 						while (skip-- > 0)
 							i++;
 
@@ -146,8 +240,23 @@ class ReHLS : public Module {
 					if (line.find("RESOLUTION=") != std::string::npos)
 						m3u8MasterNew += ",SUBTITLES=\"subtitles\"";
 				} else {
-					auto skip = ensureAbsoluteUrl();
+					optionalUrl = line;
+					auto skip = ensureAbsoluteOutputUrl();
 					addLine(skip);
+				}
+
+				//variant playlist: keep retro-compatibility by not processing when delayInSec == 0
+				if (delayInSec != 0 && !optionalUrl.empty()) {
+					auto ensureAbsoluteInputUrl = [&](std::string inputUrl) {
+						if (startsWith(line, "http")) { // absolute
+							return inputUrl;
+						} else if (startsWith(line, "/")) { // root
+							return serverName(this->url) + inputUrl.substr(1/*remove starting '/'*/);
+						} else { // relative
+							return urlPath(this->url) + inputUrl;
+						}
+					};
+					updateVariantPlaylist(ensureAbsoluteInputUrl(optionalUrl), relativeFromUrl(optionalUrl));
 				}
 
 				m3u8MasterNew.push_back('\n');
@@ -163,17 +272,17 @@ class ReHLS : public Module {
 				//remove trailing slash
 				std::string baseUrl = baseUrlSub.empty() ? "" : baseUrlSub.back() != '/' ? baseUrlSub : baseUrlSub.substr(0, baseUrlSub.size() - 1);
 				auto const subVariant = format("#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subtitles\",NAME=\"%s\",LANGUAGE=\"de\","
-				        "AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI=\"%s/%s\"\n", displayedName, baseUrl, variantPlaylistFn);
+				        "AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI=\"%s/%s\"\n", displayedName, baseUrl, variantPlaylistSubFn);
 				m3u8MasterNew += subVariant;
 			}
 
-			postManifest(outputMaster, m3u8MasterNew);
+			postManifest(outputPlaylists, masterPlaylistFn, m3u8MasterNew);
 		}
 
-		void postManifest(OutputDefault *output, const std::string &contents) {
+		void postManifest(OutputDefault *output, const std::string &fn, const std::string &contents) {
 			auto out = output->allocData<DataRaw>(contents.size());
 			auto metadata = make_shared<MetadataFile>(PLAYLIST);
-			metadata->filename = safe_cast<const MetadataFile>(output->getMetadata())->filename;
+			metadata->filename = fn;
 			metadata->filesize = contents.size();
 			out->setMetadata(metadata);
 			memcpy(out->buffer->data().ptr, contents.data(), contents.size());
@@ -181,10 +290,11 @@ class ReHLS : public Module {
 		}
 
 		KHost *m_host;
-		OutputDefault *outputMaster;
+		OutputDefault *outputPlaylists;
 		const std::string displayedName, url, baseUrlAV, baseUrlSub;
 		const bool hasBaseUrlAV;
-		const int segmentDurationInMs;
+		const int delayInSec;
+		std::string masterPlaylistFn;
 		std::unique_ptr<IFilePuller> httpSrc;
 		Fraction nextAwakeTime;
 };
