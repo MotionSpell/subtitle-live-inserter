@@ -650,7 +650,7 @@ http://127.0.0.1:9000/video_dash_track2_576.ts
 	ASSERT_EQUALS(expectedRequestedURLs, ((MemoryFileSystem*)(filePullerFactory.instance))->requestedURLs);
 }
 
-unittest("reHLS: global delay (separate audio, baseURLs set)") {
+unittest("reHLS: global delay (multiple separate audios, baseURLs set)") {
 	auto cfg = createRDCfg();
 	cfg.delayInSec = 2;
 	cfg.url = "http://127.0.0.1:8889/live.m3u8";
@@ -663,13 +663,22 @@ unittest("reHLS: global delay (separate audio, baseURLs set)") {
 #EXT-X-VERSION:3
 #EXT-X-INDEPENDENT-SEGMENTS
 
-#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio1",NAME="1",AUTOSELECT=YES,URI="live_1.m3u8",CHANNELS="1"
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio1",NAME="1",AUTOSELECT=YES,URI="live_1a.m3u8",CHANNELS="1"
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio2",NAME="2",AUTOSELECT=YES,URI="live_1b.m3u8",CHANNELS="1"
 #EXT-X-STREAM-INF:BANDWIDTH=100000,CODECS="avc1.64001F,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=25,AUDIO="audio1"
 live_2.m3u8
 )|";
 	auto inputs = std::vector<const char*> ({
 		master, master,
-		/*variant live_1.m3u8*/
+		/*variant live_1a.m3u8*/
+		R"|(#EXTM3U
+#EXT-X-TARGETDURATION:2
+#EXT-X-VERSION:3
+#EXT-X-MEDIA-SEQUENCE:576
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXTINF:1.99692,
+audio_dash_track1_576.ts
+)|",	/*variant live_1b.m3u8*/
 		R"|(#EXTM3U
 #EXT-X-TARGETDURATION:2
 #EXT-X-VERSION:3
@@ -705,6 +714,17 @@ http://127.0.0.1:9000/AV/audio_dash_track1_576.ts
 #EXT-X-MEDIA-SEQUENCE:576
 #EXT-X-INDEPENDENT-SEGMENTS
 #EXT-X-START:TIME-OFFSET=%s
+#EXTINF:1.99692,
+http://127.0.0.1:9000/AV/audio_dash_track1_576.ts
+
+## Updated with Motion Spell / GPAC Licensing %s version %s
+)|", -cfg.delayInSec, g_appName, g_version),
+		format(R"|(#EXTM3U
+#EXT-X-TARGETDURATION:2
+#EXT-X-VERSION:3
+#EXT-X-MEDIA-SEQUENCE:576
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXT-X-START:TIME-OFFSET=%s
 #EXTINF:2,
 http://127.0.0.1:9000/AV/video_dash_track2_576.ts
 
@@ -714,7 +734,8 @@ http://127.0.0.1:9000/AV/video_dash_track2_576.ts
 #EXT-X-VERSION:3
 #EXT-X-INDEPENDENT-SEGMENTS
 
-#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio1",NAME="1",AUTOSELECT=YES,URI="http://127.0.0.1:9001/SUB/live_1.m3u8",CHANNELS="1"
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio1",NAME="1",AUTOSELECT=YES,URI="http://127.0.0.1:9001/SUB/live_1a.m3u8",CHANNELS="1"
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio2",NAME="2",AUTOSELECT=YES,URI="http://127.0.0.1:9001/SUB/live_1b.m3u8",CHANNELS="1"
 #EXT-X-STREAM-INF:BANDWIDTH=100000,CODECS="avc1.64001F,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=25,AUDIO="audio1",SUBTITLES="subtitles"
 http://127.0.0.1:9001/SUB/live_2.m3u8
 
@@ -732,7 +753,7 @@ http://127.0.0.1:9001/SUB/live_2.m3u8
 
 	Data data;
 	bool ret;
-	std::vector<std::string> expectedFilenames = { "live_1.m3u8", "live_2.m3u8", cfg.manifestFn };
+	std::vector<std::string> expectedFilenames = { "live_1a.m3u8", "live_1b.m3u8", "live_2.m3u8", cfg.manifestFn };
 	for (size_t i=0; i<expectedFilenames.size(); ++i) {
 		ret = recorder->tryPop(data);
 		ASSERT_EQUALS(true, ret);
@@ -751,7 +772,7 @@ http://127.0.0.1:9001/SUB/live_2.m3u8
 	ASSERT_EQUALS(false, ret);
 
 	ASSERT(filePullerFactory.instance);
-	std::vector<std::string> expectedRequestedURLs = {{"http://127.0.0.1:8889/live.m3u8", "http://127.0.0.1:8889/live.m3u8", "http://127.0.0.1:8889/live_1.m3u8", "http://127.0.0.1:8889/live_2.m3u8"}};
+	std::vector<std::string> expectedRequestedURLs = {{"http://127.0.0.1:8889/live.m3u8", "http://127.0.0.1:8889/live.m3u8", "http://127.0.0.1:8889/live_1a.m3u8", "http://127.0.0.1:8889/live_1b.m3u8", "http://127.0.0.1:8889/live_2.m3u8"}};
 	ASSERT_EQUALS(expectedRequestedURLs, ((MemoryFileSystem*)(filePullerFactory.instance))->requestedURLs);
 }
 
