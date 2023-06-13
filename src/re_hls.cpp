@@ -230,6 +230,10 @@ class ReHLS : public Module {
 						while (skip-- > 0)
 							i++;
 
+						auto const relOptionalUrl = relativeFromUrl(optionalUrl) + filenameFromUrl(optionalUrl);
+						m3u8MasterNew += relOptionalUrl;
+						i += optionalUrl.size();
+						optionalUrl = relOptionalUrl;
 						for ( ; i < line.size(); ++i)
 							m3u8MasterNew.push_back(line[i]);
 					} else {
