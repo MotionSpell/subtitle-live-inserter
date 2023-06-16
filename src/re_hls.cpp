@@ -44,7 +44,10 @@ std::string urlPath(std::string path) {
 // http://xxx.com/prefix2/master_3329.m3u8 -> prefix2/
 // /prefix3/master_3330.m3u8 -> prefix3/
 std::string relativeFromUrl(std::string path) {
-	auto const prefixLen = startsWith(path, "https://") ? 8 : startsWith(path, "http://") ? 7 : 0 /*assume no prefix*/;
+	auto const prefixLen = startsWith(path, "https://") ? 8 : startsWith(path, "http://") ? 7 : 0;
+	if (!prefixLen && !startsWith(path, "/"))
+		return urlPath(path);
+
 	auto const i = path.substr(prefixLen).find('/');
 	if (i == path.npos)
 		return "";
