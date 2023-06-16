@@ -1065,4 +1065,109 @@ https://localhost:443/testout/vod/hls/index_2.m3u8
 	ASSERT_EQUALS(expectedRequestedURLs, ((MemoryFileSystem*)(filePullerFactory.instance))->requestedURLs);
 }
 
+unittest("reHLS: separate streams but no A/B BaseURL") {
+	auto cfg = createRDCfg();
+	cfg.delayInSec = 2;
+	cfg.url = "https://reverse-proxy:443/vod/hls/index.m3u8";
+	cfg.baseUrlAV = "";
+	cfg.baseUrlSub = "https://localhost:443/testout/";
+	cfg.manifestFn = "titi";
+
+	auto master = /*master*/
+		R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-INDEPENDENT-SEGMENTS
+
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio1",NAME="1",AUTOSELECT=YES,URI="https://reverse-proxy:443/vod/hls/index_1.m3u8",CHANNELS="1"
+#EXT-X-STREAM-INF:BANDWIDTH=100000,CODECS="avc1.640015,mp4a.40.2",RESOLUTION=480x240,FRAME-RATE=25,AUDIO="audio1"
+https://reverse-proxy:443/vod/hls/index_2.m3u8
+)|";
+	auto inputs = std::vector<const char*> ({
+		master, master,
+		/*variant live_1.m3u8*/
+		R"|(#EXTM3U
+#EXT-X-TARGETDURATION:2
+#EXT-X-VERSION:3
+#EXT-X-MEDIA-SEQUENCE:576
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXTINF:1.99692,
+audio_dash_track1_576.ts
+)|",	/*variant live_2.m3u8*/
+		R"|(#EXTM3U
+#EXT-X-TARGETDURATION:2
+#EXT-X-VERSION:3
+#EXT-X-MEDIA-SEQUENCE:576
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXTINF:2,
+video_dash_track2_576.ts
+)|" });
+
+	auto expected = std::vector<std::string> ({
+		format(R"|(#EXTM3U
+#EXT-X-TARGETDURATION:2
+#EXT-X-VERSION:3
+#EXT-X-MEDIA-SEQUENCE:576
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXT-X-START:TIME-OFFSET=%s
+#EXTINF:1.99692,
+https://reverse-proxy:443/vod/hls/audio_dash_track1_576.ts
+
+## Updated with Motion Spell / GPAC Licensing %s version %s
+)|", -cfg.delayInSec, g_appName, g_version),
+		format(R"|(#EXTM3U
+#EXT-X-TARGETDURATION:2
+#EXT-X-VERSION:3
+#EXT-X-MEDIA-SEQUENCE:576
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXT-X-START:TIME-OFFSET=%s
+#EXTINF:2,
+https://reverse-proxy:443/vod/hls/video_dash_track2_576.ts
+
+## Updated with Motion Spell / GPAC Licensing %s version %s
+)|", -cfg.delayInSec, g_appName, g_version),
+		format(R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-INDEPENDENT-SEGMENTS
+
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio1",NAME="1",AUTOSELECT=YES,URI="https://localhost:443/testout/vod/hls/index_1.m3u8",CHANNELS="1"
+#EXT-X-STREAM-INF:BANDWIDTH=100000,CODECS="avc1.640015,mp4a.40.2",RESOLUTION=480x240,FRAME-RATE=25,AUDIO="audio1",SUBTITLES="subtitles"
+https://localhost:443/testout/vod/hls/index_2.m3u8
+
+## Updated with Motion Spell / GPAC Licensing %s version %s
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitle",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="https://localhost:443/testout/index_sub.m3u8"
+)|", g_appName, g_version),
+	});
+
+	FilePullerFactory filePullerFactory(inputs);
+	cfg.filePullerFactory = &filePullerFactory;
+	auto redash = loadModule("reHLS", &NullHost, &cfg);
+	auto recorder = createModule<Utils::Recorder>(&NullHost);
+	ConnectOutputToInput(redash->getOutput(0), recorder->getInput(0));
+	redash->process();
+
+	Data data;
+	bool ret;
+	std::vector<std::string> expectedFilenames = { "vod/hls/index_1.m3u8", "vod/hls/index_2.m3u8", cfg.manifestFn };
+	for (size_t i=0; i<expectedFilenames.size(); ++i) {
+		ret = recorder->tryPop(data);
+		ASSERT_EQUALS(true, ret);
+
+		auto dataRaw = std::dynamic_pointer_cast<const DataRaw>(data);
+		ASSERT(dataRaw);
+
+		auto meta = std::dynamic_pointer_cast<const MetadataFile>(data->getMetadata());
+		ASSERT(meta);
+		ASSERT_EQUALS(expectedFilenames[i], meta->filename);
+
+		ASSERT_EQUALS(expected[i], std::string((const char*)data->data().ptr, data->data().len).c_str());
+	}
+
+	ret = recorder->tryPop(data);
+	ASSERT_EQUALS(false, ret);
+
+	ASSERT(filePullerFactory.instance);
+	std::vector<std::string> expectedRequestedURLs = {"https://reverse-proxy:443/vod/hls/index.m3u8", "https://reverse-proxy:443/vod/hls/index.m3u8", "https://reverse-proxy:443/vod/hls/index_1.m3u8", "https://reverse-proxy:443/vod/hls/index_2.m3u8"};
+	ASSERT_EQUALS(expectedRequestedURLs, ((MemoryFileSystem*)(filePullerFactory.instance))->requestedURLs);
+}
+
 }
