@@ -542,7 +542,7 @@ http://xxx.com/segments/sec3330(3ae40f708f79ca9471f52b86da76a3a8)/frag(3)/video/
 	ASSERT_EQUALS(false, ret);
 
 	ASSERT(filePullerFactory.instance);
-	std::vector<std::string> expectedRequestedURLs = {{"http://S.com/s1/s2/live.m3u8", "http://S.com/s1/s2/live.m3u8", "http://S.com/s1/s2/prefix1/master_3328.m3u8", "http://xxx.com/prefix2/master_3329.m3u8", "http://S.com/prefix3/master_3330.m3u8"}};
+	std::vector<std::string> expectedRequestedURLs = {"http://S.com/s1/s2/live.m3u8", "http://S.com/s1/s2/live.m3u8", "http://S.com/s1/s2/prefix1/master_3328.m3u8", "http://xxx.com/prefix2/master_3329.m3u8", "http://S.com/prefix3/master_3330.m3u8"};
 	ASSERT_EQUALS(expectedRequestedURLs, ((MemoryFileSystem*)(filePullerFactory.instance))->requestedURLs);
 }
 
@@ -646,7 +646,7 @@ http://127.0.0.1:9000/folder/video_dash_track2_576.ts
 	ASSERT_EQUALS(false, ret);
 
 	ASSERT(filePullerFactory.instance);
-	std::vector<std::string> expectedRequestedURLs = {{"http://127.0.0.1:8889/live.m3u8", "http://127.0.0.1:8889/live.m3u8", "http://127.0.0.1:8889/live_1.m3u8", "http://127.0.0.1:8889/folder/live_2.m3u8"}};
+	std::vector<std::string> expectedRequestedURLs = {"http://127.0.0.1:8889/live.m3u8", "http://127.0.0.1:8889/live.m3u8", "http://127.0.0.1:8889/live_1.m3u8", "http://127.0.0.1:8889/folder/live_2.m3u8"};
 	ASSERT_EQUALS(expectedRequestedURLs, ((MemoryFileSystem*)(filePullerFactory.instance))->requestedURLs);
 }
 
@@ -772,7 +772,7 @@ http://127.0.0.1:9001/SUB/folder2/live_2.m3u8
 	ASSERT_EQUALS(false, ret);
 
 	ASSERT(filePullerFactory.instance);
-	std::vector<std::string> expectedRequestedURLs = {{"http://127.0.0.1:8889/live.m3u8", "http://127.0.0.1:8889/live.m3u8", "http://127.0.0.1:8889/folder1/live_1a.m3u8", "http://127.0.0.1:8889/folder1/live_1b.m3u8", "http://source.com/folder2/live_2.m3u8"}};
+	std::vector<std::string> expectedRequestedURLs = {"http://127.0.0.1:8889/live.m3u8", "http://127.0.0.1:8889/live.m3u8", "http://127.0.0.1:8889/folder1/live_1a.m3u8", "http://127.0.0.1:8889/folder1/live_1b.m3u8", "http://source.com/folder2/live_2.m3u8"};
 	ASSERT_EQUALS(expectedRequestedURLs, ((MemoryFileSystem*)(filePullerFactory.instance))->requestedURLs);
 }
 
@@ -877,12 +877,12 @@ http://testdrive:9000/testout/2018019/wdrlz_aachen_ut/hls/live/2018019-b/wdrlz_a
 	ASSERT_EQUALS(false, ret);
 
 	ASSERT(filePullerFactory.instance);
-	std::vector<std::string> expectedRequestedURLs = {{
+	std::vector<std::string> expectedRequestedURLs = {
 		"https://wdrlokalzeit.akamaized.net/hls/live/2018019/wdrlz_aachen/index.m3u8",
 		"https://wdrlokalzeit.akamaized.net/hls/live/2018019/wdrlz_aachen/index.m3u8",
 		"https://wdrlokalzeit.akamaized.net/hls/live/2018019/wdrlz_aachen/master_3328.m3u8",
 		"https://wdrlokalzeit.akamaized.net/hls/live/2018019-b/wdrlz_aachen/master_3328.m3u8"
-	}};
+	};
 	ASSERT_EQUALS(expectedRequestedURLs, ((MemoryFileSystem*)(filePullerFactory.instance))->requestedURLs);
 }
 
