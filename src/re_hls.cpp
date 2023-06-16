@@ -188,6 +188,9 @@ class ReHLS : public Module {
 						if (delayInSec) {
 							m3u8MasterNew += baseUrlSub;
 							skip = serverName(&line[i]).size();
+						} else if (hasBaseUrlAV) {
+							m3u8MasterNew += urlPath(baseUrlAV);
+							skip = serverName(&line[i]).size();
 						}
 						//else: nothing to do
 					} else if (startsWith(&line[i], "/")) { // root
