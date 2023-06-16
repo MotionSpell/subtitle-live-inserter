@@ -772,7 +772,76 @@ http://127.0.0.1:9001/SUB/folder2/live_2.m3u8
 	ASSERT_EQUALS(false, ret);
 
 	ASSERT(filePullerFactory.instance);
-	std::vector<std::string> expectedRequestedURLs = {"http://127.0.0.1:8889/live.m3u8", "http://127.0.0.1:8889/live.m3u8", "http://127.0.0.1:8889/folder1/live_1a.m3u8", "http://127.0.0.1:8889/folder1/live_1b.m3u8", "http://source.com/folder2/live_2.m3u8"};
+	std::vector<std::string> expectedRequestedURLs = {"http://127.0.0.1:8889/live.m3u8", "http://127.0.0.1:8889/live.m3u8", "http://source.com/folder1/live_1a.m3u8", "http://source.com/folder1/live_1b.m3u8", "http://source.com/folder2/live_2.m3u8"};
+	ASSERT_EQUALS(expectedRequestedURLs, ((MemoryFileSystem*)(filePullerFactory.instance))->requestedURLs);
+}
+
+unittest("reHLS: multiple separate audios with absolute URLs, baseURLs set, no global delay") {
+	auto cfg = createRDCfg();
+	cfg.delayInSec = 0;
+	cfg.url = "http://127.0.0.1:8889/live.m3u8";
+	cfg.baseUrlAV = "http://127.0.0.1:9000/AV/";
+	cfg.baseUrlSub = "http://127.0.0.1:9001/SUB/";
+	cfg.manifestFn = "titi";
+
+	auto master = /*master*/
+		R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-INDEPENDENT-SEGMENTS
+
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio1",NAME="1",AUTOSELECT=YES,URI="http://source.com/folder1/live_1a.m3u8",CHANNELS="1"
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio2",NAME="2",AUTOSELECT=YES,URI="http://source.com/folder1/live_1b.m3u8",CHANNELS="1"
+#EXT-X-STREAM-INF:BANDWIDTH=100000,CODECS="avc1.64001F,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=25,AUDIO="audio1"
+http://source.com/folder2/live_2.m3u8
+)|";
+	auto inputs = std::vector<const char*> ({
+		master
+});
+
+	auto expected = std::vector<std::string> ({
+		format(R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-INDEPENDENT-SEGMENTS
+
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio1",NAME="1",AUTOSELECT=YES,URI="http://127.0.0.1:9000/AV/folder1/live_1a.m3u8",CHANNELS="1"
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio2",NAME="2",AUTOSELECT=YES,URI="http://127.0.0.1:9000/AV/folder1/live_1b.m3u8",CHANNELS="1"
+#EXT-X-STREAM-INF:BANDWIDTH=100000,CODECS="avc1.64001F,mp4a.40.2",RESOLUTION=1280x720,FRAME-RATE=25,AUDIO="audio1",SUBTITLES="subtitles"
+http://127.0.0.1:9000/AV/folder2/live_2.m3u8
+
+## Updated with Motion Spell / GPAC Licensing %s version %s
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitle",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="http://127.0.0.1:9001/SUB/index_sub.m3u8"
+)|", g_appName, g_version),
+	});
+
+	FilePullerFactory filePullerFactory(inputs);
+	cfg.filePullerFactory = &filePullerFactory;
+	auto redash = loadModule("reHLS", &NullHost, &cfg);
+	auto recorder = createModule<Utils::Recorder>(&NullHost);
+	ConnectOutputToInput(redash->getOutput(0), recorder->getInput(0));
+	redash->process();
+
+	Data data;
+	bool ret;
+	std::vector<std::string> expectedFilenames = { cfg.manifestFn };
+	for (size_t i=0; i<expectedFilenames.size(); ++i) {
+		ret = recorder->tryPop(data);
+		ASSERT_EQUALS(true, ret);
+
+		auto dataRaw = std::dynamic_pointer_cast<const DataRaw>(data);
+		ASSERT(dataRaw);
+
+		auto meta = std::dynamic_pointer_cast<const MetadataFile>(data->getMetadata());
+		ASSERT(meta);
+		ASSERT_EQUALS(expectedFilenames[i], meta->filename);
+
+		ASSERT_EQUALS(expected[i], std::string((const char*)data->data().ptr, data->data().len).c_str());
+	}
+
+	ret = recorder->tryPop(data);
+	ASSERT_EQUALS(false, ret);
+
+	ASSERT(filePullerFactory.instance);
+	std::vector<std::string> expectedRequestedURLs = {"http://127.0.0.1:8889/live.m3u8", "http://127.0.0.1:8889/live.m3u8"};
 	ASSERT_EQUALS(expectedRequestedURLs, ((MemoryFileSystem*)(filePullerFactory.instance))->requestedURLs);
 }
 
@@ -882,6 +951,116 @@ http://testdrive:9000/testout/2018019/wdrlz_aachen_ut/hls/live/2018019-b/wdrlz_a
 		"https://wdrlokalzeit.akamaized.net/hls/live/2018019/wdrlz_aachen/index.m3u8",
 		"https://wdrlokalzeit.akamaized.net/hls/live/2018019/wdrlz_aachen/master_3328.m3u8",
 		"https://wdrlokalzeit.akamaized.net/hls/live/2018019-b/wdrlz_aachen/master_3328.m3u8"
+	};
+	ASSERT_EQUALS(expectedRequestedURLs, ((MemoryFileSystem*)(filePullerFactory.instance))->requestedURLs);
+}
+
+unittest("reHLS: separate A/V stream with absolute URLs") {
+	auto cfg = createRDCfg();
+	cfg.delayInSec = 2;
+	cfg.url = "https://reverse-proxy:443/vod/hls/index.m3u8";
+	cfg.baseUrlAV = "https://localhost:443/vod/hls/";
+	cfg.baseUrlSub = "https://localhost:443/testout/";
+	cfg.manifestFn = "titi";
+
+	auto master = /*master*/
+		R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-INDEPENDENT-SEGMENTS
+
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio1",NAME="1",AUTOSELECT=YES,URI="https://reverse-proxy:443/vod/hls/index_1.m3u8",CHANNELS="1"
+#EXT-X-STREAM-INF:BANDWIDTH=100000,CODECS="avc1.640015,mp4a.40.2",RESOLUTION=480x240,FRAME-RATE=25,AUDIO="audio1"
+https://reverse-proxy:443/vod/hls/index_2.m3u8
+)|";
+	auto inputs = std::vector<const char*> ({
+		master, master,
+		/*variant live_1.m3u8*/
+		R"|(#EXTM3U
+#EXT-X-TARGETDURATION:2
+#EXT-X-VERSION:3
+#EXT-X-MEDIA-SEQUENCE:576
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXTINF:1.99692,
+audio_dash_track1_576.ts
+)|",	/*variant live_2.m3u8*/
+		R"|(#EXTM3U
+#EXT-X-TARGETDURATION:2
+#EXT-X-VERSION:3
+#EXT-X-MEDIA-SEQUENCE:576
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXTINF:2,
+video_dash_track2_576.ts
+)|" });
+
+	auto expected = std::vector<std::string> ({
+		format(R"|(#EXTM3U
+#EXT-X-TARGETDURATION:2
+#EXT-X-VERSION:3
+#EXT-X-MEDIA-SEQUENCE:576
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXT-X-START:TIME-OFFSET=%s
+#EXTINF:1.99692,
+https://localhost:443/vod/hls/vod/hls/audio_dash_track1_576.ts
+
+## Updated with Motion Spell / GPAC Licensing %s version %s
+)|", -cfg.delayInSec, g_appName, g_version),
+		format(R"|(#EXTM3U
+#EXT-X-TARGETDURATION:2
+#EXT-X-VERSION:3
+#EXT-X-MEDIA-SEQUENCE:576
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXT-X-START:TIME-OFFSET=%s
+#EXTINF:2,
+https://localhost:443/vod/hls/vod/hls/video_dash_track2_576.ts
+
+## Updated with Motion Spell / GPAC Licensing %s version %s
+)|", -cfg.delayInSec, g_appName, g_version),
+		format(R"|(#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-INDEPENDENT-SEGMENTS
+
+#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio1",NAME="1",AUTOSELECT=YES,URI="https://localhost:443/testout/vod/hls/index_1.m3u8",CHANNELS="1"
+#EXT-X-STREAM-INF:BANDWIDTH=100000,CODECS="avc1.640015,mp4a.40.2",RESOLUTION=480x240,FRAME-RATE=25,AUDIO="audio1",SUBTITLES="subtitles"
+https://localhost:443/testout/vod/hls/index_2.m3u8
+
+## Updated with Motion Spell / GPAC Licensing %s version %s
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subtitles",NAME="subtitle",LANGUAGE="de",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="https://localhost:443/testout/index_sub.m3u8"
+)|", g_appName, g_version),
+	});
+
+	FilePullerFactory filePullerFactory(inputs);
+	cfg.filePullerFactory = &filePullerFactory;
+	auto redash = loadModule("reHLS", &NullHost, &cfg);
+	auto recorder = createModule<Utils::Recorder>(&NullHost);
+	ConnectOutputToInput(redash->getOutput(0), recorder->getInput(0));
+	redash->process();
+
+	Data data;
+	bool ret;
+	std::vector<std::string> expectedFilenames = { "vod/hls/index_1.m3u8", "vod/hls/index_2.m3u8", cfg.manifestFn };
+	for (size_t i=0; i<expectedFilenames.size(); ++i) {
+		ret = recorder->tryPop(data);
+		ASSERT_EQUALS(true, ret);
+
+		auto dataRaw = std::dynamic_pointer_cast<const DataRaw>(data);
+		ASSERT(dataRaw);
+
+		auto meta = std::dynamic_pointer_cast<const MetadataFile>(data->getMetadata());
+		ASSERT(meta);
+		ASSERT_EQUALS(expectedFilenames[i], meta->filename);
+
+		ASSERT_EQUALS(expected[i], std::string((const char*)data->data().ptr, data->data().len).c_str());
+	}
+
+	ret = recorder->tryPop(data);
+	ASSERT_EQUALS(false, ret);
+
+	ASSERT(filePullerFactory.instance);
+	std::vector<std::string> expectedRequestedURLs = {
+		"https://reverse-proxy:443/vod/hls/index.m3u8",
+		"https://reverse-proxy:443/vod/hls/index.m3u8",
+		"https://reverse-proxy:443/vod/hls/index_1.m3u8",
+		"https://reverse-proxy:443/vod/hls/index_2.m3u8"
 	};
 	ASSERT_EQUALS(expectedRequestedURLs, ((MemoryFileSystem*)(filePullerFactory.instance))->requestedURLs);
 }

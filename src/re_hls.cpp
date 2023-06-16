@@ -239,7 +239,7 @@ class ReHLS : public Module {
 						auto const relOptionalUrl = relativeFromUrl(optionalUrl) + filenameFromUrl(optionalUrl);
 						m3u8MasterNew += relOptionalUrl;
 						i += optionalUrl.size();
-						optionalUrl = relOptionalUrl;
+						optionalUrl = startsWith(optionalUrl, "http") ? optionalUrl : relOptionalUrl;
 						for ( ; i < line.size(); ++i)
 							m3u8MasterNew.push_back(line[i]);
 					} else {
@@ -258,9 +258,9 @@ class ReHLS : public Module {
 				//variant playlist: keep retro-compatibility by not processing when delayInSec == 0
 				if (delayInSec != 0 && !optionalUrl.empty()) {
 					auto ensureAbsoluteInputUrl = [&](std::string inputUrl) {
-						if (startsWith(line, "http")) { // absolute
+						if (startsWith(optionalUrl, "http")) { // absolute
 							return inputUrl;
-						} else if (startsWith(line, "/")) { // root
+						} else if (startsWith(optionalUrl, "/")) { // root
 							return serverName(this->url) + inputUrl.substr(1/*remove starting '/'*/);
 						} else { // relative
 							return urlPath(this->url) + inputUrl;
