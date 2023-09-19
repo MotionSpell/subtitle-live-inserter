@@ -3,12 +3,10 @@
 
 const char *g_appName = "subtitle-live-inserter";
 
-namespace
-{
+namespace {
 
-  unittest("reDash: manifest from Keepixo/Anevia/Ateme")
-  {
-    auto mpd = R"|(
+  unittest("reDash: manifest from Keepixo/Anevia/Ateme") {
+	  auto mpd = R"|(
 <?xml version="1.0" encoding="UTF-8" ?>
 <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:mspr="urn:microsoft:playready" xmlns:cenc="urn:mpeg:cenc:2013" profiles="urn:dvb:dash:profile:dvb-dash:2014,urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011" type="dynamic" availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" publishTime="2020-10-02T17:27:38Z" timeShiftBufferDepth="PT24H0.00S" minBufferTime="PT10.00S">
   <Period id="0" start="PT0S">
@@ -38,7 +36,7 @@ namespace
   </Period>
 </MPD>)|";
 
-    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:mspr="urn:microsoft:playready" xmlns:cenc="urn:mpeg:cenc:2013" profiles="urn:dvb:dash:profile:dvb-dash:2014,urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011" type="dynamic" availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" publishTime="2020-10-02T17:27:38Z" timeShiftBufferDepth="PT24H0.00S" minBufferTime="PT10.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -182,7 +180,7 @@ namespace
 </MPD>
     )|";
 
-    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	        auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:mspr="urn:microsoft:playready" xmlns:cenc="urn:mpeg:cenc:2013" profiles="urn:dvb:dash:profile:dvb-dash:2014,urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011" type="dynamic" availabilityStartTime="1970-01-01T00:00:00Z" minimumUpdatePeriod="PT6.000S" publishTime="2021-02-03T10:31:43Z" timeShiftBufferDepth="PT8H0.000S" minBufferTime="PT6.000S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -393,7 +391,7 @@ namespace
 </MPD>
 )|";
 
-    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+  auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" type="dynamic" publishTime="2021-02-03T11:14:54Z" minimumUpdatePeriod="PT30S" availabilityStartTime="2021-01-26T10:25:50Z" minBufferTime="PT22S" suggestedPresentationDelay="PT2S" timeShiftBufferDepth="PT2H0M0S" profiles="urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -446,7 +444,7 @@ namespace
   </ProgramInformation>
 </MPD>)|";
 
-    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	  auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>TEST - Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -462,7 +460,7 @@ namespace
   {
     auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"/>)|";
 
-    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	  auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -478,7 +476,7 @@ namespace
   {
     auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
-    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	  auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -504,7 +502,7 @@ namespace
   {
     auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
-    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	  auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:40Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -531,7 +529,7 @@ namespace
   {
     auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S"><Period/></MPD>)|";
 
-    auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
+	  auto expected = format(R"|(<?xml version="1.0" encoding="utf-8"?>
 <MPD availabilityStartTime="2020-10-02T17:27:40Z" minimumUpdatePeriod="PT30.00S" timeShiftBufferDepth="PT24H0.00S">
   <ProgramInformation>
     <Title>Updated with Motion Spell / GPAC Licensing subtitle-live-inserter version %s</Title>
@@ -557,10 +555,9 @@ namespace
 
   unittest("reDash: sanity checks")
   {
-    auto mpd = R"|(<MPD availabilityStartTime="2020-10-02T17:27:38Z" minimumUpdatePeriod="PT30.00S"><Period/></MPD>)|";
+    auto mpd = R"|(<MPD minimumUpdatePeriod="PT30.00S"><Period/></MPD>)|";
     auto cfg = createRDCfg();
     cfg.baseUrlSub = "";
     ASSERT_THROWN(check("reDASH", mpd, "", cfg));
-  }
-
+}
 }

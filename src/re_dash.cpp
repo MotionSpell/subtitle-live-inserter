@@ -88,16 +88,17 @@ class ReDash : public Module {
 
 			auto mpd = refreshDashSession(mpdAsText);
 
-			auto sanity = [&](const std::string &attribute) {
-				if (mpd["minimumUpdatePeriod"].empty())
+			auto sanity = [&](const char *attribute) {
+				if (mpd[attribute].empty())
 					throw error(format("Sanity check failed: MPD %s attributes is absent.", attribute).c_str());
 			};
 
 			sanity("availabilityStartTime");
 			sanity("minimumUpdatePeriod");
-			sanity("timeShiftBufferDepth");
 
-			cfg->timeshiftBufferDepthInSec = parseIso8601Period(mpd["timeShiftBufferDepth"]);
+			// DASH 5.3.1.2 - Table 3: When not present, the value is infinite
+			cfg->timeshiftBufferDepthInSec = mpd["timeShiftBufferDepth"].empty() ? 0LL : parseIso8601Period(mpd["timeShiftBufferDepth"]);
+
 			cfg->updateDelayInSec = std::bind(&ReDash::updateDelayInSec, this, std::placeholders::_1);
 			if (cfg->utcStartTime)
 				cfg->utcStartTime->startTime = (uint64_t)parseDate(mpd["availabilityStartTime"]) * IClock::Rate;
